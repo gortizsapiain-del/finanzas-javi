@@ -518,8 +518,8 @@ function renderResumen(){
     return s+(real>0?real:g.ref);
   },0)+varMRes.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
   const gonzaloTotal=gonzaloFijosTotal+gonzaloVarTotal;
-  // Total gastos = TC + Créditos (consumo) + Gonzalo
-  const totalGastos=tcGastos+credTotal+gonzaloTotal;
+  // Total = TC Pendiente + Créditos + Gonzalo
+  const totalGastos=tcPendiente+credTotal+gonzaloTotal;
   // Saldo CC acumulado
   const hastaHoyCC=ccAll.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
   const saldoCC=SALDO_INICIAL_CC+hastaHoyCC.reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
@@ -531,7 +531,7 @@ function renderResumen(){
       <div style="min-width:0">
         <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Total Gastos ${MESES[mes]} ${anio}</div>
         <div style="font-size:clamp(22px,7vw,32px);font-weight:700;font-family:'DM Mono',monospace;color:#8A4050;overflow-wrap:anywhere">${mxn(totalGastos)}</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:4px">TC + Créditos + Gonzalo (hipotecario + comunes + básicos)</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:4px">TC Pendiente + Créditos + Gonzalo</div>
       </div>
       <div style="font-size:40px;opacity:.5;flex-shrink:0">🌸</div>
     </div>
