@@ -1041,31 +1041,54 @@ async function guardar(){
   const numCuotas=parseInt(document.getElementById("fCuotas").value)||1;
   if(!monto||!fecha){mostrarToast("⚠️ Completa monto y fecha");return;}
   const esCuota=cuenta==="tc"&&numCuotas>1;
-  const cuotaActual=parseInt(document.getElementById("fCuotaActual")?.value)||null;
-  const cuotasTotal=parseInt(document.getElementById("fCuotasTotal")?.value)||null;
-  const tranBase={fecha,cuenta,tipo:modalTipo,cat:(cuenta==="cc"&&modalTipo==="ingreso")?null:cat};
+  const cuotaActual=(cuenta==="creditos"&&parseInt(document.getElementById("fCuotaActual")?.value))||null;
+  const cuotasTotal=(cuenta==="creditos"&&parseInt(document.getElementById("fCuotasTotal")?.value))||null;
+  const tranBase={fecha,cuenta,tipo:modalTipo,cat};
   cerrarModal();
   try{
+    const lote=db.batch();
     if(editandoId){
       const t={...tranBase,desc,monto,...((cuenta==="tc"||cuenta==="creditos")?{mes_facturacion:mesFac}:{}),...(cuotaActual?{cuota_actual:cuotaActual,cuotas_total:cuotasTotal}:{})};
-      await colUsuario().doc(editandoId).update(t);
-      mostrarToast("✅ Actualizado");
+      lote.update(colUsuario().doc(editandoId),t);
     } else if(esCuota){
-      const lote=db.batch();
       for(let i=0;i<numCuotas;i++){
         const ref=colUsuario().doc();
         const d=new Date(anio,mes+i,1);
         const mFac=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
         lote.set(ref,{...tranBase,desc:`${desc} (cuota ${i+1}/${numCuotas})`,monto:Math.round(monto/numCuotas),mes_facturacion:mFac});
       }
-      await lote.commit();
-      mostrarToast(`✅ ${numCuotas} cuotas de ${mxn(Math.round(monto/numCuotas))} registradas`);
     } else {
       const t={...tranBase,desc,monto,...((cuenta==="tc"||cuenta==="creditos")?{mes_facturacion:mesFac}:{}),...(cuotaActual?{cuota_actual:cuotaActual,cuotas_total:cuotasTotal}:{})};
-      await colUsuario().add(t);
-      mostrarToast("✅ Guardado");
+      lote.set(colUsuario().doc(),t);
+
+      // Auto-descuento CC: al pagar TC o hacer transferencia/gonzalo como gasto
+      const esPagoTC=(cuenta==="tc"&&cat==="pago");
+      const esTransfCC=(cuenta==="cc"&&cat==="transferencia"&&modalTipo==="gasto");
+      const esGastoGonzalo=(cuenta==="gonzalo");
+      if(esPagoTC){
+        // Crear gasto en CC por el monto del pago TC
+        lote.set(colUsuario().doc(),{
+          fecha,cuenta:"cc",tipo:"gasto",cat:"pagos_cc",
+          desc:"Pago TC"+(desc?" — "+desc:""),monto
+        });
+      } else if(esGastoGonzalo){
+        // Crear gasto en CC por gastos de Gonzalo
+        const cGonz=CATS[cat]||{label:cat};
+        lote.set(colUsuario().doc(),{
+          fecha,cuenta:"cc",tipo:"gasto",cat:"transferencia",
+          desc:"Transferencia Gonzalo — "+(desc||cGonz.label),monto
+        });
+      }
     }
-  }catch(err){mostrarToast("❌ Error: "+err.message);}
+    await lote.commit();
+    const extras=[];
+    if(cuenta==="tc"&&cat==="pago") extras.push("+ descuento CC automático");
+    if(cuenta==="gonzalo") extras.push("+ descuento CC automático");
+    mostrarToast("✅ Guardado"+(extras.length?" ("+extras.join(", ")+")":""));
+  }catch(err){
+    console.error("guardar error:",err);
+    mostrarToast("❌ "+err.message);
+  }
 }
 
 async function eliminar(id){
