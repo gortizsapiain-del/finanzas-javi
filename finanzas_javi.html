@@ -180,7 +180,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </div>
 
 <div class="container">
-  <div class="month-nav">
+  <div class="month-nav" id="monthNav">
     <button class="btn-ghost" onclick="cambiarMes(-1)">← Anterior</button>
     <div style="text-align:center">
       <div class="month-name" id="mesNombre"></div>
@@ -566,7 +566,7 @@ function render(){
     document.querySelectorAll(".tab-javiera").forEach(el=>el.style.display=perfil==="javiera"?"":"none");
     document.querySelectorAll(".tab-skinlux").forEach(el=>el.style.display=perfil==="skinlux"?"":"none");
     // Ocultar navegador de meses en Skin Lux (es acumulado, no por mes)
-    document.querySelector(".month-nav").style.display=perfil==="skinlux"?"none":"";
+    document.getElementById("monthNav").style.display=perfil==="skinlux"?"none":"";
     // Si el tab activo no existe en este perfil, resetear a resumen
     const tabsJaviera=["resumen","tc","cc","creditos","ahorros","gonzalo"];
     const tabsSkinlux=["resumen","ventas","compras","iva","flujo","reembolsos"];
@@ -669,6 +669,7 @@ function renderResumen(){
     // Calcular F29 mes a mes con remanente (igual lógica que renderIVA)
     const mesesIVA=[...new Set([...todasVentas,...todasCompras].map(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)).filter(Boolean))].sort();
     let _rem=0,posIVA=0,ultimoMesIVA="";
+    const f29Meses=[];
     mesesIVA.forEach(m=>{
       const deb=todasVentas.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.iva||0),0);
       const cred=todasCompras.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.iva||0),0);
@@ -677,6 +678,7 @@ function renderResumen(){
       _rem=posicion<0?Math.abs(posicion):0;
       posIVA=posicion;
       ultimoMesIVA=m;
+      f29Meses.push({m,posicion,aPagar:posicion>0?posicion:0,remanente:_rem});
     });
     const saldoCuenta=ventasDep-todasComprasCta.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
     const pendienteRemb=todasReembolsosAdeudo.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
@@ -693,8 +695,20 @@ function renderResumen(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="summary-card sage" onclick="setTab('ventas')" style="cursor:pointer"><div class="s-label" style="color:#2A7040">💰 Ventas</div><div class="s-amount" style="color:#2A7040">${mxn(ventasBruto)}</div><div class="s-sub">dep. ${mxn(ventasDep)} · ${todasVentas.length} vtas</div></div>
       <div class="summary-card" style="background:linear-gradient(135deg,#FFF8F0,#FFF0E4);border:1px solid #DDB8A0;cursor:pointer" onclick="setTab('compras')"><div class="s-label" style="color:#7A4020">🛒 Compras</div><div class="s-amount" style="color:#7A4020">${mxn(comprasTotal)}</div><div class="s-sub">${todasCompras.length} facturas</div></div>
-      <div class="summary-card" style="background:linear-gradient(135deg,#F5F0FF,#EDE4FF);border:1px solid #C8B0F0;cursor:pointer" onclick="setTab('iva')"><div class="s-label" style="color:#6040B0">📋 IVA F29</div><div class="s-amount" style="color:${posIVA<=0?"#3A8A70":"#C07050"}">${mxn(Math.abs(posIVA))}</div><div class="s-sub">${ultimoMesIVA?MESES[parseInt(ultimoMesIVA.split("-")[1])-1]+" · ":""}${posIVA<=0?"a favor":"a pagar"}</div></div>
+      <div class="summary-card" style="background:linear-gradient(135deg,#F5F0FF,#EDE4FF);border:1px solid #C8B0F0;cursor:pointer" onclick="setTab('iva')"><div class="s-label" style="color:#6040B0">📊 IVA</div><div class="s-amount" style="color:${posIVA<=0?"#3A8A70":"#C07050"}">${mxn(Math.abs(posIVA))}</div><div class="s-sub">${ultimoMesIVA?MESES[parseInt(ultimoMesIVA.split("-")[1])-1]+" · ":""}${posIVA<=0?"a favor":"a pagar"}</div></div>
       <div class="summary-card" style="background:linear-gradient(135deg,#FFF5F0,#FFE8E0);border:1px solid #DDB8A0;cursor:pointer" onclick="setTab('reembolsos')"><div class="s-label" style="color:#7A4020">👥 Reembolso socios</div><div class="s-amount" style="color:#7A4020">${mxn(pendienteRemb>0?pendienteRemb:0)}</div><div class="s-sub">pendiente</div></div>
+    </div>
+    <div style="background:linear-gradient(135deg,#F0F4FF,#E4EAFF);border:1px solid #B0C0F0;border-radius:14px;padding:14px 16px;cursor:pointer" onclick="setTab('iva')">
+      <div style="font-size:10px;color:#3050A0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">📋 F29 · Declaración mensual IVA</div>
+      ${f29Meses.map(r=>{
+        const [ay,am]=r.m.split("-");
+        const label=MESES[parseInt(am)-1]+" "+ay;
+        const aPagar=r.posicion>0;
+        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #C8D4F0">
+          <div style="font-size:13px;color:#3050A0;font-weight:600">${label}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${aPagar?"#C07050":"#3A8A70"}">${aPagar?"Pagar "+mxn(r.aPagar):"A favor "+mxn(r.remanente)}</div>
+        </div>`;
+      }).join("")}
     </div>
     ${!hayDatos?`<div style="background:#FFF5E0;border:1px solid #E0C080;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="abrirImportExcel()">
       <div style="font-size:28px">📥</div>
