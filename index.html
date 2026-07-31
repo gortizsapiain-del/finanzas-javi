@@ -209,9 +209,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           <option value="consumo">💼 Crédito Consumo</option>
         </optgroup>
         <optgroup label="CC">
-          <option value="sueldo">💰 Sueldo</option>
-          <option value="transferencia">💸 Transferencia</option>
+          <option value="transferencia">💙 Transferencia Gonzalo</option>
           <option value="pagos_cc">💳 Pagos</option>
+          <option value="sueldo">💰 Sueldo</option>
           <option value="reembolsos">🔄 Reembolsos</option>
           <option value="varios_cc">📋 Varios</option>
         </optgroup>
@@ -302,7 +302,7 @@ const CATS = {
   consumo:           {label:"Crédito Consumo",    icon:"💼", color:"#B87AA0"},
   // CC
   sueldo:            {label:"Sueldo",             icon:"💰", color:"#3A8A70"},
-  transferencia:     {label:"Transferencia",      icon:"💸", color:"#7BB5A0"},
+  transferencia:     {label:"Transferencia Gonzalo",icon:"💙", color:"#5070C0"},
   pagos_cc:          {label:"Pagos",              icon:"💳", color:"#C4788A"},
   reembolsos:        {label:"Reembolsos",         icon:"🔄", color:"#7A9AB0"},
   varios_cc:         {label:"Varios",             icon:"📋", color:"#9090A8"},
@@ -1010,7 +1010,8 @@ function actualizarOpcionesCat(cuenta){
     else if(cuenta==="tc")opt.style.display=CATS_TC.includes(opt.value)?"":"none";
     else if(cuenta==="ahorros")opt.style.display=CATS_AHORROS.includes(opt.value)?"":"none";
     else if(cuenta==="gonzalo")opt.style.display=CATS_GONZALO.includes(opt.value)?"":"none";
-    else opt.style.display=(CATS_CRED.includes(opt.value)||CATS_AHORROS.includes(opt.value)||CATS_GONZALO.includes(opt.value))?"none":"";
+    else if(cuenta==="cc")opt.style.display=CATS_CC.includes(opt.value)?"":"none";
+    else opt.style.display=(CATS_CRED.includes(opt.value)||CATS_AHORROS.includes(opt.value)||CATS_GONZALO.includes(opt.value)||CATS_CC.includes(opt.value))?"none":"";
   });
   const firstVisible=Array.from(select.options).find(o=>o.style.display!=="none");
   if(firstVisible)select.value=firstVisible.value;
