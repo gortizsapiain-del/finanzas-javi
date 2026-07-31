@@ -398,6 +398,25 @@ function suscribirDatos(){
       data = snap.docs.map(d=>({id:d.id,...d.data()}));
       render();
     });
+  limpiarDatosViejos();
+}
+
+// Elimina entradas que quedaron en las cuentas antiguas tras la reorganización
+async function limpiarDatosViejos(){
+  try{
+    const snap=await colUsuario().get();
+    if(snap.empty) return;
+    const lote=db.batch();
+    let n=0;
+    snap.forEach(doc=>{
+      const d=doc.data();
+      // hipotecario en creditos → ahora está en Gonzalo (fijo)
+      if(d.cat==="hipotecario"&&d.cuenta==="creditos"){lote.delete(doc.ref);n++;}
+      // gastos_comunes/basicos en cc → ahora en Gonzalo (fijo)
+      if((d.cat==="gastos_comunes"||d.cat==="gastos_basicos")&&d.cuenta==="cc"){lote.delete(doc.ref);n++;}
+    });
+    if(n>0) await lote.commit();
+  }catch(e){console.warn("limpiarDatosViejos:",e);}
 }
 
 // ══════════════════════════════════════════
@@ -475,6 +494,8 @@ function renderResumen(){
   const ad=allData();
   const tcM=delMes(ad.filter(t=>t.cuenta==="tc"));
   const tcGastos=tcM.filter(t=>t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
+  const tcPagos=tcM.filter(t=>t.cat==="pago").reduce((s,t)=>s+t.monto,0);
+  const tcPendiente=Math.max(0,tcGastos-tcPagos);
   const ccAll=ad.filter(t=>t.cuenta==="cc");
   const ccM=delMes(ccAll);
   const credM=delMes(ad.filter(t=>t.cuenta==="creditos"));
@@ -501,7 +522,7 @@ function renderResumen(){
       <div style="font-size:40px;opacity:.5;flex-shrink:0">🌸</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="summary-card rose"><div class="s-label" style="color:var(--accent)">💳 TC</div><div class="s-amount" style="color:#8A3050">${mxn(tcGastos)}</div><div class="s-sub" style="color:var(--dim)">${tcM.filter(t=>t.cat!=="pago").length} movimientos</div></div>
+      <div class="summary-card rose"><div class="s-label" style="color:var(--accent)">💳 TC</div><div class="s-amount" style="color:#8A3050">${mxn(tcGastos)}</div><div class="s-sub" style="color:var(--dim)">${tcPagos>0?`Pagado ${mxn(tcPagos)} · `:""}${tcPendiente>0?`<span style="color:#C05060;font-weight:700">Pendiente ${mxn(tcPendiente)}</span>`:"Al día ✓"}</div></div>
       <div class="summary-card sage"><div class="s-label" style="color:#2A7060">🏦 Cuenta Corriente</div><div class="s-amount" style="color:${saldoCC>=0?"#2A7060":"#8A4050"}">${mxn(saldoCC)}</div><div class="s-sub" style="color:var(--dim)">saldo actual</div></div>
       <div class="summary-card" style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0"><div class="s-label" style="color:#3050A0">💙 Gonzalo</div><div class="s-amount" style="color:#3050A0">${mxn(gonzaloTotal)}</div><div class="s-sub" style="color:#6080C0">a depositar este mes</div></div>
       <div class="summary-card gold"><div class="s-label" style="color:#7A5030">🏛️ Créditos</div><div class="s-amount" style="color:#7A5030">${mxn(credTotal)}</div><div class="s-sub" style="color:#7A5030">${credM.length} cuotas</div></div>
