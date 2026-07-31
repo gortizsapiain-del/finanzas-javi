@@ -164,13 +164,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div class="tab-bar">
   <div class="tabs" id="tabsContainer">
-    <button class="tab active" onclick="setTab('resumen')">📊 Resumen</button>
-    <button class="tab" onclick="setTab('tc')">💳 TC</button>
-    <button class="tab" onclick="setTab('cc')">🏦 Cta. Corriente</button>
+    <button class="tab active tab-all" onclick="setTab('resumen')">📊 Resumen</button>
+    <button class="tab tab-javiera" onclick="setTab('tc')">💳 TC</button>
+    <button class="tab tab-javiera" onclick="setTab('cc')">🏦 Cta. Corriente</button>
     <button class="tab tab-javiera" onclick="setTab('creditos')">🏛️ Créditos</button>
     <button class="tab tab-javiera" onclick="setTab('ahorros')">🌿 Ahorros</button>
     <button class="tab tab-javiera" onclick="setTab('gonzalo')">💙 Gonzalo</button>
     <button class="tab tab-skinlux" style="display:none" onclick="setTab('facturas')">🧾 Facturas</button>
+    <button class="tab tab-skinlux" style="display:none" onclick="setTab('cc')">🏦 Cta. Corriente</button>
+    <button class="tab tab-skinlux" style="display:none" onclick="setTab('tc')">💳 TC</button>
   </div>
 </div>
 
@@ -437,7 +439,7 @@ function suscribirDatos(){
       data = snap.docs.map(d=>({id:d.id,...d.data()}));
       render();
     });
-  if(perfil==="javiera") limpiarDatosViejos();
+  if(perfil==="javiera"){limpiarDatosViejos();limpiarDuplicadosAutoInit();}
   if(perfil==="skinlux") limpiarDatosSkinlux();
 }
 
@@ -481,11 +483,29 @@ async function limpiarDatosSkinlux(){
       const d=doc.data();
       // consumo en creditos → es de Javiera, no Skin Lux
       if(d.cat==="consumo"&&d.cuenta==="creditos"){lote.delete(doc.ref);n++;}
-      // farmacia en tc con desc "Farmacia" → era el auto-init de agosto 2026
+      // farmacia auto-init en tc
       if(d.cat==="farmacia"&&d.cuenta==="tc"&&d.desc==="Farmacia"){lote.delete(doc.ref);n++;}
     });
     if(n>0) await lote.commit();
   }catch(e){console.warn("limpiarDatosSkinlux:",e);}
+}
+
+// Elimina duplicados de autoInit en Javiera (entradas con ID no determinista para cat ya inicializado)
+async function limpiarDuplicadosAutoInit(){
+  try{
+    const mesStr=anio+'-'+String(mes+1).padStart(2,'0');
+    const cats=[{cuenta:'creditos',cat:'consumo'},{cuenta:'tc',cat:'farmacia'}];
+    for(const c of cats){
+      const snap=await colUsuario().where('cuenta','==',c.cuenta).where('cat','==',c.cat).get();
+      if(snap.size<=1) continue;
+      // Conservar el doc con ID determinista (init_cat_mes) o el más antiguo; borrar el resto
+      const docs=snap.docs;
+      const initDoc=docs.find(d=>d.id.startsWith('init_'));
+      const lote=db.batch();
+      docs.forEach(d=>{if(d.id!==(initDoc?initDoc.id:docs[0].id))lote.delete(d.ref);});
+      await lote.commit();
+    }
+  }catch(e){console.warn("limpiarDuplicados:",e);}
 }
 
 // Elimina entradas que quedaron en las cuentas antiguas tras la reorganización
@@ -536,13 +556,14 @@ function render(){
     document.querySelectorAll(".tab-skinlux").forEach(el=>el.style.display=perfil==="skinlux"?"":"none");
     // Si el tab activo no existe en este perfil, resetear a resumen
     const tabsJaviera=["resumen","tc","cc","creditos","ahorros","gonzalo"];
-    const tabsSkinlux=["resumen","tc","cc","facturas"];
+    const tabsSkinlux=["resumen","facturas","cc","tc"];
     const tabsValidos=perfil==="skinlux"?tabsSkinlux:tabsJaviera;
     if(!tabsValidos.includes(tabActual)) tabActual="resumen";
+    // Botones HTML: [resumen(all), tc(javi), cc(javi), creditos(javi), ahorros(javi), gonzalo(javi), facturas(skin), cc(skin), tc(skin)]
     document.querySelectorAll(".tab").forEach((b,i)=>{
       const tabs=perfil==="skinlux"?
-        ["resumen","tc","cc",null,null,null,"facturas"]:
-        ["resumen","tc","cc","creditos","ahorros","gonzalo",null];
+        ["resumen",null,null,null,null,null,"facturas","cc","tc"]:
+        ["resumen","tc","cc","creditos","ahorros","gonzalo",null,null,null];
       b.classList.toggle("active",tabs[i]===tabActual);
     });
     const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos",ahorros:"viewAhorros",gonzalo:"viewGonzalo",facturas:"viewFacturas"};
@@ -1055,15 +1076,14 @@ async function autoInicializarMes(){
     ...(anio===2026&&mes===7?[{cuenta:'tc',tipo:'gasto',cat:'farmacia',monto:21359,mes_facturacion:mesStr,fecha:mesStr+'-01',desc:'Farmacia'}]:[]),
   ];
   try{
-    const lote=db.batch();
-    let n=0;
-    entradas.forEach(function(e){
-      const existe=data.some(function(t){
-        return t.cuenta===e.cuenta&&t.cat===e.cat&&(e.mes_facturacion?(t.mes_facturacion||t.fecha.slice(0,7))===e.mes_facturacion:t.fecha.startsWith(mesStr));
-      });
-      if(!existe){lote.set(colUsuario().doc(),Object.assign({},e,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));n++;}
-    });
-    if(n>0) await lote.commit();
+    // Usar IDs deterministas y verificar existencia directa en Firestore
+    // (evita race condition donde data=[] al momento del check)
+    for(const e of entradas){
+      const docId='init_'+e.cat+'_'+mesStr;
+      const ref=colUsuario().doc(docId);
+      const snap=await ref.get();
+      if(!snap.exists) await ref.set(Object.assign({},e,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+    }
   }catch(err){console.error('autoInit:',err);}
 }
 
