@@ -655,12 +655,12 @@ function renderResumen(){
 
   let html;
   if(perfil==="skinlux"){
-    // Métricas ACUMULADAS (no filtradas por mes) para SkinLux
-    const todasVentas=data.filter(t=>t.cuenta==="ventas");
-    const todasCompras=data.filter(t=>t.cuenta==="compras");
+    // Métricas ACUMULADAS usando datos embebidos + Firebase
+    const todasVentas=slData("ventas");
+    const todasCompras=slData("compras");
     const todasComprasCta=todasCompras.filter(t=>(t.forma_pago||"").toLowerCase().includes("empresa"));
-    const todosReembolsosPago=data.filter(t=>t.cuenta==="reembolsos_pago");
-    const todasReembolsosAdeudo=data.filter(t=>t.cuenta==="reembolsos_adeudo");
+    const todosReembolsosPago=slData("reembolsos_pago");
+    const todasReembolsosAdeudo=slData("reembolsos_adeudo");
     const ventasBruto=todasVentas.reduce((s,t)=>s+(t.monto||0),0);
     const ventasDep=todasVentas.reduce((s,t)=>s+(t.depositado||0),0);
     const comprasTotal=todasCompras.reduce((s,t)=>s+(t.monto||0),0);
@@ -1055,8 +1055,8 @@ function slFecha(d){
 }
 
 function renderVentas(){
-  const todos=data.filter(t=>t.cuenta==="ventas");
-  const gm=todos; // mostrar todos los datos, no filtrar por mes
+  const todos=slData("ventas");
+  const gm=todos;
   const totalBruto=gm.reduce((s,t)=>s+(t.monto||0),0);
   const totalNeto=gm.reduce((s,t)=>s+(t.neto||0),0);
   const totalIVA=gm.reduce((s,t)=>s+(t.iva||0),0);
@@ -1096,8 +1096,8 @@ function renderVentas(){
 }
 
 function renderCompras(){
-  const todos=data.filter(t=>t.cuenta==="compras");
-  const gm=todos; // mostrar todos los datos
+  const todos=slData("compras");
+  const gm=todos;
   const totalBruto=gm.reduce((s,t)=>s+(t.monto||0),0);
   const totalNeto=gm.reduce((s,t)=>s+(t.neto||0),0);
   const totalIVA=gm.reduce((s,t)=>s+(t.iva||0),0);
@@ -1134,8 +1134,8 @@ function renderCompras(){
 
 function renderIVA(){
   // Agrupar por mes todas las ventas y compras
-  const ventas=data.filter(t=>t.cuenta==="ventas");
-  const compras=data.filter(t=>t.cuenta==="compras");
+  const ventas=slData("ventas");
+  const compras=slData("compras");
   const meses=new Set([...ventas,...compras].map(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)).filter(Boolean));
   const mesesArr=[...meses].sort();
 
@@ -1178,9 +1178,9 @@ function renderIVA(){
 }
 
 function renderFlujo(){
-  const ventas=data.filter(t=>t.cuenta==="ventas");
-  const comprasCta=data.filter(t=>t.cuenta==="compras"&&(t.forma_pago||"").toLowerCase().includes("empresa"));
-  const rembolsosPagos=data.filter(t=>t.cuenta==="reembolsos_pago");
+  const ventas=slData("ventas");
+  const comprasCta=slData("compras").filter(t=>(t.forma_pago||"").toLowerCase().includes("empresa"));
+  const rembolsosPagos=slData("reembolsos_pago");
 
   const meses=new Set([...ventas,...comprasCta,...rembolsosPagos].map(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)).filter(Boolean));
   const mesesArr=[...meses].sort();
@@ -1195,7 +1195,7 @@ function renderFlujo(){
     const dep=ventas.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.depositado||0),0);
     const comp=comprasCta.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.monto||0),0);
     const remb=rembolsosPagos.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.monto||0),0);
-    const iva=data.filter(t=>t.cuenta==="iva_pago"&&(t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.monto||0),0);
+    const iva=slData("iva_pago").filter(t=>(t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.monto||0),0);
     const flujoNeto=dep-comp-remb-iva;
     saldo+=flujoNeto;
     totalEntradas+=dep;
@@ -1229,8 +1229,8 @@ function renderFlujo(){
 }
 
 function renderReembolsos(){
-  const adeudos=data.filter(t=>t.cuenta==="reembolsos_adeudo");
-  const pagos=data.filter(t=>t.cuenta==="reembolsos_pago");
+  const adeudos=slData("reembolsos_adeudo").filter(t=>t.fecha);
+  const pagos=slData("reembolsos_pago").filter(t=>t.fecha);
   const totalAdeudado=adeudos.reduce((s,t)=>s+(t.monto||0),0);
   const totalPagado=pagos.reduce((s,t)=>s+(t.monto||0),0);
   const pendiente=totalAdeudado-totalPagado;
@@ -1441,6 +1441,25 @@ const GASTOS_FIJOS_CC = {
 
 // Mes base: agosto 2026 = cuota 20 hipotecario, cuota 1 consumo
 const BASE_MES=7, BASE_ANIO=2026;
+
+// ══════════════════════════════════════════
+//  DATOS INICIALES SKIN LUX (desde Excel)
+// ══════════════════════════════════════════
+const SL_DATA_INIT={
+ventas:[{cuenta:"ventas",fecha:"2026-05-16",mes_facturacion:"2026-05",cliente:"Gonzalo",rut_cliente:"—",n_documento:"M23WW1V2-1",categoria:"Servicio Estética",desc:"Prueba — Tarjeta Crédito",neto:84,iva:16,monto:100,comision:3,depositado:97,docId:"venta_20260516_17"},{cuenta:"ventas",fecha:"2026-05-16",mes_facturacion:"2026-05",cliente:"Alejandra Hernández",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Limpieza Facial Premium — Tarjeta Débito",neto:50336,iva:9564,monto:59900,comision:1775,depositado:58125,docId:"venta_20260516_18"},{cuenta:"ventas",fecha:"2026-05-19",mes_facturacion:"2026-05",cliente:"Patricia Soto",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Limpieza Facial Premium — Tarjeta Débito",neto:50336,iva:9564,monto:59900,comision:1775,depositado:58125,docId:"venta_20260519_19"},{cuenta:"ventas",fecha:"2026-05-22",mes_facturacion:"2026-05",cliente:"Cecilia Peñafiel",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Limpieza Facial Premium — Tarjeta Débito",neto:50336,iva:9564,monto:59900,comision:1775,depositado:58125,docId:"venta_20260522_20"},{cuenta:"ventas",fecha:"2026-05-28",mes_facturacion:"2026-05",cliente:"Patricia Soto",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Vitamina C — Tarjeta Crédito",neto:37815,iva:7185,monto:45000,comision:1333,depositado:43667,docId:"venta_20260528_21"},{cuenta:"ventas",fecha:"2026-06-04",mes_facturacion:"2026-06",cliente:"Silvia Manquez (2)",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Limpieza Facial Premium — Tarjeta Crédito VISA 14:06",neto:80538,iva:15302,monto:95840,comision:2840,depositado:93000,docId:"venta_20260604_22"},{cuenta:"ventas",fecha:"2026-06-04",mes_facturacion:"2026-06",cliente:"Bernarda Castillo",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Limpieza Facial Básica — Tarjeta Crédito Mastercard 19:40",neto:23529,iva:4471,monto:28000,comision:830,depositado:27170,docId:"venta_20260604_23"},{cuenta:"ventas",fecha:"2026-06-05",mes_facturacion:"2026-06",cliente:"Consumidor final",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Cyber premium — 13:59 VISA",neto:40269,iva:7651,monto:47920,comision:1420,depositado:46500,docId:"venta_20260605_24"},{cuenta:"ventas",fecha:"2026-06-25",mes_facturacion:"2026-06",cliente:"Cecilia Peñafiel",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Vitamina C — Tarjeta Debito",neto:37815,iva:7185,monto:45000,comision:1333,depositado:43667,docId:"venta_20260625_25"},{cuenta:"ventas",fecha:"2026-07-05",mes_facturacion:"2026-07",cliente:"Patricia Soto",rut_cliente:"—",n_documento:"",categoria:"Servicio Estética",desc:"Vitamina C — Tarjeta Debito",neto:37815,iva:7185,monto:45000,comision:1333,depositado:43667,docId:"venta_20260705_26"}],
+compras:[{cuenta:"compras",fecha:"2026-05-16",mes_facturacion:"2026-05",proveedor:"Decoración Integral Limitada",rut_proveedor:"86.838.400-K",n_factura:"106010",categoria:"Insumos / Ropa de cama",desc:"Frazada coral King crudo",neto:19489,iva:3702.91,monto:23192,forma_pago:"TC Socio",docId:"compra_106010"},{cuenta:"compras",fecha:"2026-05-16",mes_facturacion:"2026-05",proveedor:"Escuela Prof. de Estética M. Paz Torres EIRL",rut_proveedor:"—",n_factura:"3481",categoria:"Insumos cosméticos",desc:"Máscaras peel off, Double Phase, Pack Sabanilla",neto:54875,iva:10426.25,monto:65301,forma_pago:"TC Socio",docId:"compra_3481"},{cuenta:"compras",fecha:"2026-05-22",mes_facturacion:"2026-05",proveedor:"Renovación y Tecnología Empresarial Ltda",rut_proveedor:"78.936.330-7",n_factura:"1298115",categoria:"Tecnología",desc:"iPhone 17 Pro",neto:1260479,iva:239491.01,monto:1499970,forma_pago:"TC Socio",docId:"compra_1298115"},{cuenta:"compras",fecha:"2026-05-22",mes_facturacion:"2026-05",proveedor:"Matriz Ideas S.A.",rut_proveedor:"76.322.590-9",n_factura:"433381",categoria:"Decoración",desc:"Aceite aromático, difusor USB, rociador, bolsa",neto:15109,iva:2870.71,monto:17980,forma_pago:"TC Socio",docId:"compra_433381"},{cuenta:"compras",fecha:"2026-05-24",mes_facturacion:"2026-05",proveedor:"Matriz Ideas S.A.",rut_proveedor:"76.322.590-9",n_factura:"433397",categoria:"Decoración",desc:"Marco foto MDF, percha puerta",neto:24168,iva:4591.92,monto:28760,forma_pago:"TC Socio",docId:"compra_433397"},{cuenta:"compras",fecha:"2026-05-30",mes_facturacion:"2026-05",proveedor:"Sodimac S.A.",rut_proveedor:"96.792.430-K",n_factura:"147543272",categoria:"Equipamiento",desc:"Cajones apilables, cajas plásticas, puff",neto:33732,iva:6409.08,monto:40141,forma_pago:"TC Socio",docId:"compra_147543272"},{cuenta:"compras",fecha:"2026-06-03",mes_facturacion:"2026-06",proveedor:"ASM Global Limitada",rut_proveedor:"76.523.147-7",n_factura:"119",categoria:"Mobiliario",desc:"Mueble para tocador M241608",neto:69748,iva:13252.12,monto:83000,forma_pago:"TC Socio",docId:"compra_119"},{cuenta:"compras",fecha:"2026-07-02",mes_facturacion:"2026-07",proveedor:"AMBM SHOP (Mercado Libre)",rut_proveedor:"77.603.022-8",n_factura:"19864",categoria:"Insumo",desc:"Cintillo, regalo gift card",neto:20823.53,iva:3956.47,monto:24780,forma_pago:"Cuenta Empresa",docId:"compra_19864"},{cuenta:"compras",fecha:"2026-07-10",mes_facturacion:"2026-07",proveedor:"IMPORTACION KIMALE SPA",rut_proveedor:"77.714.021-3",n_factura:"905",categoria:"Insumo",desc:"Aguja dermapen",neto:24398.46,iva:4635.71,monto:27414,forma_pago:"Cuenta Empresa",docId:"compra_905"}],
+reembolsos_adeudo:[{cuenta:"reembolsos_adeudo",fecha:"2026-05-16",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"106010",proveedor:"Decoración Integral Limitada",emitida_rut:"Sí",monto:23192,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-05",docId:"remb_adeudo_106010"},{cuenta:"reembolsos_adeudo",fecha:"2026-05-16",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"3481",proveedor:"Escuela Prof. de Estética M. Paz Torres EIRL",emitida_rut:"Sí",monto:65301,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-05",docId:"remb_adeudo_3481"},{cuenta:"reembolsos_adeudo",fecha:"2026-05-22",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"1298115",proveedor:"Renovación y Tecnología Empresarial Ltda",emitida_rut:"Sí",monto:1499970,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-05",docId:"remb_adeudo_1298115"},{cuenta:"reembolsos_adeudo",fecha:"2026-05-22",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"433381",proveedor:"Matriz Ideas S.A.",emitida_rut:"Sí",monto:17980,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-05",docId:"remb_adeudo_433381"},{cuenta:"reembolsos_adeudo",fecha:"2026-05-24",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"433397",proveedor:"Matriz Ideas S.A.",emitida_rut:"Sí",monto:28760,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-05",docId:"remb_adeudo_433397"},{cuenta:"reembolsos_adeudo",fecha:"2026-05-30",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"147543272",proveedor:"Sodimac S.A.",emitida_rut:"Sí",monto:40141,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-05",docId:"remb_adeudo_147543272"},{cuenta:"reembolsos_adeudo",fecha:"2026-06-03",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"119",proveedor:"ASM Global Limitada",emitida_rut:"Sí",monto:83000,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-06",docId:"remb_adeudo_119"},{cuenta:"reembolsos_adeudo",fecha:"2026-06-16",socio:"Gonzalo Andrés Ortiz Sapiain",rut_socio:"19.101.309-3",n_factura:"Boleta SII",proveedor:"SII Pago PPM",emitida_rut:"Sí",monto:23398,calificacion:"Reembolso (Caso A)",mes_facturacion:"2026-06",docId:"remb_adeudo_BoletaSII"}],
+reembolsos_pago:[{cuenta:"reembolsos_pago",fecha:"2026-06-01",socio:"Gonzalo Andrés Ortiz Sapiain",monto:311411,medio:"Transferencia",desc:"iPhone (parcial), ajustado por comisión SumUp absorbida en depósitos may-jun",mes_facturacion:"2026-06",docId:"remb_pago_16"},{cuenta:"reembolsos_pago",fecha:"2026-06-17",socio:"Gonzalo Andrés Ortiz Sapiain",monto:23398,medio:"Transferencia",desc:"Abono a cuenta del socio",mes_facturacion:"2026-06",docId:"remb_pago_17"},{cuenta:"reembolsos_pago",fecha:"2026-07-10",socio:"Gonzalo Andrés Ortiz Sapiain",monto:50000,medio:"Transferencia",desc:"Abono a cuenta del socio",mes_facturacion:"2026-07",docId:"remb_pago_18"}]
+};
+
+// Retorna datos de SL_DATA_INIT + Firebase para una cuenta dada (sin duplicados)
+function slData(cuenta){
+  const init=(SL_DATA_INIT[cuenta]||[]).map(t=>({...t,id:t.docId}));
+  const fb=data.filter(t=>t.cuenta===cuenta);
+  const fbIds=new Set(fb.map(t=>t.docId||t.id));
+  const initFilt=init.filter(t=>!fbIds.has(t.docId));
+  return [...initFilt,...fb];
+}
 
 let mesAutoInitKey=null;
 async function autoInicializarMes(){
