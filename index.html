@@ -233,7 +233,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="tipo-toggle" id="tipoToggle"></div>
     </div>
     <div class="field"><label>Descripción</label><input id="fDesc" placeholder="Ej. Copec, Sushi, Zara…"/></div>
-    <div class="field"><label>Monto ($)</label><input id="fMonto" type="number" placeholder="0" min="0" oninput="actualizarPreviewCuotas()"/></div>
+    <div class="field"><label>Monto ($)</label><input id="fMonto" type="text" inputmode="numeric" placeholder="0" oninput="formatMontoInput(this);actualizarPreviewCuotas()"/></div>
     <div class="field" id="fieldCuotas">
       <label>Número de cuotas</label>
       <input id="fCuotas" type="number" min="1" max="48" value="1" oninput="actualizarPreviewCuotas()"/>
@@ -933,7 +933,7 @@ function abrirModal(id){
     document.getElementById("modalTitle").textContent="Editar movimiento";
     document.getElementById("fCuenta").value=t.cuenta;
     document.getElementById("fDesc").value=t.desc||"";
-    document.getElementById("fMonto").value=t.monto||"";
+    document.getElementById("fMonto").value=t.monto?fmtMonto(t.monto):"";
     document.getElementById("fFecha").value=t.fecha||hoy;
     document.getElementById("fCuotas").value=1;
     if(t.cuota_actual){document.getElementById("fCuotaActual").value=t.cuota_actual;document.getElementById("fCuotasTotal").value=t.cuotas_total;}
@@ -1019,8 +1019,20 @@ function actualizarOpcionesCat(cuenta){
 function setTipo(t){modalTipo=t;actualizarModalPorCuenta();}
 function onCatChange(){}
 
+function parseMonto(){return parseInt((document.getElementById("fMonto").value||"").replace(/\./g,""))||0;}
+function fmtMonto(n){return n?n.toLocaleString("es-CL"):"";}
+function formatMontoInput(el){
+  const raw=el.value.replace(/\./g,"").replace(/[^0-9]/g,"");
+  const num=parseInt(raw)||0;
+  const pos=el.selectionStart;
+  const prevLen=el.value.length;
+  el.value=num?num.toLocaleString("es-CL"):"";
+  // mantener posición del cursor
+  const diff=el.value.length-prevLen;
+  el.selectionStart=el.selectionEnd=Math.max(0,pos+diff);
+}
 function actualizarPreviewCuotas(){
-  const monto=parseFloat(document.getElementById("fMonto").value)||0;
+  const monto=parseMonto();
   const cuotas=parseInt(document.getElementById("fCuotas").value)||1;
   const prev=document.getElementById("cuotaPreview");
   if(prev)prev.textContent=cuotas>1?`${cuotas} cuotas de ${mxn(Math.round(monto/cuotas))} c/u`:"";
@@ -1037,7 +1049,7 @@ async function guardar(){
   const cuenta=document.getElementById("fCuenta").value;
   const cat=document.getElementById("fCat").value;
   const desc=document.getElementById("fDesc").value.trim();
-  const monto=parseFloat(document.getElementById("fMonto").value)||0;
+  const monto=parseMonto();
   const fecha=document.getElementById("fFecha").value;
   const numCuotas=parseInt(document.getElementById("fCuotas").value)||1;
   if(!monto||!fecha){mostrarToast("⚠️ Completa monto y fecha");return;}
