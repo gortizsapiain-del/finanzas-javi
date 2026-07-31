@@ -28,6 +28,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .header-label{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px}
 .header-title{font-size:18px;font-weight:700;color:var(--text)}
+/* ── Profile switcher ── */
+.profile-btn{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:0;font-family:inherit}
+.profile-btn:hover .header-title{color:var(--accent)}
+.profile-chevron{font-size:11px;color:var(--dim);transition:transform .2s}
+.profile-dropdown{position:absolute;top:100%;left:0;background:#fff;border:1px solid var(--border2);border-radius:14px;box-shadow:0 8px 24px rgba(196,120,138,.15);min-width:200px;padding:8px;z-index:200;margin-top:6px}
+.profile-option{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:14px;font-weight:600;color:var(--text)}
+.profile-option:hover{background:var(--surface2)}
+.profile-option.active{background:#FFF0F4;color:var(--accent)}
 /* ── Tabs ── */
 .tab-bar{background:#FFF0F5;border-bottom:1px solid var(--border);padding:10px 20px}
 .tabs{display:flex;gap:4px;background:#FFF0F4;border-radius:12px;padding:4px;border:1px solid var(--border);overflow-x:auto;scrollbar-width:none;max-width:720px;margin:0 auto}
@@ -127,9 +135,22 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div class="header">
   <div class="header-inner">
-    <div>
+    <div style="position:relative">
       <div class="header-label">🌸 Mis Finanzas</div>
-      <div class="header-title" id="headerTitle">Control Financiero</div>
+      <button class="profile-btn" onclick="toggleProfileMenu()" id="profileBtn">
+        <div class="header-title" id="headerTitle">Control Financiero</div>
+        <span class="profile-chevron" id="profileChevron">▼</span>
+      </button>
+      <div class="profile-dropdown" id="profileDropdown" style="display:none">
+        <div class="profile-option active" id="optJaviera" onclick="cambiarPerfil('javiera')">
+          <span style="font-size:18px">🌸</span>
+          <div><div>Javiera</div><div style="font-size:11px;color:var(--dim);font-weight:400">Personal</div></div>
+        </div>
+        <div class="profile-option" id="optSkinlux" onclick="cambiarPerfil('skinlux')">
+          <span style="font-size:18px">✨</span>
+          <div><div>Skin Lux</div><div style="font-size:11px;color:var(--dim);font-weight:400">Empresa</div></div>
+        </div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <div id="userInfo" style="display:none;align-items:center;gap:8px">
@@ -348,6 +369,8 @@ const GONZALO_ESTIMADOS = [
 let db, auth, uid;
 let data = [];
 let tabActual = "resumen";
+let perfil = "javiera"; // "javiera" | "skinlux"
+let unsubscribeDatos = null;
 let mes, anio;
 let modalTipo = "gasto";
 let editandoId = null;
@@ -365,14 +388,17 @@ firebase.initializeApp(FIREBASE_CONFIG);
 db = firebase.firestore();
 auth = firebase.auth();
 
-function colUsuario(){return db.collection("usuarios").doc(uid).collection("transacciones");}
+function colUsuario(){
+  const col = perfil==="skinlux" ? "transacciones_skinlux" : "transacciones";
+  return db.collection("usuarios").doc(uid).collection(col);
+}
 
 auth.onAuthStateChanged(user=>{
   if(user){
     uid = user.uid;
     document.getElementById("userInfo").style.display="flex";
     document.getElementById("userAvatar").src = user.photoURL||"";
-    document.getElementById("headerTitle").textContent = user.displayName?.split(" ")[0]||"Javi";
+    document.getElementById("headerTitle").textContent = perfil==="skinlux"?"Skin Lux":"Javiera";
     document.getElementById("btnAgregar").style.display="";
     suscribirDatos();
   } else {
@@ -401,13 +427,43 @@ function loginGoogle(){
 function logout(){if(confirm("¿Cerrar sesión?"))auth.signOut();}
 
 function suscribirDatos(){
-  db.collection("usuarios").doc(uid).collection("transacciones")
+  if(unsubscribeDatos) unsubscribeDatos();
+  unsubscribeDatos = colUsuario()
     .orderBy("fecha","desc")
     .onSnapshot(snap=>{
       data = snap.docs.map(d=>({id:d.id,...d.data()}));
       render();
     });
-  limpiarDatosViejos();
+  if(perfil==="javiera") limpiarDatosViejos();
+}
+
+function cambiarPerfil(p){
+  if(p===perfil){cerrarProfileMenu();return;}
+  perfil=p;
+  data=[];mesAutoInitKey=null;
+  // Actualizar UI header
+  const esJaviera=p==="javiera";
+  document.getElementById("headerTitle").textContent=esJaviera?"Javiera":"Skin Lux";
+  document.getElementById("optJaviera").className="profile-option"+(esJaviera?" active":"");
+  document.getElementById("optSkinlux").className="profile-option"+(esJaviera?"":" active");
+  cerrarProfileMenu();
+  suscribirDatos();
+  render();
+}
+
+function toggleProfileMenu(){
+  const dd=document.getElementById("profileDropdown");
+  const open=dd.style.display!=="none";
+  dd.style.display=open?"none":"";
+  document.getElementById("profileChevron").style.transform=open?"":"rotate(180deg)";
+  if(!open) setTimeout(()=>document.addEventListener("click",cerrarProfileMenuOutside,{once:true}),0);
+}
+function cerrarProfileMenu(){
+  document.getElementById("profileDropdown").style.display="none";
+  document.getElementById("profileChevron").style.transform="";
+}
+function cerrarProfileMenuOutside(e){
+  if(!document.getElementById("profileBtn").contains(e.target)) cerrarProfileMenu();
 }
 
 // Elimina entradas que quedaron en las cuentas antiguas tras la reorganización
