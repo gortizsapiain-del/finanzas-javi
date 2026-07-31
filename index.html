@@ -655,22 +655,21 @@ function renderResumen(){
 
   let html;
   if(perfil==="skinlux"){
-    // Métricas del mes para SkinLux
-    const ventasMes=delMes(data.filter(t=>t.cuenta==="ventas"));
-    const comprasMes=delMes(data.filter(t=>t.cuenta==="compras"));
-    const ventasBruto=ventasMes.reduce((s,t)=>s+(t.monto||0),0);
-    const ventasDep=ventasMes.reduce((s,t)=>s+(t.depositado||0),0);
-    const comprasTotal=comprasMes.reduce((s,t)=>s+(t.monto||0),0);
-    const ivaDebito=ventasMes.reduce((s,t)=>s+(t.iva||0),0);
-    const ivaCredito=comprasMes.reduce((s,t)=>s+(t.iva||0),0);
-    const posIVA=ivaDebito-ivaCredito;
-    // Flujo global
+    // Métricas ACUMULADAS (no filtradas por mes) para SkinLux
     const todasVentas=data.filter(t=>t.cuenta==="ventas");
-    const todasComprasCta=data.filter(t=>t.cuenta==="compras"&&(t.forma_pago||"").toLowerCase().includes("empresa"));
+    const todasCompras=data.filter(t=>t.cuenta==="compras");
+    const todasComprasCta=todasCompras.filter(t=>(t.forma_pago||"").toLowerCase().includes("empresa"));
     const todosReembolsosPago=data.filter(t=>t.cuenta==="reembolsos_pago");
-    const saldoCuenta=todasVentas.reduce((s,t)=>s+(t.depositado||0),0)-todasComprasCta.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
-    const pendienteRemb=data.filter(t=>t.cuenta==="reembolsos_adeudo").reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
-    const hayDatos=data.some(t=>["ventas","compras","reembolsos_adeudo"].includes(t.cuenta));
+    const todasReembolsosAdeudo=data.filter(t=>t.cuenta==="reembolsos_adeudo");
+    const ventasBruto=todasVentas.reduce((s,t)=>s+(t.monto||0),0);
+    const ventasDep=todasVentas.reduce((s,t)=>s+(t.depositado||0),0);
+    const comprasTotal=todasCompras.reduce((s,t)=>s+(t.monto||0),0);
+    const ivaDebito=todasVentas.reduce((s,t)=>s+(t.iva||0),0);
+    const ivaCredito=todasCompras.reduce((s,t)=>s+(t.iva||0),0);
+    const posIVA=ivaDebito-ivaCredito;
+    const saldoCuenta=ventasDep-todasComprasCta.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
+    const pendienteRemb=todasReembolsosAdeudo.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
+    const hayDatos=todasVentas.length>0||todasCompras.length>0||todasReembolsosAdeudo.length>0;
     html=`
     <div style="background:linear-gradient(135deg,#F5F0FF,#EDE4FF);border:1px solid #C8B0F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="min-width:0">
@@ -681,8 +680,8 @@ function renderResumen(){
       <div style="font-size:40px;opacity:.5;flex-shrink:0">✨</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="summary-card sage" onclick="setTab('ventas')" style="cursor:pointer"><div class="s-label" style="color:#2A7040">💰 Ventas</div><div class="s-amount" style="color:#2A7040">${mxn(ventasBruto)}</div><div class="s-sub">dep. ${mxn(ventasDep)} · ${ventasMes.length} vtas</div></div>
-      <div class="summary-card" style="background:linear-gradient(135deg,#FFF8F0,#FFF0E4);border:1px solid #DDB8A0;cursor:pointer" onclick="setTab('compras')"><div class="s-label" style="color:#7A4020">🛒 Compras</div><div class="s-amount" style="color:#7A4020">${mxn(comprasTotal)}</div><div class="s-sub">${comprasMes.length} facturas</div></div>
+      <div class="summary-card sage" onclick="setTab('ventas')" style="cursor:pointer"><div class="s-label" style="color:#2A7040">💰 Ventas</div><div class="s-amount" style="color:#2A7040">${mxn(ventasBruto)}</div><div class="s-sub">dep. ${mxn(ventasDep)} · ${todasVentas.length} vtas</div></div>
+      <div class="summary-card" style="background:linear-gradient(135deg,#FFF8F0,#FFF0E4);border:1px solid #DDB8A0;cursor:pointer" onclick="setTab('compras')"><div class="s-label" style="color:#7A4020">🛒 Compras</div><div class="s-amount" style="color:#7A4020">${mxn(comprasTotal)}</div><div class="s-sub">${todasCompras.length} facturas</div></div>
       <div class="summary-card" style="background:linear-gradient(135deg,#F5F0FF,#EDE4FF);border:1px solid #C8B0F0;cursor:pointer" onclick="setTab('iva')"><div class="s-label" style="color:#6040B0">📋 IVA F29</div><div class="s-amount" style="color:${posIVA<=0?"#3A8A70":"#C07050"}">${mxn(Math.abs(posIVA))}</div><div class="s-sub">${posIVA<=0?"a favor":"a pagar"}</div></div>
       <div class="summary-card" style="background:linear-gradient(135deg,#FFF5F0,#FFE8E0);border:1px solid #DDB8A0;cursor:pointer" onclick="setTab('reembolsos')"><div class="s-label" style="color:#7A4020">👥 Reembolso socios</div><div class="s-amount" style="color:#7A4020">${mxn(pendienteRemb>0?pendienteRemb:0)}</div><div class="s-sub">pendiente</div></div>
     </div>
@@ -1057,7 +1056,7 @@ function slFecha(d){
 
 function renderVentas(){
   const todos=data.filter(t=>t.cuenta==="ventas");
-  const gm=delMes(todos);
+  const gm=todos; // mostrar todos los datos, no filtrar por mes
   const totalBruto=gm.reduce((s,t)=>s+(t.monto||0),0);
   const totalNeto=gm.reduce((s,t)=>s+(t.neto||0),0);
   const totalIVA=gm.reduce((s,t)=>s+(t.iva||0),0);
@@ -1065,7 +1064,7 @@ function renderVentas(){
   const totalCom=gm.reduce((s,t)=>s+(t.comision||0),0);
 
   let html='<div style="background:linear-gradient(135deg,#F0FAF5,#E4F7ED);border:1px solid #B0DDB8;border-radius:16px;padding:18px 20px;margin-bottom:4px">';
-  html+='<div style="font-size:10px;color:#2A7040;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Resumen Ventas · '+MESES[mes]+' '+anio+'</div>';
+  html+='<div style="font-size:10px;color:#2A7040;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Resumen Ventas · Acumulado</div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   html+='<div><div style="font-size:11px;color:#6A9070">Bruto</div><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:#2A7040">'+mxn(totalBruto)+'</div></div>';
   html+='<div><div style="font-size:11px;color:#6A9070">Depositado</div><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:#2A7040">'+mxn(totalDep)+'</div></div>';
@@ -1098,13 +1097,13 @@ function renderVentas(){
 
 function renderCompras(){
   const todos=data.filter(t=>t.cuenta==="compras");
-  const gm=delMes(todos);
+  const gm=todos; // mostrar todos los datos
   const totalBruto=gm.reduce((s,t)=>s+(t.monto||0),0);
   const totalNeto=gm.reduce((s,t)=>s+(t.neto||0),0);
   const totalIVA=gm.reduce((s,t)=>s+(t.iva||0),0);
 
   let html='<div style="background:linear-gradient(135deg,#FFF8F0,#FFF0E4);border:1px solid #DDB8A0;border-radius:16px;padding:18px 20px;margin-bottom:4px">';
-  html+='<div style="font-size:10px;color:#7A4020;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Resumen Compras · '+MESES[mes]+' '+anio+'</div>';
+  html+='<div style="font-size:10px;color:#7A4020;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Resumen Compras · Acumulado</div>';
   html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   html+='<div><div style="font-size:11px;color:#9A7060">Total c/IVA</div><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:#7A4020">'+mxn(totalBruto)+'</div></div>';
   html+='<div><div style="font-size:11px;color:#9A7060">IVA Crédito</div><div style="font-size:18px;font-weight:700;font-family:DM Mono,monospace;color:#7A4020">'+mxn(totalIVA)+'</div></div>';
@@ -1290,43 +1289,48 @@ async function procesarExcel(input){
   if(!uid){mostrarToast("⚠️ Debes iniciar sesión");return;}
   mostrarToast("⏳ Procesando Excel...");
   const buf=await input.files[0].arrayBuffer();
+  // cellDates:true → fechas como objetos Date en lugar de número serial
   const wb=XLSX.read(buf,{type:"array",cellDates:true});
 
+  // Convertir fecha (Date|string|número) → "YYYY-MM-DD"
   const fmt=d=>{
     if(!d) return null;
-    if(d instanceof Date) return d.toISOString().slice(0,10);
-    if(typeof d==="string") return d.slice(0,10);
+    if(d instanceof Date){
+      const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+      return y+'-'+m+'-'+day;
+    }
+    if(typeof d==="string"&&d.match(/^\d{4}-\d{2}-\d{2}/)) return d.slice(0,10);
     return null;
   };
+  const toNum=v=>typeof v==="number"?v:(parseFloat(String(v).replace(/[^0-9.-]/g,""))||0);
 
   const col=colUsuario();
   const lote=db.batch();
   let n=0;
 
-  // ── VENTAS (filas desde índice 16) ──
+  // ── VENTAS ──
   if(wb.SheetNames.includes("Venta")){
     const ws=wb.Sheets["Venta"];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
-    // Encontrar fila de headers: Fecha|Cliente|...
+    // raw:true → Date objects (gracias a cellDates:true)
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
     let start=-1;
     rows.forEach((r,i)=>{if(r[0]==="Fecha"&&r[1]==="Cliente") start=i+1;});
     if(start<0) start=17;
     for(let i=start;i<rows.length;i++){
       const r=rows[i];
-      if(!r[0]&&!r[6]) continue;
-      const fecha=fmt(r[0] instanceof Date?r[0]:r[0]?new Date(r[0]):null)||fmt(r[0]);
+      const fecha=fmt(r[0]);
       if(!fecha) continue;
-      const monto=parseFloat(r[8])||0;
+      const monto=toNum(r[8]);
       if(!monto) continue;
-      const mesStr=(fecha||"").slice(0,7);
+      const mesStr=fecha.slice(0,7);
       const docId="venta_"+fecha.replace(/-/g,"")+"_"+i;
       lote.set(col.doc(docId),{
         cuenta:"ventas", fecha, mes_facturacion:mesStr,
-        cliente:r[1]||"", rut_cliente:r[2]||"",
-        n_documento:r[3]||"", categoria:r[4]||"",
-        desc:r[5]||"", neto:parseFloat(r[6])||0,
-        iva:parseFloat(r[7])||0, monto,
-        comision:parseFloat(r[9])||0, depositado:parseFloat(r[10])||0,
+        cliente:String(r[1]||""), rut_cliente:String(r[2]||""),
+        n_documento:String(r[3]||""), categoria:String(r[4]||""),
+        desc:String(r[5]||""), neto:toNum(r[6]),
+        iva:toNum(r[7]), monto,
+        comision:toNum(r[9]), depositado:toNum(r[10]),
         importado:true
       });
       n++;
@@ -1336,75 +1340,72 @@ async function procesarExcel(input){
   // ── COMPRAS ──
   if(wb.SheetNames.includes("Compra")){
     const ws=wb.Sheets["Compra"];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
     let start=-1;
     rows.forEach((r,i)=>{if(r[0]==="Fecha"&&r[1]==="Proveedor") start=i+1;});
     if(start<0) start=4;
     for(let i=start;i<rows.length;i++){
       const r=rows[i];
-      if(!r[0]) continue;
-      const fecha=fmt(r[0] instanceof Date?r[0]:r[0]?new Date(r[0]):null)||fmt(r[0]);
+      const fecha=fmt(r[0]);
       if(!fecha) continue;
-      const monto=parseFloat(r[8])||0;
+      const monto=toNum(r[8]);
       if(!monto) continue;
-      const mesStr=(fecha||"").slice(0,7);
+      const mesStr=fecha.slice(0,7);
       const nFac=r[3]||i;
-      const docId="compra_"+String(nFac).replace(/\s/g,"");
+      const docId="compra_"+String(nFac).replace(/[\s/]/g,"");
       lote.set(col.doc(docId),{
         cuenta:"compras", fecha, mes_facturacion:mesStr,
-        proveedor:r[1]||"", rut_proveedor:r[2]||"",
-        n_factura:r[3]||"", categoria:r[4]||"",
-        desc:r[5]||"", neto:parseFloat(r[6])||0,
-        iva:parseFloat(r[7])||0, monto,
-        forma_pago:r[9]||"", importado:true
+        proveedor:String(r[1]||""), rut_proveedor:String(r[2]||""),
+        n_factura:String(r[3]||""), categoria:String(r[4]||""),
+        desc:String(r[5]||""), neto:toNum(r[6]),
+        iva:toNum(r[7]), monto,
+        forma_pago:String(r[9]||""), importado:true
       });
       n++;
     }
   }
 
-  // ── REEMBOLSOS — Adeudos ──
+  // ── REEMBOLSOS ──
   if(wb.SheetNames.includes("Reembolsos a Socios")){
     const ws=wb.Sheets["Reembolsos a Socios"];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
     let startAd=-1,startPag=-1;
     rows.forEach((r,i)=>{
-      if(r[0]==="Fecha"&&r[1]==="Socio que adelantó") startAd=i+1;
-      if(r[0]==="Fecha"&&r[1]==="Socio"&&r[2]==="Monto transferido") startPag=i+1;
+      if(String(r[0]||"").includes("Fecha")&&String(r[1]||"").includes("adelant")) startAd=i+1;
+      if(String(r[0]||"").includes("Fecha")&&String(r[1]||"").includes("Socio")&&String(r[2]||"").includes("Monto")) startPag=i+1;
     });
-    // Adeudos
     if(startAd>=0){
       for(let i=startAd;i<rows.length;i++){
         const r=rows[i];
-        if(!r[0]||(!r[3]&&!r[6])) break;
-        const monto=parseFloat(r[6])||0;
+        if(!r[0]&&!r[6]) break;
+        const monto=toNum(r[6]);
         if(!monto) continue;
-        const fecha=fmt(r[0] instanceof Date?r[0]:r[0]?new Date(r[0]):null)||fmt(r[0]);
+        const fecha=fmt(r[0])||"";
         const nFac=r[3]||i;
-        const docId="remb_adeudo_"+String(nFac).replace(/\s/g,"");
+        const docId="remb_adeudo_"+String(nFac).replace(/[\s/]/g,"");
         lote.set(col.doc(docId),{
-          cuenta:"reembolsos_adeudo",
-          fecha:fecha||"", socio:r[1]||"", rut_socio:r[2]||"",
-          n_factura:r[3]||"", proveedor:r[4]||"",
-          emitida_rut:r[5]||"", monto, calificacion:r[7]||"",
-          mes_facturacion:(fecha||"").slice(0,7), importado:true
+          cuenta:"reembolsos_adeudo", fecha,
+          socio:String(r[1]||""), rut_socio:String(r[2]||""),
+          n_factura:String(r[3]||""), proveedor:String(r[4]||""),
+          emitida_rut:String(r[5]||""), monto,
+          calificacion:String(r[7]||""),
+          mes_facturacion:fecha.slice(0,7), importado:true
         });
         n++;
       }
     }
-    // Pagos de reembolso
     if(startPag>=0){
       for(let i=startPag;i<rows.length;i++){
         const r=rows[i];
-        if(!r[0]&&!r[2]) break;
-        const monto=parseFloat(r[2])||0;
+        const monto=toNum(r[2]);
         if(!monto) continue;
-        const fecha=fmt(r[0] instanceof Date?r[0]:r[0]?new Date(r[0]):null)||fmt(r[0]);
+        const fecha=fmt(r[0])||"";
         const docId="remb_pago_"+i;
         lote.set(col.doc(docId),{
-          cuenta:"reembolsos_pago",
-          fecha:fecha||"", socio:r[1]||"", monto,
-          medio:r[3]||"", desc:r[4]||"",
-          mes_facturacion:(fecha||"").slice(0,7), importado:true
+          cuenta:"reembolsos_pago", fecha,
+          socio:String(r[1]||""), monto,
+          medio:String(r[3]||""), desc:String(r[4]||""),
+          mes_facturacion:fecha.slice(0,7), importado:true
         });
         n++;
       }
