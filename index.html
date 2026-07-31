@@ -387,8 +387,9 @@ function render(){
       const tabs=["resumen","tc","cc","creditos"];
       b.classList.toggle("active",tabs[i]===tabActual);
     });
+    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos"};
     ["resumen","tc","cc","creditos"].forEach(t=>{
-      document.getElementById("view"+t.charAt(0).toUpperCase()+t.slice(1)).style.display=tabActual===t?"":"none";
+      document.getElementById(viewIds[t]).style.display=tabActual===t?"":"none";
     });
     if(tabActual==="resumen")renderResumen();
     if(tabActual==="tc")renderTC();
