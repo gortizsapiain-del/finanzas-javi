@@ -671,14 +671,19 @@ function renderResumen(){
     let _rem=0,posIVA=0,ultimoMesIVA="";
     const f29Meses=[];
     mesesIVA.forEach(m=>{
-      const deb=todasVentas.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.iva||0),0);
-      const cred=todasCompras.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m).reduce((s,t)=>s+(t.iva||0),0);
+      const vm=todasVentas.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m);
+      const cm=todasCompras.filter(t=>(t.mes_facturacion||t.fecha||"").slice(0,7)===m);
+      const deb=vm.reduce((s,t)=>s+(t.iva||0),0);
+      const cred=cm.reduce((s,t)=>s+(t.iva||0),0);
       const ivaMes=deb-cred;
       const posicion=ivaMes-_rem;
       _rem=posicion<0?Math.abs(posicion):0;
       posIVA=posicion;
       ultimoMesIVA=m;
-      f29Meses.push({m,posicion,aPagar:posicion>0?posicion:0,remanente:_rem});
+      const ventasNetas=vm.reduce((s,t)=>s+(t.neto||0),0);
+      const ppm=Math.round(ventasNetas*PPM_TASA);
+      const ivaPagar=posicion>0?posicion:0;
+      f29Meses.push({m,posicion,aPagar:ivaPagar,remanente:_rem,ppm,totalF29:ivaPagar+ppm});
     });
     const saldoCuenta=ventasDep-todasComprasCta.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
     const pendienteRemb=todasReembolsosAdeudo.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
@@ -699,14 +704,21 @@ function renderResumen(){
       <div class="summary-card" style="background:linear-gradient(135deg,#FFF5F0,#FFE8E0);border:1px solid #DDB8A0;cursor:pointer" onclick="setTab('reembolsos')"><div class="s-label" style="color:#7A4020">👥 Reembolso socios</div><div class="s-amount" style="color:#7A4020">${mxn(pendienteRemb>0?pendienteRemb:0)}</div><div class="s-sub">pendiente</div></div>
     </div>
     <div style="background:linear-gradient(135deg,#F0F4FF,#E4EAFF);border:1px solid #B0C0F0;border-radius:14px;padding:14px 16px;cursor:pointer" onclick="setTab('iva')">
-      <div style="font-size:10px;color:#3050A0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">📋 F29 · Declaración mensual IVA</div>
+      <div style="font-size:10px;color:#3050A0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">📋 F29 · Total a pagar por mes (IVA + PPM)</div>
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;align-items:center;margin-bottom:4px">
+        <div style="font-size:10px;color:#6070A0"></div>
+        <div style="font-size:10px;color:#6070A0;text-align:right">IVA</div>
+        <div style="font-size:10px;color:#6070A0;text-align:right">PPM</div>
+        <div style="font-size:10px;color:#6070A0;text-align:right;font-weight:700">Total F29</div>
+      </div>
       ${f29Meses.map(r=>{
         const [ay,am]=r.m.split("-");
         const label=MESES[parseInt(am)-1]+" "+ay;
-        const aPagar=r.posicion>0;
-        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #C8D4F0">
+        return`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;align-items:center;padding:7px 0;border-bottom:1px solid #C8D4F0">
           <div style="font-size:13px;color:#3050A0;font-weight:600">${label}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${aPagar?"#C07050":"#3A8A70"}">${aPagar?"Pagar "+mxn(r.aPagar):"A favor "+mxn(r.remanente)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:${r.aPagar>0?"#C07050":"#3A8A70"};text-align:right">${r.aPagar>0?mxn(r.aPagar):"favor"}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:#3050A0;text-align:right">${mxn(r.ppm)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${r.totalF29>0?"#C07050":"#3A8A70"};text-align:right">${mxn(r.totalF29)}</div>
         </div>`;
       }).join("")}
     </div>
@@ -1181,21 +1193,26 @@ function renderIVA(){
     const posicion=ivaMes-remanente; // remanente a favor se resta del IVA a pagar
     const aPagar=posicion>0?posicion:0;
     const remNuevo=posicion<0?Math.abs(posicion):0;
+    const ventasNetas=vm.reduce((s,t)=>s+(t.neto||0),0);
+    const ppm=Math.round(ventasNetas*PPM_TASA);
+    const totalF29=aPagar+ppm;
     const [ay,am]=m.split("-");
     const label=MESES[parseInt(am)-1]+" "+ay;
 
     html+='<div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px">';
     html+='<div style="background:linear-gradient(135deg,#F5F0FF,#EDE4FF);padding:12px 16px;display:flex;justify-content:space-between;align-items:center">';
     html+='<div style="font-weight:700;font-size:14px;color:#6040B0">📋 '+label+'</div>';
-    html+='<div style="font-family:DM Mono,monospace;font-weight:700;font-size:16px;color:'+(aPagar>0?"#8A4050":"#2A7040")+'">'+(aPagar>0?"Pagar: "+mxn(aPagar):"Remanente: "+mxn(remNuevo))+'</div>';
+    html+='<div style="text-align:right"><div style="font-family:DM Mono,monospace;font-weight:700;font-size:16px;color:#3050A0">Total F29: '+mxn(totalF29)+'</div><div style="font-size:11px;color:#8060C0;margin-top:2px">'+(aPagar>0?"IVA "+mxn(aPagar)+" + ":"IVA a favor · ")+"PPM "+mxn(ppm)+'</div></div>';
     html+='</div>';
     html+='<div style="padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface)">';
-    html+='<div style="font-size:12px;color:var(--muted)">Ventas netas</div><div style="font-size:12px;text-align:right;font-weight:600">'+mxn(vm.reduce((s,t)=>s+(t.neto||0),0))+'</div>';
+    html+='<div style="font-size:12px;color:var(--muted)">Ventas netas</div><div style="font-size:12px;text-align:right;font-weight:600">'+mxn(ventasNetas)+'</div>';
     html+='<div style="font-size:12px;color:var(--muted)">IVA débito (19%)</div><div style="font-size:12px;text-align:right;font-weight:600;color:#3A8A70">'+mxn(debito)+'</div>';
     html+='<div style="font-size:12px;color:var(--muted)">Compras netas</div><div style="font-size:12px;text-align:right;font-weight:600">'+mxn(cm.reduce((s,t)=>s+(t.neto||0),0))+'</div>';
     html+='<div style="font-size:12px;color:var(--muted)">IVA crédito (19%)</div><div style="font-size:12px;text-align:right;font-weight:600;color:#C07050">'+mxn(credito)+'</div>';
     if(remanente>0){html+='<div style="font-size:12px;color:var(--muted)">Remanente anterior</div><div style="font-size:12px;text-align:right;font-weight:600;color:#3A8A70">'+mxn(remanente)+'</div>';}
     html+='<div style="font-size:12px;font-weight:700;color:#6040B0">Posición IVA</div><div style="font-size:12px;text-align:right;font-weight:700;color:'+(posicion<=0?"#3A8A70":"#C07050")+'">'+mxn(Math.abs(posicion))+(posicion<=0?" a favor":" a pagar")+'</div>';
+    html+='<div style="font-size:12px;color:var(--muted)">PPM (0,125% × neto)</div><div style="font-size:12px;text-align:right;font-weight:600;color:#3050A0">'+mxn(ppm)+'</div>';
+    html+='<div style="font-size:13px;font-weight:700;color:#3050A0;border-top:1px solid var(--border);padding-top:6px;margin-top:2px">Total F29 (sin intereses)</div><div style="font-size:13px;text-align:right;font-weight:700;color:#3050A0;border-top:1px solid var(--border);padding-top:6px;margin-top:2px">'+mxn(totalF29)+'</div>';
     html+='</div></div>';
     remanente=remNuevo;
   });
@@ -1466,6 +1483,8 @@ const GASTOS_FIJOS_CC = {
 
 // Mes base: agosto 2026 = cuota 20 hipotecario, cuota 1 consumo
 const BASE_MES=7, BASE_ANIO=2026;
+
+const PPM_TASA=0.00125; // Pro Pyme 1er año: 0,125%
 
 // ══════════════════════════════════════════
 //  DATOS INICIALES SKIN LUX (desde Excel)
