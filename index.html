@@ -148,6 +148,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <button class="tab" onclick="setTab('cc')">🏦 Cta. Corriente</button>
     <button class="tab" onclick="setTab('creditos')">🏛️ Créditos</button>
     <button class="tab" onclick="setTab('ahorros')">🌿 Ahorros</button>
+    <button class="tab" onclick="setTab('gonzalo')">💙 Gonzalo</button>
   </div>
 </div>
 
@@ -165,6 +166,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div id="viewCC" style="display:none"></div>
   <div id="viewCreditos" style="display:none"></div>
   <div id="viewAhorros" style="display:none"></div>
+  <div id="viewGonzalo" style="display:none"></div>
 </div>
 
 <!-- ── Modal ── -->
@@ -299,16 +301,20 @@ const CATS = {
   renta_plus:        {label:"Renta Plus",         icon:"🌿", color:"#3A8A70"},
 };
 
-const CATS_TC = ["bencina","almuerzo","cena","ropa","skincare","skinlux","farmacia","estudios","auto","gastos_comunes","gastos_basicos","super_personal","super_depto","gastos_varios","gastos_varios_depto","pago"];
-const CATS_CRED = ["hipotecario","consumo"];
+const CATS_TC = ["bencina","almuerzo","cena","ropa","skincare","skinlux","farmacia","estudios","auto","super_personal","super_depto","gastos_varios","gastos_varios_depto","pago"];
+const CATS_CRED = ["consumo"];
 const CATS_CC = ["sueldo","transferencia","pagos_cc","reembolsos","varios_cc"];
 const CATS_AHORROS = ["renta_plus"];
+const CATS_NO_SALDO = [];
 const SALDO_INICIAL_AHORROS = {renta_plus: 2000000};
 const SALDO_INICIAL_CC = 325289;
-const CATS_NO_SALDO = ["gastos_comunes","gastos_basicos"];
 
-// Montos fijos de referencia para gastos comunes y básicos
-const MONTOS_FIJOS = {gastos_comunes:85000, gastos_basicos:75000};
+// Gastos fijos mensuales de Gonzalo (lo que Javi le debe depositar)
+const GONZALO_FIJOS = [
+  {cat:"hipotecario",  desc:"Hipotecario",    icon:"🏠", color:"#C9A87A", monto:375000, cuota_base:20, cuotas_total:360},
+  {cat:"gastos_comunes",desc:"Gastos Comunes",icon:"🏢", color:"#7BB5A0", monto:85000},
+  {cat:"gastos_basicos",desc:"Gastos Básicos",icon:"💡", color:"#9B8AB0", monto:75000},
+];
 
 // ══════════════════════════════════════════
 //  ESTADO
@@ -403,11 +409,11 @@ function render(){
     document.getElementById("mesNombre").textContent=MESES[mes];
     document.getElementById("anioNum").textContent=anio;
     document.querySelectorAll(".tab").forEach((b,i)=>{
-      const tabs=["resumen","tc","cc","creditos","ahorros"];
+      const tabs=["resumen","tc","cc","creditos","ahorros","gonzalo"];
       b.classList.toggle("active",tabs[i]===tabActual);
     });
-    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos",ahorros:"viewAhorros"};
-    ["resumen","tc","cc","creditos","ahorros"].forEach(t=>{
+    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos",ahorros:"viewAhorros",gonzalo:"viewGonzalo"};
+    ["resumen","tc","cc","creditos","ahorros","gonzalo"].forEach(t=>{
       document.getElementById(viewIds[t]).style.display=tabActual===t?"":"none";
     });
     if(tabActual==="resumen")renderResumen();
@@ -415,6 +421,7 @@ function render(){
     if(tabActual==="cc")renderCC();
     if(tabActual==="creditos")renderCreditos();
     if(tabActual==="ahorros")renderAhorros();
+    if(tabActual==="gonzalo")renderGonzalo();
   }catch(err){
     console.error("render() error:",err);
     document.getElementById("viewResumen").innerHTML='<div style="color:red;padding:20px;font-size:13px">Error: '+err.message+'</div>';
@@ -432,9 +439,6 @@ function getVirtualItems(){
   const offset=(anio-2026)*12+(mes-7);
   if(offset<0) return [];
   const candidatos=[
-    {cuenta:'cc',tipo:'gasto',cat:'gastos_comunes',monto:85000,fecha:mesStr+'-01',desc:'Gastos Comunes'},
-    {cuenta:'cc',tipo:'gasto',cat:'gastos_basicos',monto:75000,fecha:mesStr+'-01',desc:'Gastos Básicos'},
-    {cuenta:'creditos',tipo:'gasto',cat:'hipotecario',monto:375000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:20+offset,cuotas_total:360,desc:'Hipotecario (cuota '+(20+offset)+'/360)'},
     {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
     ...(anio===2026&&mes===7?[{cuenta:'tc',tipo:'gasto',cat:'farmacia',monto:21359,mes_facturacion:mesStr,fecha:mesStr+'-01',desc:'Farmacia'}]:[]),
   ];
@@ -456,30 +460,31 @@ function renderResumen(){
   const tcGastos=tcM.filter(t=>t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
   const ccAll=ad.filter(t=>t.cuenta==="cc");
   const ccM=delMes(ccAll);
-  const gastosFijosCC=ccM.filter(t=>t.tipo==="gasto"&&CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>s+t.monto,0);
   const credM=delMes(ad.filter(t=>t.cuenta==="creditos"));
   const credTotal=credM.reduce((s,t)=>s+t.monto,0);
-  // Total gastos = TC + Créditos + Gastos Comunes + Gastos Básicos
-  const totalGastos=tcGastos+credTotal+gastosFijosCC;
-  // Saldo CC acumulado (excluye CATS_NO_SALDO igual que renderCC)
+  const offset=(anio-2026)*12+(mes-7);
+  const gonzaloTotal=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
+  // Total gastos = TC + Créditos (consumo) + Gonzalo (hipotecario+comunes+basicos)
+  const totalGastos=tcGastos+credTotal+gonzaloTotal;
+  // Saldo CC acumulado
   const hastaHoyCC=ccAll.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
-  const saldoCC=SALDO_INICIAL_CC+hastaHoyCC.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
-  // Gastos variables = TC + Gastos Comunes + Gastos Básicos
-  const gastosVariable=tcGastos+gastosFijosCC;
+  const saldoCC=SALDO_INICIAL_CC+hastaHoyCC.reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
+  // Gastos TC del mes
+  const gastosVariable=tcGastos;
 
   let html=`
     <div style="background:linear-gradient(135deg,#FFF0F4,#FFE4EC);border:1px solid #F0C0D0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="min-width:0">
         <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Total Gastos ${MESES[mes]} ${anio}</div>
         <div style="font-size:clamp(22px,7vw,32px);font-weight:700;font-family:'DM Mono',monospace;color:#8A4050;overflow-wrap:anywhere">${mxn(totalGastos)}</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:4px">TC + Créditos + Gastos Comunes + Gastos Básicos</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:4px">TC + Créditos + Gonzalo (hipotecario + comunes + básicos)</div>
       </div>
       <div style="font-size:40px;opacity:.5;flex-shrink:0">🌸</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="summary-card rose"><div class="s-label" style="color:var(--accent)">💳 TC</div><div class="s-amount" style="color:#8A3050">${mxn(tcGastos)}</div><div class="s-sub" style="color:var(--dim)">${tcM.filter(t=>t.cat!=="pago").length} movimientos</div></div>
       <div class="summary-card sage"><div class="s-label" style="color:#2A7060">🏦 Cuenta Corriente</div><div class="s-amount" style="color:${saldoCC>=0?"#2A7060":"#8A4050"}">${mxn(saldoCC)}</div><div class="s-sub" style="color:var(--dim)">saldo actual</div></div>
-      <div class="summary-card mauve"><div class="s-label" style="color:#6A4070">📦 Gastos del mes</div><div class="s-amount" style="color:#6A4070">${mxn(gastosVariable)}</div><div class="s-sub" style="color:var(--dim)">TC + Comunes + Básicos</div></div>
+      <div class="summary-card mauve"><div class="s-label" style="color:#6A4070">💳 Gastos TC</div><div class="s-amount" style="color:#6A4070">${mxn(gastosVariable)}</div><div class="s-sub" style="color:var(--dim)">${tcM.filter(t=>t.cat!=="pago").length} movimientos</div></div>
       <div class="summary-card gold"><div class="s-label" style="color:#7A5030">🏛️ Créditos</div><div class="s-amount" style="color:#7A5030">${mxn(credTotal)}</div><div class="s-sub" style="color:#7A5030">${credM.length} cuotas</div></div>
     </div>`;
 
@@ -585,7 +590,7 @@ function setFiltroTC(f){filtroTC=f;renderTC();}
 function renderCC(){
   const todos=allData().filter(t=>t.cuenta==="cc");
   const hastaHoy=todos.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
-  const saldoAcumulado=SALDO_INICIAL_CC+hastaHoy.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
+  const saldoAcumulado=SALDO_INICIAL_CC+hastaHoy.reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
   const gm=delMes(todos);
   const ingresos=gm.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
   const gastos=gm.filter(t=>t.tipo==="gasto").reduce((s,t)=>s+t.monto,0);
@@ -750,6 +755,40 @@ function renderAhorros(){
   document.getElementById("viewAhorros").innerHTML=html;
 }
 
+// ══════════════════════════════════════════
+//  GONZALO
+// ══════════════════════════════════════════
+function renderGonzalo(){
+  const offset=(anio-2026)*12+(mes-7);
+  const total=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
+
+  let html='<div style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">';
+  html+='<div style="min-width:0">';
+  html+='<div style="font-size:10px;color:#3050A0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">💙 Depósito a Gonzalo — '+MESES[mes]+' '+anio+'</div>';
+  html+='<div style="font-size:clamp(22px,7vw,30px);font-weight:700;font-family:\'DM Mono\',monospace;color:#3050A0;overflow-wrap:anywhere">'+mxn(total)+'</div>';
+  html+='<div style="font-size:12px;color:#6080C0;margin-top:4px">Total que Javi debe depositar este mes</div>';
+  html+='</div><div style="font-size:36px;opacity:.4;flex-shrink:0">💙</div></div>';
+
+  html+='<div class="expense-list">';
+  GONZALO_FIJOS.forEach(function(g){
+    let desc=g.desc;
+    if(g.cuota_base&&offset>=0) desc+=' (cuota '+(g.cuota_base+offset)+'/'+g.cuotas_total+')';
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 1px 4px rgba(100,130,200,.08)">';
+    html+='<div style="width:38px;height:38px;border-radius:9px;background:'+g.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+g.icon+'</div>';
+    html+='<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:var(--text)">'+desc+'</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Gasto fijo mensual</div></div>';
+    html+='<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:15px;color:#3050A0;flex-shrink:0">'+mxn(g.monto)+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+
+  html+='<div style="background:#EEF4FF;border:2px solid #B0C8F0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">';
+  html+='<div style="font-size:13px;font-weight:700;color:#3050A0">Total a depositar</div>';
+  html+='<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:18px;color:#3050A0">'+mxn(total)+'</div>';
+  html+='</div>';
+
+  document.getElementById("viewGonzalo").innerHTML=html;
+}
+
 // Montos por defecto para pago automático
 // cuota_actual = la cuota ANTERIOR a agosto (ya que la función suma +1)
 const DEFAULT_CUOTAS_CREDITO = {
@@ -775,10 +814,7 @@ async function autoInicializarMes(){
   const mesStr=anio+'-'+String(mes+1).padStart(2,'0');
   const offset=(anio-BASE_ANIO)*12+(mes-BASE_MES);
   const entradas=[
-    {cuenta:'creditos',tipo:'gasto',cat:'hipotecario',monto:375000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:20+offset,cuotas_total:360,desc:'Hipotecario (cuota '+(20+offset)+'/360)'},
     {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
-    {cuenta:'cc',tipo:'gasto',cat:'gastos_comunes',monto:85000,fecha:mesStr+'-01',desc:'Gastos Comunes'},
-    {cuenta:'cc',tipo:'gasto',cat:'gastos_basicos',monto:75000,fecha:mesStr+'-01',desc:'Gastos Básicos'},
     // Gasto inicial Farmacia agosto 2026
     ...(anio===2026&&mes===7?[{cuenta:'tc',tipo:'gasto',cat:'farmacia',monto:21359,mes_facturacion:mesStr,fecha:mesStr+'-01',desc:'Farmacia'}]:[]),
   ];
