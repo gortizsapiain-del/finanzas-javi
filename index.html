@@ -180,6 +180,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <option value="cc">🏦 Cuenta Corriente</option>
         <option value="creditos">🏛️ Crédito</option>
         <option value="ahorros">🌿 Ahorros</option>
+        <option value="gonzalo">💙 Gonzalo</option>
       </select>
     </div>
     <div class="field" id="fieldCat">
@@ -216,6 +217,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         </optgroup>
         <optgroup label="Ahorros">
           <option value="renta_plus">🌿 Renta Plus</option>
+        </optgroup>
+        <optgroup label="Gonzalo">
+          <option value="cuotas_comp">🤝 Cuotas Compartidas</option>
+          <option value="extra_super">🛒 Extra Supermercado</option>
+          <option value="comida_chancheo">🍔 Comida Chancheo</option>
+          <option value="plataformas">📱 Plataformas</option>
+          <option value="farmacia_gonz">💊 Farmacia Gonzalo</option>
+          <option value="varios_gonz">📦 Varios Gonzalo</option>
         </optgroup>
       </select>
     </div>
@@ -299,27 +308,29 @@ const CATS = {
   varios_cc:         {label:"Varios",             icon:"📋", color:"#9090A8"},
   // Ahorros
   renta_plus:        {label:"Renta Plus",         icon:"🌿", color:"#3A8A70"},
+  // Gonzalo (variables)
+  cuotas_comp:       {label:"Cuotas Compartidas", icon:"🤝", color:"#A07848"},
+  extra_super:       {label:"Extra Supermercado", icon:"🛒", color:"#B8906A"},
+  comida_chancheo:   {label:"Comida Chancheo",    icon:"🍔", color:"#E8855A"},
+  plataformas:       {label:"Plataformas",        icon:"📱", color:"#7A9AB0"},
+  farmacia_gonz:     {label:"Farmacia Gonzalo",   icon:"💊", color:"#7AB0D4"},
+  varios_gonz:       {label:"Varios Gonzalo",     icon:"📦", color:"#A08898"},
 };
 
 const CATS_TC = ["bencina","almuerzo","cena","ropa","skincare","skinlux","farmacia","estudios","auto","super_personal","super_depto","gastos_varios","gastos_varios_depto","pago"];
 const CATS_CRED = ["consumo"];
 const CATS_CC = ["sueldo","transferencia","pagos_cc","reembolsos","varios_cc"];
 const CATS_AHORROS = ["renta_plus"];
+const CATS_GONZALO = ["cuotas_comp","extra_super","comida_chancheo","plataformas","farmacia_gonz","varios_gonz"];
 const CATS_NO_SALDO = [];
 const SALDO_INICIAL_AHORROS = {renta_plus: 2000000};
 const SALDO_INICIAL_CC = 325289;
 
 // Gastos fijos mensuales de Gonzalo (lo que Javi le debe depositar)
 const GONZALO_FIJOS = [
-  {cat:"hipotecario",      desc:"Hipotecario",          icon:"🏠", color:"#C9A87A", monto:375000, cuota_base:20, cuotas_total:360},
-  {cat:"gastos_comunes",   desc:"Gastos Comunes",        icon:"🏢", color:"#7BB5A0", monto:85000},
-  {cat:"gastos_basicos",   desc:"Gastos Básicos",        icon:"💡", color:"#9B8AB0", monto:75000},
-  {cat:"cuotas_comp",      desc:"Cuotas Compartidas",    icon:"🤝", color:"#A07848", monto:204096},
-  {cat:"extra_super",      desc:"Extra Supermercado",    icon:"🛒", color:"#B8906A", monto:12765},
-  {cat:"comida_chancheo",  desc:"Comida Chancheo",       icon:"🍔", color:"#E8855A", monto:8392},
-  {cat:"plataformas",      desc:"Plataformas Digitales", icon:"📱", color:"#7A9AB0", monto:1596},
-  {cat:"farmacia_gonz",    desc:"Farmacia",              icon:"💊", color:"#7AB0D4", monto:1186},
-  {cat:"varios_gonz",      desc:"Varios",                icon:"📦", color:"#A08898", monto:14990},
+  {cat:"hipotecario",    desc:"Hipotecario",    icon:"🏠", color:"#C9A87A", monto:375000, cuota_base:20, cuotas_total:360},
+  {cat:"gastos_comunes", desc:"Gastos Comunes", icon:"🏢", color:"#7BB5A0", monto:85000},
+  {cat:"gastos_basicos", desc:"Gastos Básicos", icon:"💡", color:"#9B8AB0", monto:75000},
 ];
 
 // ══════════════════════════════════════════
@@ -469,8 +480,10 @@ function renderResumen(){
   const credM=delMes(ad.filter(t=>t.cuenta==="creditos"));
   const credTotal=credM.reduce((s,t)=>s+t.monto,0);
   const offset=(anio-2026)*12+(mes-7);
-  const gonzaloTotal=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
-  // Total gastos = TC + Créditos (consumo) + Gonzalo (hipotecario+comunes+basicos)
+  const gonzaloFijosTotal=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
+  const gonzaloVarTotal=delMes(data.filter(t=>t.cuenta==="gonzalo")).reduce((s,t)=>s+t.monto,0);
+  const gonzaloTotal=gonzaloFijosTotal+gonzaloVarTotal;
+  // Total gastos = TC + Créditos (consumo) + Gonzalo
   const totalGastos=tcGastos+credTotal+gonzaloTotal;
   // Saldo CC acumulado
   const hastaHoyCC=ccAll.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
@@ -746,26 +759,50 @@ function renderAhorros(){
 // ══════════════════════════════════════════
 function renderGonzalo(){
   const offset=(anio-2026)*12+(mes-7);
-  const total=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
+  const totalFijos=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
+
+  // Gastos variables del mes (cuenta:'gonzalo' en Firebase)
+  const varM=delMes(data.filter(t=>t.cuenta==="gonzalo"));
+  const totalVar=varM.reduce((s,t)=>s+t.monto,0);
+  const total=totalFijos+totalVar;
 
   let html='<div style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">';
   html+='<div style="min-width:0">';
   html+='<div style="font-size:10px;color:#3050A0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">💙 Depósito a Gonzalo — '+MESES[mes]+' '+anio+'</div>';
   html+='<div style="font-size:clamp(22px,7vw,30px);font-weight:700;font-family:\'DM Mono\',monospace;color:#3050A0;overflow-wrap:anywhere">'+mxn(total)+'</div>';
-  html+='<div style="font-size:12px;color:#6080C0;margin-top:4px">Total que Javi debe depositar este mes</div>';
+  html+='<div style="font-size:12px;color:#6080C0;margin-top:4px">Fijos '+mxn(totalFijos)+(totalVar>0?' + Variables '+mxn(totalVar):'')+'</div>';
   html+='</div><div style="font-size:36px;opacity:.4;flex-shrink:0">💙</div></div>';
 
+  // ── Fijos ──
+  html+='<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 2px">Gastos Fijos Mensuales</div>';
   html+='<div class="expense-list">';
   GONZALO_FIJOS.forEach(function(g){
     let desc=g.desc;
     if(g.cuota_base&&offset>=0) desc+=' (cuota '+(g.cuota_base+offset)+'/'+g.cuotas_total+')';
-    html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 1px 4px rgba(100,130,200,.08)">';
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border)">';
     html+='<div style="width:38px;height:38px;border-radius:9px;background:'+g.color+'22;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+g.icon+'</div>';
-    html+='<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:var(--text)">'+desc+'</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Gasto fijo mensual</div></div>';
+    html+='<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:var(--text)">'+desc+'</div><div style="font-size:11px;color:var(--dim);margin-top:2px">Fijo mensual</div></div>';
     html+='<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:15px;color:#3050A0;flex-shrink:0">'+mxn(g.monto)+'</div>';
     html+='</div>';
   });
   html+='</div>';
+
+  // ── Variables ──
+  html+='<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 2px;margin-top:4px">Gastos Variables del Mes</div>';
+  if(varM.length===0){
+    html+='<div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px">Sin gastos variables este mes · usa + Agregar</div>';
+  } else {
+    html+='<div class="expense-list">';
+    varM.sort((a,b)=>b.fecha.localeCompare(a.fecha)).forEach(function(t){
+      const c=CATS[t.cat]||{label:t.cat,icon:"📦",color:"#A08898"};
+      html+='<div class="expense-row" onclick="abrirModal(\''+t.id+'\')">';
+      html+='<div class="expense-icon" style="background:'+c.color+'22">'+c.icon+'</div>';
+      html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+' · '+c.label+'</div></div>';
+      html+='<div class="expense-amount">'+mxn(t.monto)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
 
   html+='<div style="background:#EEF4FF;border:2px solid #B0C8F0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">';
   html+='<div style="font-size:13px;font-weight:700;color:#3050A0">Total a depositar</div>';
@@ -906,7 +943,7 @@ function abrirModal(id){
     if(t.mes_facturacion)initMesFacPicker(t.mes_facturacion);
   } else {
     document.getElementById("modalTitle").textContent="Nuevo movimiento";
-    const cuentaDefault=tabActual==="cc"?"cc":tabActual==="creditos"?"creditos":tabActual==="ahorros"?"ahorros":"tc";
+    const cuentaDefault=tabActual==="cc"?"cc":tabActual==="creditos"?"creditos":tabActual==="ahorros"?"ahorros":tabActual==="gonzalo"?"gonzalo":"tc";
     document.getElementById("fCuenta").value=cuentaDefault;
     document.getElementById("fDesc").value="";
     document.getElementById("fMonto").value="";
@@ -939,6 +976,13 @@ function actualizarModalPorCuenta(cuentaForzada){
     document.getElementById("fieldCuotaCredito").style.display="";
     document.getElementById("labelFecha").textContent="Fecha de pago";
     actualizarOpcionesCat("creditos");
+  } else if(cuenta==="gonzalo"){
+    fieldTipo.style.display="none";fieldCat.style.display="";modalTipo="gasto";
+    document.getElementById("fieldMesFac").style.display="none";
+    document.getElementById("fieldCuotas").style.display="none";
+    document.getElementById("fieldCuotaCredito").style.display="none";
+    document.getElementById("labelFecha").textContent="Fecha";
+    actualizarOpcionesCat("gonzalo");
   } else if(cuenta==="ahorros"){
     fieldTipo.style.display="";fieldCat.style.display="";
     document.getElementById("fieldMesFac").style.display="none";
@@ -965,7 +1009,8 @@ function actualizarOpcionesCat(cuenta){
     if(cuenta==="creditos")opt.style.display=CATS_CRED.includes(opt.value)?"":"none";
     else if(cuenta==="tc")opt.style.display=CATS_TC.includes(opt.value)?"":"none";
     else if(cuenta==="ahorros")opt.style.display=CATS_AHORROS.includes(opt.value)?"":"none";
-    else opt.style.display=(CATS_CRED.includes(opt.value)||CATS_AHORROS.includes(opt.value))?"none":"";
+    else if(cuenta==="gonzalo")opt.style.display=CATS_GONZALO.includes(opt.value)?"":"none";
+    else opt.style.display=(CATS_CRED.includes(opt.value)||CATS_AHORROS.includes(opt.value)||CATS_GONZALO.includes(opt.value))?"none":"";
   });
   const firstVisible=Array.from(select.options).find(o=>o.style.display!=="none");
   if(firstVisible)select.value=firstVisible.value;
