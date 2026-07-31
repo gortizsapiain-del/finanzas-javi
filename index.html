@@ -163,13 +163,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </div>
 
 <div class="tab-bar">
-  <div class="tabs">
+  <div class="tabs" id="tabsContainer">
     <button class="tab active" onclick="setTab('resumen')">📊 Resumen</button>
     <button class="tab" onclick="setTab('tc')">💳 TC</button>
     <button class="tab" onclick="setTab('cc')">🏦 Cta. Corriente</button>
-    <button class="tab" onclick="setTab('creditos')">🏛️ Créditos</button>
-    <button class="tab" onclick="setTab('ahorros')">🌿 Ahorros</button>
-    <button class="tab" onclick="setTab('gonzalo')">💙 Gonzalo</button>
+    <button class="tab tab-javiera" onclick="setTab('creditos')">🏛️ Créditos</button>
+    <button class="tab tab-javiera" onclick="setTab('ahorros')">🌿 Ahorros</button>
+    <button class="tab tab-javiera" onclick="setTab('gonzalo')">💙 Gonzalo</button>
+    <button class="tab tab-skinlux" style="display:none" onclick="setTab('facturas')">🧾 Facturas</button>
   </div>
 </div>
 
@@ -188,6 +189,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div id="viewCreditos" style="display:none"></div>
   <div id="viewAhorros" style="display:none"></div>
   <div id="viewGonzalo" style="display:none"></div>
+  <div id="viewFacturas" style="display:none"></div>
 </div>
 
 <!-- ── Modal ── -->
@@ -202,6 +204,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <option value="creditos">🏛️ Crédito</option>
         <option value="ahorros">🌿 Ahorros</option>
         <option value="gonzalo">💙 Gonzalo</option>
+        <option value="facturas">🧾 Facturas</option>
       </select>
     </div>
     <div class="field" id="fieldCat">
@@ -528,12 +531,22 @@ function render(){
   try{
     document.getElementById("mesNombre").textContent=MESES[mes];
     document.getElementById("anioNum").textContent=anio;
+    // Mostrar/ocultar tabs según perfil
+    document.querySelectorAll(".tab-javiera").forEach(el=>el.style.display=perfil==="javiera"?"":"none");
+    document.querySelectorAll(".tab-skinlux").forEach(el=>el.style.display=perfil==="skinlux"?"":"none");
+    // Si el tab activo no existe en este perfil, resetear a resumen
+    const tabsJaviera=["resumen","tc","cc","creditos","ahorros","gonzalo"];
+    const tabsSkinlux=["resumen","tc","cc","facturas"];
+    const tabsValidos=perfil==="skinlux"?tabsSkinlux:tabsJaviera;
+    if(!tabsValidos.includes(tabActual)) tabActual="resumen";
     document.querySelectorAll(".tab").forEach((b,i)=>{
-      const tabs=["resumen","tc","cc","creditos","ahorros","gonzalo"];
+      const tabs=perfil==="skinlux"?
+        ["resumen","tc","cc",null,null,null,"facturas"]:
+        ["resumen","tc","cc","creditos","ahorros","gonzalo",null];
       b.classList.toggle("active",tabs[i]===tabActual);
     });
-    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos",ahorros:"viewAhorros",gonzalo:"viewGonzalo"};
-    ["resumen","tc","cc","creditos","ahorros","gonzalo"].forEach(t=>{
+    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos",ahorros:"viewAhorros",gonzalo:"viewGonzalo",facturas:"viewFacturas"};
+    ["resumen","tc","cc","creditos","ahorros","gonzalo","facturas"].forEach(t=>{
       document.getElementById(viewIds[t]).style.display=tabActual===t?"":"none";
     });
     if(tabActual==="resumen")renderResumen();
@@ -542,6 +555,7 @@ function render(){
     if(tabActual==="creditos")renderCreditos();
     if(tabActual==="ahorros")renderAhorros();
     if(tabActual==="gonzalo")renderGonzalo();
+    if(tabActual==="facturas")renderFacturas();
   }catch(err){
     console.error("render() error:",err);
     document.getElementById("viewResumen").innerHTML='<div style="color:red;padding:20px;font-size:13px">Error: '+err.message+'</div>';
@@ -602,7 +616,28 @@ function renderResumen(){
   // Gastos TC del mes
   const gastosVariable=tcGastos;
 
-  let html=`
+  let html;
+  if(perfil==="skinlux"){
+    // Ingresos y gastos CC del mes
+    const ccIngresos=ccM.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
+    const ccGastos=ccM.filter(t=>t.tipo==="gasto").reduce((s,t)=>s+t.monto,0);
+    // También sumar gastos TC del mes como gasto
+    const totalGastosMes=ccGastos+tcGastos;
+    html=`
+    <div style="background:linear-gradient(135deg,#F5F0FF,#EDE4FF);border:1px solid #C8B0F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="min-width:0">
+        <div style="font-size:10px;color:#6040B0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo Cuenta Corriente · ${MESES[mes]} ${anio}</div>
+        <div style="font-size:clamp(22px,7vw,32px);font-weight:700;font-family:'DM Mono',monospace;color:${saldoCC>=0?"#4A2A90":"#8A4050"};overflow-wrap:anywhere">${mxn(saldoCC)}</div>
+        <div style="font-size:12px;color:#8060C0;margin-top:4px">saldo actual</div>
+      </div>
+      <div style="font-size:40px;opacity:.5;flex-shrink:0">✨</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="summary-card sage"><div class="s-label" style="color:#2A7060">💰 Ingresos</div><div class="s-amount" style="color:#2A7060">${mxn(ccIngresos)}</div><div class="s-sub" style="color:var(--dim)">este mes</div></div>
+      <div class="summary-card rose"><div class="s-label" style="color:#8A4050">💸 Gastos</div><div class="s-amount" style="color:#8A4050">${mxn(totalGastosMes)}</div><div class="s-sub" style="color:var(--dim)">TC + CC este mes</div></div>
+    </div>`;
+  } else {
+    html=`
     <div style="background:linear-gradient(135deg,#FFF0F4,#FFE4EC);border:1px solid #F0C0D0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="min-width:0">
         <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Total Gastos ${MESES[mes]} ${anio}</div>
@@ -617,6 +652,7 @@ function renderResumen(){
       <div class="summary-card" style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0"><div class="s-label" style="color:#3050A0">💙 Gonzalo</div><div class="s-amount" style="color:#3050A0">${mxn(gonzaloTotal)}</div><div class="s-sub" style="color:#6080C0">a depositar este mes</div></div>
       <div class="summary-card gold"><div class="s-label" style="color:#7A5030">🏛️ Créditos</div><div class="s-amount" style="color:#7A5030">${mxn(credTotal)}</div><div class="s-sub" style="color:#7A5030">${credM.length} cuotas</div></div>
     </div>`;
+  }
   document.getElementById("viewResumen").innerHTML=html;
 }
 
@@ -951,6 +987,43 @@ function renderGonzalo(){
   document.getElementById("viewGonzalo").innerHTML=html;
 }
 
+// ══════════════════════════════════════════
+//  FACTURAS (Skin Lux)
+// ══════════════════════════════════════════
+function renderFacturas(){
+  const todos=data.filter(t=>t.cuenta==="facturas");
+  const gm=delMes(todos);
+  const emitidas=gm.filter(t=>t.tipo==="emitida");
+  const recibidas=gm.filter(t=>t.tipo==="recibida");
+  const totalEmitidas=emitidas.reduce((s,t)=>s+t.monto,0);
+  const totalRecibidas=recibidas.reduce((s,t)=>s+t.monto,0);
+
+  let html='<div class="grid-2">';
+  html+='<div class="summary-card sage"><div class="s-label" style="color:#2A7060">📤 Emitidas</div><div class="s-amount" style="color:#2A7060">'+mxn(totalEmitidas)+'</div></div>';
+  html+='<div class="summary-card rose"><div class="s-label" style="color:#8A4050">📥 Recibidas</div><div class="s-amount" style="color:#8A4050">'+mxn(totalRecibidas)+'</div></div>';
+  html+='</div>';
+
+  if(gm.length===0){
+    html+='<div style="text-align:center;padding:32px 20px;color:var(--dim);font-size:14px">Sin facturas este mes</div>';
+  } else {
+    html+='<div class="expense-list">';
+    gm.sort((a,b)=>b.fecha.localeCompare(a.fecha)).forEach(function(t){
+      const esEmitida=t.tipo==="emitida";
+      const color=esEmitida?"var(--green)":"var(--red)";
+      const signo=esEmitida?"+":"-";
+      const icon=esEmitida?"📤":"📥";
+      html+='<div class="expense-row" onclick="abrirModal(\''+t.id+'\')">';
+      html+='<div class="expense-icon" style="background:'+(esEmitida?"#3A8A7022":"#8A405022")+'">'+icon+'</div>';
+      html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||"Factura")+'</div><div class="expense-meta">'+t.fecha+' · '+(esEmitida?"Emitida":"Recibida")+(t.folio?' · N°'+t.folio:'')+'</div></div>';
+      html+='<div class="expense-amount" style="color:'+color+'">'+signo+mxn(t.monto)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  document.getElementById("viewFacturas").innerHTML=html;
+}
+
 // Montos por defecto para pago automático
 // cuota_actual = la cuota ANTERIOR a agosto (ya que la función suma +1)
 const DEFAULT_CUOTAS_CREDITO = {
@@ -1083,7 +1156,7 @@ function abrirModal(id){
     if(t.mes_facturacion)initMesFacPicker(t.mes_facturacion);
   } else {
     document.getElementById("modalTitle").textContent="Nuevo movimiento";
-    const cuentaDefault=tabActual==="cc"?"cc":tabActual==="creditos"?"creditos":tabActual==="ahorros"?"ahorros":tabActual==="gonzalo"?"gonzalo":"tc";
+    const cuentaDefault=tabActual==="cc"?"cc":tabActual==="creditos"?"creditos":tabActual==="ahorros"?"ahorros":tabActual==="gonzalo"?"gonzalo":tabActual==="facturas"?"facturas":"tc";
     document.getElementById("fCuenta").value=cuentaDefault;
     document.getElementById("fDesc").value="";
     document.getElementById("fMonto").value="";
@@ -1132,6 +1205,14 @@ function actualizarModalPorCuenta(cuentaForzada){
     if(!["deposito","retiro"].includes(modalTipo))modalTipo="deposito";
     document.getElementById("tipoToggle").innerHTML=`<button class="tipo-btn ${modalTipo==="deposito"?"selected-ingreso":""}" onclick="setTipo('deposito')">💚 Depósito</button><button class="tipo-btn ${modalTipo==="retiro"?"selected-gasto":""}" onclick="setTipo('retiro')">🔴 Retiro</button>`;
     actualizarOpcionesCat("ahorros");
+  } else if(cuenta==="facturas"){
+    fieldTipo.style.display="";fieldCat.style.display="none";
+    document.getElementById("fieldMesFac").style.display="none";
+    document.getElementById("fieldCuotas").style.display="none";
+    document.getElementById("fieldCuotaCredito").style.display="none";
+    document.getElementById("labelFecha").textContent="Fecha";
+    if(!["emitida","recibida"].includes(modalTipo))modalTipo="emitida";
+    document.getElementById("tipoToggle").innerHTML=`<button class="tipo-btn ${modalTipo==="emitida"?"selected-ingreso":""}" onclick="setTipo('emitida')">📤 Emitida</button><button class="tipo-btn ${modalTipo==="recibida"?"selected-gasto":""}" onclick="setTipo('recibida')">📥 Recibida</button>`;
   } else {
     fieldTipo.style.display="";fieldCat.style.display="";
     document.getElementById("fieldMesFac").style.display="none";
