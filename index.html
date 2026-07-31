@@ -380,19 +380,24 @@ function emptyState(icon,title,sub){
 //  RENDER PRINCIPAL
 // ══════════════════════════════════════════
 function render(){
-  document.getElementById("mesNombre").textContent=MESES[mes];
-  document.getElementById("anioNum").textContent=anio;
-  document.querySelectorAll(".tab").forEach((b,i)=>{
-    const tabs=["resumen","tc","cc","creditos"];
-    b.classList.toggle("active",tabs[i]===tabActual);
-  });
-  ["resumen","tc","cc","creditos"].forEach(t=>{
-    document.getElementById("view"+t.charAt(0).toUpperCase()+t.slice(1)).style.display=tabActual===t?"":"none";
-  });
-  if(tabActual==="resumen")renderResumen();
-  if(tabActual==="tc")renderTC();
-  if(tabActual==="cc")renderCC();
-  if(tabActual==="creditos")renderCreditos();
+  try{
+    document.getElementById("mesNombre").textContent=MESES[mes];
+    document.getElementById("anioNum").textContent=anio;
+    document.querySelectorAll(".tab").forEach((b,i)=>{
+      const tabs=["resumen","tc","cc","creditos"];
+      b.classList.toggle("active",tabs[i]===tabActual);
+    });
+    ["resumen","tc","cc","creditos"].forEach(t=>{
+      document.getElementById("view"+t.charAt(0).toUpperCase()+t.slice(1)).style.display=tabActual===t?"":"none";
+    });
+    if(tabActual==="resumen")renderResumen();
+    if(tabActual==="tc")renderTC();
+    if(tabActual==="cc")renderCC();
+    if(tabActual==="creditos")renderCreditos();
+  }catch(err){
+    console.error("render() error:",err);
+    document.getElementById("viewResumen").innerHTML='<div style="color:red;padding:20px;font-size:13px">Error: '+err.message+'</div>';
+  }
 }
 
 function setTab(t){tabActual=t;catExpandidaTC=null;filtroTC="todas";filtroCC="todas";filtroCredito="todas";render();}
