@@ -435,6 +435,7 @@ function suscribirDatos(){
       render();
     });
   if(perfil==="javiera") limpiarDatosViejos();
+  if(perfil==="skinlux") limpiarDatosSkinlux();
 }
 
 function cambiarPerfil(p){
@@ -464,6 +465,24 @@ function cerrarProfileMenu(){
 }
 function cerrarProfileMenuOutside(e){
   if(!document.getElementById("profileBtn").contains(e.target)) cerrarProfileMenu();
+}
+
+// Elimina entradas auto-inicializadas de Javiera que se escribieron en Skin Lux
+async function limpiarDatosSkinlux(){
+  try{
+    const snap=await colUsuario().get();
+    if(snap.empty) return;
+    const lote=db.batch();
+    let n=0;
+    snap.forEach(doc=>{
+      const d=doc.data();
+      // consumo en creditos → es de Javiera, no Skin Lux
+      if(d.cat==="consumo"&&d.cuenta==="creditos"){lote.delete(doc.ref);n++;}
+      // farmacia en tc con desc "Farmacia" → era el auto-init de agosto 2026
+      if(d.cat==="farmacia"&&d.cuenta==="tc"&&d.desc==="Farmacia"){lote.delete(doc.ref);n++;}
+    });
+    if(n>0) await lote.commit();
+  }catch(e){console.warn("limpiarDatosSkinlux:",e);}
 }
 
 // Elimina entradas que quedaron en las cuentas antiguas tras la reorganización
