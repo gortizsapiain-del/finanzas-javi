@@ -147,6 +147,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <button class="tab" onclick="setTab('tc')">💳 TC</button>
     <button class="tab" onclick="setTab('cc')">🏦 Cta. Corriente</button>
     <button class="tab" onclick="setTab('creditos')">🏛️ Créditos</button>
+    <button class="tab" onclick="setTab('ahorros')">🌿 Ahorros</button>
   </div>
 </div>
 
@@ -163,6 +164,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div id="viewTC" style="display:none"></div>
   <div id="viewCC" style="display:none"></div>
   <div id="viewCreditos" style="display:none"></div>
+  <div id="viewAhorros" style="display:none"></div>
 </div>
 
 <!-- ── Modal ── -->
@@ -175,6 +177,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <option value="tc">💳 Tarjeta de Crédito</option>
         <option value="cc">🏦 Cuenta Corriente</option>
         <option value="creditos">🏛️ Crédito</option>
+        <option value="ahorros">🌿 Ahorros</option>
       </select>
     </div>
     <div class="field" id="fieldCat">
@@ -205,6 +208,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           <option value="pagos_cc">💳 Pagos</option>
           <option value="reembolsos">🔄 Reembolsos</option>
           <option value="varios_cc">📋 Varios</option>
+        </optgroup>
+        <optgroup label="Ahorros">
+          <option value="renta_plus">🌿 Renta Plus</option>
         </optgroup>
       </select>
     </div>
@@ -283,11 +289,16 @@ const CATS = {
   pagos_cc:          {label:"Pagos",              icon:"💳", color:"#C4788A"},
   reembolsos:        {label:"Reembolsos",         icon:"🔄", color:"#7A9AB0"},
   varios_cc:         {label:"Varios",             icon:"📋", color:"#9090A8"},
+  // Ahorros
+  renta_plus:        {label:"Renta Plus",         icon:"🌿", color:"#3A8A70"},
 };
 
 const CATS_TC = ["bencina","almuerzo","cena","ropa","skincare","auto","gastos_comunes","gastos_basicos","super_personal","super_depto","gastos_varios","gastos_varios_depto","pago"];
 const CATS_CRED = ["hipotecario","consumo"];
 const CATS_CC = ["sueldo","transferencia","pagos_cc","reembolsos","varios_cc"];
+const CATS_AHORROS = ["renta_plus"];
+const SALDO_INICIAL_AHORROS = {renta_plus: 2000000};
+const CATS_NO_SALDO = ["gastos_comunes","gastos_basicos"];
 
 // Montos fijos de referencia para gastos comunes y básicos
 const MONTOS_FIJOS = {gastos_comunes:85000, gastos_basicos:75000};
@@ -385,17 +396,18 @@ function render(){
     document.getElementById("mesNombre").textContent=MESES[mes];
     document.getElementById("anioNum").textContent=anio;
     document.querySelectorAll(".tab").forEach((b,i)=>{
-      const tabs=["resumen","tc","cc","creditos"];
+      const tabs=["resumen","tc","cc","creditos","ahorros"];
       b.classList.toggle("active",tabs[i]===tabActual);
     });
-    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos"};
-    ["resumen","tc","cc","creditos"].forEach(t=>{
+    const viewIds={resumen:"viewResumen",tc:"viewTC",cc:"viewCC",creditos:"viewCreditos",ahorros:"viewAhorros"};
+    ["resumen","tc","cc","creditos","ahorros"].forEach(t=>{
       document.getElementById(viewIds[t]).style.display=tabActual===t?"":"none";
     });
     if(tabActual==="resumen")renderResumen();
     if(tabActual==="tc")renderTC();
     if(tabActual==="cc")renderCC();
     if(tabActual==="creditos")renderCreditos();
+    if(tabActual==="ahorros")renderAhorros();
   }catch(err){
     console.error("render() error:",err);
     document.getElementById("viewResumen").innerHTML='<div style="color:red;padding:20px;font-size:13px">Error: '+err.message+'</div>';
@@ -559,7 +571,7 @@ function setFiltroTC(f){filtroTC=f;renderTC();}
 function renderCC(){
   const todos=allData().filter(t=>t.cuenta==="cc");
   const hastaHoy=todos.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
-  const saldoAcumulado=hastaHoy.reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
+  const saldoAcumulado=hastaHoy.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
   const gm=delMes(todos);
   const ingresos=gm.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
   const gastos=gm.filter(t=>t.tipo==="gasto").reduce((s,t)=>s+t.monto,0);
@@ -675,6 +687,54 @@ function renderCreditos(){
 }
 function toggleCatCredito(id){catExpandidaCredito=catExpandidaCredito===id?null:id;renderCreditos();}
 function setFiltroCredito(f){filtroCredito=f;catExpandidaCredito=f!=="todas"?f:null;renderCreditos();}
+
+// ══════════════════════════════════════════
+//  AHORROS
+// ══════════════════════════════════════════
+function renderAhorros(){
+  const todos=data.filter(t=>t.cuenta==="ahorros");
+  const gm=delMes(todos);
+  const depositos=gm.filter(t=>t.tipo==="deposito").reduce((s,t)=>s+t.monto,0);
+  const retiros=gm.filter(t=>t.tipo==="retiro").reduce((s,t)=>s+t.monto,0);
+
+  // Saldo acumulado = saldo inicial + todos los depósitos históricos - todos los retiros históricos
+  const totalDepositos=todos.filter(t=>t.tipo==="deposito").reduce((s,t)=>s+t.monto,0);
+  const totalRetiros=todos.filter(t=>t.tipo==="retiro").reduce((s,t)=>s+t.monto,0);
+  const saldoTotal=Object.values(SALDO_INICIAL_AHORROS).reduce((s,v)=>s+v,0)+totalDepositos-totalRetiros;
+
+  let html='<div style="background:linear-gradient(135deg,#F0FAF7,#E4F7F0);border:1px solid #B0DDD0;border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">';
+  html+='<div style="min-width:0"><div style="font-size:10px;color:#2A7060;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo Total Ahorros</div>';
+  html+='<div style="font-size:clamp(22px,7vw,30px);font-weight:700;font-family:\'DM Mono\',monospace;color:#2A7060;overflow-wrap:anywhere">'+mxn(saldoTotal)+'</div>';
+  html+='<div style="font-size:11px;color:#4A9A80;margin-top:4px">Saldo inicial: '+mxn(Object.values(SALDO_INICIAL_AHORROS).reduce((s,v)=>s+v,0))+'</div></div>';
+  html+='<div style="font-size:36px;opacity:.4;flex-shrink:0">🌿</div></div>';
+
+  html+='<div class="grid-2">';
+  html+='<div class="summary-card sage"><div class="s-label" style="color:#2A7060">Depósitos este mes</div><div class="s-amount" style="color:#2A7060">'+mxn(depositos)+'</div></div>';
+  html+='<div class="summary-card rose"><div class="s-label" style="color:#8A4050">Retiros este mes</div><div class="s-amount" style="color:#8A4050">'+mxn(retiros)+'</div></div>';
+  html+='</div>';
+
+  // Lista de movimientos del mes
+  const movs=gm.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(movs.length===0){
+    html+='<div style="text-align:center;padding:32px 20px;color:var(--dim);font-size:14px">Sin movimientos este mes</div>';
+  } else {
+    html+='<div class="expense-list">';
+    movs.forEach(function(t){
+      const c=CATS[t.cat]||{label:t.cat,icon:"💵",color:"#7BB5A0"};
+      const esDeposito=t.tipo==="deposito";
+      const color=esDeposito?"var(--green)":"var(--red)";
+      const signo=esDeposito?"+":"-";
+      html+='<div class="expense-row" onclick="abrirModal(\''+t.id+'\')">';
+      html+='<div class="expense-icon" style="background:'+c.color+'22">'+c.icon+'</div>';
+      html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+' · '+(esDeposito?"Depósito":"Retiro")+'</div></div>';
+      html+='<div class="expense-amount" style="color:'+color+'">'+signo+mxn(t.monto)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  document.getElementById("viewAhorros").innerHTML=html;
+}
 
 // Montos por defecto para pago automático
 // cuota_actual = la cuota ANTERIOR a agosto (ya que la función suma +1)
@@ -808,14 +868,14 @@ function abrirModal(id){
     if(t.mes_facturacion)initMesFacPicker(t.mes_facturacion);
   } else {
     document.getElementById("modalTitle").textContent="Nuevo movimiento";
-    const cuentaDefault=tabActual==="cc"?"cc":tabActual==="creditos"?"creditos":"tc";
+    const cuentaDefault=tabActual==="cc"?"cc":tabActual==="creditos"?"creditos":tabActual==="ahorros"?"ahorros":"tc";
     document.getElementById("fCuenta").value=cuentaDefault;
     document.getElementById("fDesc").value="";
     document.getElementById("fMonto").value="";
     document.getElementById("fFecha").value=hoy;
     document.getElementById("fCuotas").value=1;
     document.getElementById("cuotaPreview").textContent="";
-    modalTipo=cuentaDefault==="cc"?"gasto":"gasto";
+    modalTipo=cuentaDefault==="ahorros"?"deposito":"gasto";
     actualizarModalPorCuenta(cuentaDefault);
     initMesFacPicker(`${anio}-${String(mes+1).padStart(2,'0')}`);
   }
@@ -841,6 +901,15 @@ function actualizarModalPorCuenta(cuentaForzada){
     document.getElementById("fieldCuotaCredito").style.display="";
     document.getElementById("labelFecha").textContent="Fecha de pago";
     actualizarOpcionesCat("creditos");
+  } else if(cuenta==="ahorros"){
+    fieldTipo.style.display="";fieldCat.style.display="";
+    document.getElementById("fieldMesFac").style.display="none";
+    document.getElementById("fieldCuotas").style.display="none";
+    document.getElementById("fieldCuotaCredito").style.display="none";
+    document.getElementById("labelFecha").textContent="Fecha";
+    if(!["deposito","retiro"].includes(modalTipo))modalTipo="deposito";
+    document.getElementById("tipoToggle").innerHTML=`<button class="tipo-btn ${modalTipo==="deposito"?"selected-ingreso":""}" onclick="setTipo('deposito')">💚 Depósito</button><button class="tipo-btn ${modalTipo==="retiro"?"selected-gasto":""}" onclick="setTipo('retiro')">🔴 Retiro</button>`;
+    actualizarOpcionesCat("ahorros");
   } else {
     fieldTipo.style.display="";fieldCat.style.display="";
     document.getElementById("fieldMesFac").style.display="none";
@@ -857,7 +926,8 @@ function actualizarOpcionesCat(cuenta){
   Array.from(select.options).forEach(opt=>{
     if(cuenta==="creditos")opt.style.display=CATS_CRED.includes(opt.value)?"":"none";
     else if(cuenta==="tc")opt.style.display=CATS_TC.includes(opt.value)?"":"none";
-    else opt.style.display=(CATS_CRED.includes(opt.value))?"none":"";
+    else if(cuenta==="ahorros")opt.style.display=CATS_AHORROS.includes(opt.value)?"":"none";
+    else opt.style.display=(CATS_CRED.includes(opt.value)||CATS_AHORROS.includes(opt.value))?"none":"";
   });
   const firstVisible=Array.from(select.options).find(o=>o.style.display!=="none");
   if(firstVisible)select.value=firstVisible.value;
