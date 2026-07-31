@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Finanzas · Javi 🌸</title><!-- v6 -->
+<title>Finanzas · Javi 🌸</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -406,16 +406,39 @@ function setTab(t){tabActual=t;catExpandidaTC=null;filtroTC="todas";filtroCC="to
 function cambiarMes(dir){mes+=dir;if(mes<0){mes=11;anio--;}if(mes>11){mes=0;anio++;}filtroTC="todas";filtroCC="todas";filtroCredito="todas";render();}
 
 // ══════════════════════════════════════════
+//  VIRTUAL ITEMS (gastos fijos + créditos siempre visibles)
+// ══════════════════════════════════════════
+function getVirtualItems(){
+  const mesStr=anio+'-'+String(mes+1).padStart(2,'0');
+  const offset=(anio-2026)*12+(mes-7);
+  if(offset<0) return [];
+  const candidatos=[
+    {cuenta:'cc',tipo:'gasto',cat:'gastos_comunes',monto:85000,fecha:mesStr+'-01',desc:'Gastos Comunes'},
+    {cuenta:'cc',tipo:'gasto',cat:'gastos_basicos',monto:75000,fecha:mesStr+'-01',desc:'Gastos Básicos'},
+    {cuenta:'creditos',tipo:'gasto',cat:'hipotecario',monto:375000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:20+offset,cuotas_total:360,desc:'Hipotecario (cuota '+(20+offset)+'/360)'},
+    {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
+  ];
+  return candidatos.filter(function(e){
+    return !data.some(function(t){
+      return t.cuenta===e.cuenta&&t.cat===e.cat&&
+        (e.mes_facturacion?(t.mes_facturacion||t.fecha.slice(0,7))===e.mes_facturacion:t.fecha&&t.fecha.startsWith(mesStr));
+    });
+  }).map(function(e,i){return Object.assign({},e,{id:'_v'+i});});
+}
+function allData(){return data.concat(getVirtualItems());}
+
+// ══════════════════════════════════════════
 //  RESUMEN
 // ══════════════════════════════════════════
 function renderResumen(){
-  const tcM=delMes(data.filter(t=>t.cuenta==="tc"));
+  const ad=allData();
+  const tcM=delMes(ad.filter(t=>t.cuenta==="tc"));
   const tcGastos=tcM.filter(t=>t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
   const tcPagos=tcM.filter(t=>t.cat==="pago").reduce((s,t)=>s+t.monto,0);
-  const ccM=delMes(data.filter(t=>t.cuenta==="cc"));
+  const ccM=delMes(ad.filter(t=>t.cuenta==="cc"));
   const ccIngresos=ccM.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
   const ccGastos=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
-  const credM=delMes(data.filter(t=>t.cuenta==="creditos"));
+  const credM=delMes(ad.filter(t=>t.cuenta==="creditos"));
   const credTotal=credM.reduce((s,t)=>s+t.monto,0);
   const balance=ccIngresos-ccGastos-tcGastos-credTotal;
 
@@ -534,7 +557,7 @@ function setFiltroTC(f){filtroTC=f;renderTC();}
 //  CC
 // ══════════════════════════════════════════
 function renderCC(){
-  const todos=data.filter(t=>t.cuenta==="cc");
+  const todos=allData().filter(t=>t.cuenta==="cc");
   const hastaHoy=todos.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
   const saldoAcumulado=hastaHoy.reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
   const gm=delMes(todos);
@@ -584,7 +607,7 @@ function setFiltroCC(f){filtroCC=f;renderCC();}
 //  CRÉDITOS
 // ══════════════════════════════════════════
 function renderCreditos(){
-  const todos=data.filter(t=>t.cuenta==="creditos");
+  const todos=allData().filter(t=>t.cuenta==="creditos");
   const gm=delMes(todos);
   const totalMes=gm.reduce((s,t)=>s+t.monto,0);
   const hastaElMes=todos.filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
