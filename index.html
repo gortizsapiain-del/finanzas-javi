@@ -189,6 +189,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           <option value="cena">🍷 Cena</option>
           <option value="ropa">👗 Ropa</option>
           <option value="skincare">✨ Skincare</option>
+          <option value="skinlux">💆 SkinLux</option>
+          <option value="farmacia">💊 Farmacia</option>
+          <option value="estudios">📚 Estudios</option>
           <option value="auto">🚗 Auto</option>
           <option value="gastos_comunes">🏢 Gastos Comunes</option>
           <option value="gastos_basicos">💡 Gastos Básicos</option>
@@ -272,6 +275,9 @@ const CATS = {
   cena:              {label:"Cena",               icon:"🍷", color:"#C47888"},
   ropa:              {label:"Ropa",               icon:"👗", color:"#B87AA0"},
   skincare:          {label:"Skincare",           icon:"✨", color:"#D4A0B0"},
+  skinlux:           {label:"SkinLux",            icon:"💆", color:"#E8A0C0"},
+  farmacia:          {label:"Farmacia",           icon:"💊", color:"#7AB0D4"},
+  estudios:          {label:"Estudios",           icon:"📚", color:"#8AB07A"},
   auto:              {label:"Auto",               icon:"🚗", color:"#7A9AB0"},
   gastos_comunes:    {label:"Gastos Comunes",     icon:"🏢", color:"#7BB5A0"},
   gastos_basicos:    {label:"Gastos Básicos",     icon:"💡", color:"#9B8AB0"},
@@ -293,11 +299,12 @@ const CATS = {
   renta_plus:        {label:"Renta Plus",         icon:"🌿", color:"#3A8A70"},
 };
 
-const CATS_TC = ["bencina","almuerzo","cena","ropa","skincare","auto","gastos_comunes","gastos_basicos","super_personal","super_depto","gastos_varios","gastos_varios_depto","pago"];
+const CATS_TC = ["bencina","almuerzo","cena","ropa","skincare","skinlux","farmacia","estudios","auto","gastos_comunes","gastos_basicos","super_personal","super_depto","gastos_varios","gastos_varios_depto","pago"];
 const CATS_CRED = ["hipotecario","consumo"];
 const CATS_CC = ["sueldo","transferencia","pagos_cc","reembolsos","varios_cc"];
 const CATS_AHORROS = ["renta_plus"];
 const SALDO_INICIAL_AHORROS = {renta_plus: 2000000};
+const SALDO_INICIAL_CC = 325289;
 const CATS_NO_SALDO = ["gastos_comunes","gastos_basicos"];
 
 // Montos fijos de referencia para gastos comunes y básicos
@@ -429,6 +436,7 @@ function getVirtualItems(){
     {cuenta:'cc',tipo:'gasto',cat:'gastos_basicos',monto:75000,fecha:mesStr+'-01',desc:'Gastos Básicos'},
     {cuenta:'creditos',tipo:'gasto',cat:'hipotecario',monto:375000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:20+offset,cuotas_total:360,desc:'Hipotecario (cuota '+(20+offset)+'/360)'},
     {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
+    ...(anio===2026&&mes===7?[{cuenta:'tc',tipo:'gasto',cat:'farmacia',monto:21359,mes_facturacion:mesStr,fecha:mesStr+'-01',desc:'Farmacia'}]:[]),
   ];
   return candidatos.filter(function(e){
     return !data.some(function(t){
@@ -455,7 +463,7 @@ function renderResumen(){
   const totalGastos=tcGastos+credTotal+gastosFijosCC;
   // Saldo CC acumulado (excluye CATS_NO_SALDO igual que renderCC)
   const hastaHoyCC=ccAll.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
-  const saldoCC=hastaHoyCC.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
+  const saldoCC=SALDO_INICIAL_CC+hastaHoyCC.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
   // Gastos variables = TC + Gastos Comunes + Gastos Básicos
   const gastosVariable=tcGastos+gastosFijosCC;
 
@@ -577,7 +585,7 @@ function setFiltroTC(f){filtroTC=f;renderTC();}
 function renderCC(){
   const todos=allData().filter(t=>t.cuenta==="cc");
   const hastaHoy=todos.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
-  const saldoAcumulado=hastaHoy.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
+  const saldoAcumulado=SALDO_INICIAL_CC+hastaHoy.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
   const gm=delMes(todos);
   const ingresos=gm.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
   const gastos=gm.filter(t=>t.tipo==="gasto").reduce((s,t)=>s+t.monto,0);
@@ -771,6 +779,8 @@ async function autoInicializarMes(){
     {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
     {cuenta:'cc',tipo:'gasto',cat:'gastos_comunes',monto:85000,fecha:mesStr+'-01',desc:'Gastos Comunes'},
     {cuenta:'cc',tipo:'gasto',cat:'gastos_basicos',monto:75000,fecha:mesStr+'-01',desc:'Gastos Básicos'},
+    // Gasto inicial Farmacia agosto 2026
+    ...(anio===2026&&mes===7?[{cuenta:'tc',tipo:'gasto',cat:'farmacia',monto:21359,mes_facturacion:mesStr,fecha:mesStr+'-01',desc:'Farmacia'}]:[]),
   ];
   try{
     const lote=db.batch();
