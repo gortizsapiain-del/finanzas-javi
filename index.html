@@ -1153,7 +1153,7 @@ function renderIVA(){
     const debito=vm.reduce((s,t)=>s+(t.iva||0),0);
     const credito=cm.reduce((s,t)=>s+(t.iva||0),0);
     const ivaMes=debito-credito;
-    const posicion=ivaMes+remanente;
+    const posicion=ivaMes-remanente; // remanente a favor se resta del IVA a pagar
     const aPagar=posicion>0?posicion:0;
     const remNuevo=posicion<0?Math.abs(posicion):0;
     const [ay,am]=m.split("-");
