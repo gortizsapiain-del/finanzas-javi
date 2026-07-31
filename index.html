@@ -446,26 +446,32 @@ function renderResumen(){
   const ad=allData();
   const tcM=delMes(ad.filter(t=>t.cuenta==="tc"));
   const tcGastos=tcM.filter(t=>t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
-  const tcPagos=tcM.filter(t=>t.cat==="pago").reduce((s,t)=>s+t.monto,0);
-  const ccM=delMes(ad.filter(t=>t.cuenta==="cc"));
-  const ccIngresos=ccM.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
-  const ccGastos=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
+  const ccAll=ad.filter(t=>t.cuenta==="cc");
+  const ccM=delMes(ccAll);
+  const gastosFijosCC=ccM.filter(t=>t.tipo==="gasto"&&CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>s+t.monto,0);
   const credM=delMes(ad.filter(t=>t.cuenta==="creditos"));
   const credTotal=credM.reduce((s,t)=>s+t.monto,0);
-  const balance=ccIngresos-ccGastos-tcGastos-credTotal;
+  // Total gastos = TC + Créditos + Gastos Comunes + Gastos Básicos
+  const totalGastos=tcGastos+credTotal+gastosFijosCC;
+  // Saldo CC acumulado (excluye CATS_NO_SALDO igual que renderCC)
+  const hastaHoyCC=ccAll.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
+  const saldoCC=hastaHoyCC.filter(t=>!CATS_NO_SALDO.includes(t.cat)).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-t.monto,0);
+  // Gastos variables = TC + Gastos Comunes + Gastos Básicos
+  const gastosVariable=tcGastos+gastosFijosCC;
 
   let html=`
     <div style="background:linear-gradient(135deg,#FFF0F4,#FFE4EC);border:1px solid #F0C0D0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="min-width:0">
-        <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Balance ${MESES[mes]} ${anio}</div>
-        <div style="font-size:clamp(22px,7vw,32px);font-weight:700;font-family:'DM Mono',monospace;color:${balance>=0?'#2A7060':'#8A4050'};overflow-wrap:anywhere">${mxn(balance)}</div>
-        <div style="font-size:12px;color:var(--dim);margin-top:4px">Ingresos − Gastos del mes</div>
+        <div style="font-size:10px;color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Total Gastos ${MESES[mes]} ${anio}</div>
+        <div style="font-size:clamp(22px,7vw,32px);font-weight:700;font-family:'DM Mono',monospace;color:#8A4050;overflow-wrap:anywhere">${mxn(totalGastos)}</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:4px">TC + Créditos + Gastos Comunes + Gastos Básicos</div>
       </div>
       <div style="font-size:40px;opacity:.5;flex-shrink:0">🌸</div>
     </div>
-    <div class="grid-3">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="summary-card rose"><div class="s-label" style="color:var(--accent)">💳 TC</div><div class="s-amount" style="color:#8A3050">${mxn(tcGastos)}</div><div class="s-sub" style="color:var(--dim)">${tcM.filter(t=>t.cat!=="pago").length} movimientos</div></div>
-      <div class="summary-card sage"><div class="s-label" style="color:#2A7060">🏦 CC</div><div class="s-amount" style="color:#2A7060">${mxn(ccIngresos)}</div><div class="s-sub" style="color:#2A7060">ingresado este mes</div></div>
+      <div class="summary-card sage"><div class="s-label" style="color:#2A7060">🏦 Cuenta Corriente</div><div class="s-amount" style="color:${saldoCC>=0?"#2A7060":"#8A4050"}">${mxn(saldoCC)}</div><div class="s-sub" style="color:var(--dim)">saldo actual</div></div>
+      <div class="summary-card mauve"><div class="s-label" style="color:#6A4070">📦 Gastos del mes</div><div class="s-amount" style="color:#6A4070">${mxn(gastosVariable)}</div><div class="s-sub" style="color:var(--dim)">TC + Comunes + Básicos</div></div>
       <div class="summary-card gold"><div class="s-label" style="color:#7A5030">🏛️ Créditos</div><div class="s-amount" style="color:#7A5030">${mxn(credTotal)}</div><div class="s-sub" style="color:#7A5030">${credM.length} cuotas</div></div>
     </div>`;
 
