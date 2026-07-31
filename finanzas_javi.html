@@ -405,8 +405,8 @@ db = firebase.firestore();
 auth = firebase.auth();
 
 function colUsuario(){
-  const col = perfil==="skinlux" ? "transacciones_skinlux" : "transacciones";
-  return db.collection("usuarios").doc(uid).collection(col);
+  if(perfil==="skinlux") return db.collection("skinlux_spa");
+  return db.collection("usuarios").doc(uid).collection("transacciones");
 }
 
 auth.onAuthStateChanged(user=>{
