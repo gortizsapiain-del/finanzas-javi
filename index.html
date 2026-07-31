@@ -550,19 +550,18 @@ function renderCC(){
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">Por categoría</div>${porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span style="color:var(--muted)">${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:#8A4050">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${(c.total/gastos*100).toFixed(1)}%;background:${c.color}"></div></div></div>`).join("")}</div>`;
   }
   // Gastos fijos mensuales
-  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
-    <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:14px 16px 10px">Gastos Fijos Mensuales</div>
-    ${Object.entries(GASTOS_FIJOS_CC).map(([id,cfg])=>{
-      const c=CATS[id];
-      const mesStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
-      const pagado=data.find(t=>t.cuenta==="cc"&&t.cat===id&&t.fecha&&t.fecha.startsWith(mesStr));
-      return`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--border)">
-        <div style="width:34px;height:34px;border-radius:9px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${c.icon}</div>
-        <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text)">${c.label}</div><div style="font-size:11px;color:var(--dim)">${mxn(cfg.monto)}/mes</div></div>
-        ${pagado?`<span style="font-size:11px;font-weight:700;color:var(--green);background:#E4F7F0;padding:3px 10px;border-radius:20px">✅ Pagado</span>`:`<button onclick="pagoAutomaticoCC('${id}',event)" style="padding:5px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit">⚡ Auto</button>`}
-      </div>`;
-    }).join("")}
-  </div>`;
+  const mesStrCC=anio+"-"+String(mes+1).padStart(2,"0");
+  let htmlFijos='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:14px 16px 10px">Gastos Fijos Mensuales</div>';
+  Object.entries(GASTOS_FIJOS_CC).forEach(function([id,cfg]){
+    const c=CATS[id];
+    const pagado=data.find(function(t){return t.cuenta==="cc"&&t.cat===id&&t.fecha&&t.fecha.startsWith(mesStrCC);});
+    const badge=pagado
+      ?'<span style="font-size:11px;font-weight:700;color:var(--green);background:#E4F7F0;padding:3px 10px;border-radius:20px">✅ Pagado</span>'
+      :'<button onclick="pagoAutomaticoCC(\''+id+'\',event)" style="padding:5px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid '+c.color+'60;background:'+c.color+'18;color:'+c.color+';font-family:inherit">⚡ Auto</button>';
+    htmlFijos+='<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--border)"><div style="width:34px;height:34px;border-radius:9px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+c.icon+'</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text)">'+c.label+'</div><div style="font-size:11px;color:var(--dim)">'+mxn(cfg.monto)+'/mes</div></div>'+badge+'</div>';
+  });
+  htmlFijos+='</div>';
+  html+=htmlFijos;
   html+=`<div class="filter-bar"><select class="filter-select ${filtroCC!=="todas"?"on":""}" onchange="setFiltroCC(this.value)"><option value="todas">🗂️ Ver: Todos</option><option value="ingresos">✅ Ingresos</option><option value="gastos">🔴 Gastos</option>${porCat.map(c=>`<option value="${c.id}" ${filtroCC===c.id?"selected":""}>${c.icon} ${c.label}</option>`).join("")}</select></div>`;
   html+=`<div class="expense-list">${filtrados.length?filtrados.map(t=>{
     const c=CATS[t.cat]||{icon:"📋",color:"#9090A8"};
