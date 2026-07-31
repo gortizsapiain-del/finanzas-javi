@@ -380,6 +380,7 @@ function emptyState(icon,title,sub){
 //  RENDER PRINCIPAL
 // ══════════════════════════════════════════
 function render(){
+  autoInicializarMes();
   try{
     document.getElementById("mesNombre").textContent=MESES[mes];
     document.getElementById("anioNum").textContent=anio;
@@ -560,11 +561,7 @@ function renderCC(){
   let htmlFijos='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:14px 16px 10px">Gastos Fijos Mensuales</div>';
   Object.entries(GASTOS_FIJOS_CC).forEach(function([id,cfg]){
     const c=CATS[id];
-    const pagado=data.find(function(t){return t.cuenta==="cc"&&t.cat===id&&t.fecha&&t.fecha.startsWith(mesStrCC);});
-    const badge=pagado
-      ?'<span style="font-size:11px;font-weight:700;color:var(--green);background:#E4F7F0;padding:3px 10px;border-radius:20px">✅ Pagado</span>'
-      :'<button onclick="pagoAutomaticoCC(\''+id+'\',event)" style="padding:5px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid '+c.color+'60;background:'+c.color+'18;color:'+c.color+';font-family:inherit">⚡ Auto</button>';
-    htmlFijos+='<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--border)"><div style="width:34px;height:34px;border-radius:9px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+c.icon+'</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text)">'+c.label+'</div><div style="font-size:11px;color:var(--dim)">'+mxn(cfg.monto)+'/mes</div></div>'+badge+'</div>';
+    htmlFijos+='<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--border)"><div style="width:34px;height:34px;border-radius:9px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+c.icon+'</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text)">'+c.label+'</div><div style="font-size:11px;color:var(--dim)">'+mxn(cfg.monto)+'/mes</div></div></div>';
   });
   htmlFijos+='</div>';
   html+=htmlFijos;
@@ -625,7 +622,6 @@ function renderCreditos(){
         <div style="text-align:right;flex-shrink:1;margin-left:8px;min-width:0">
           <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--text);overflow-wrap:anywhere">${mxn(catTotal)}</div>
         </div>
-        <button onclick="pagoAutomatico('${id}',event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Auto</button>
         <div style="color:var(--dim);font-size:12px;margin-left:4px">${abierta?"▲":"▼"}</div>
       </div>
       ${abierta&&items.length?`<div style="border-top:1px solid var(--border);background:#FFF8FA;padding:10px 12px;display:flex;flex-direction:column;gap:5px">
@@ -643,13 +639,12 @@ function renderCreditos(){
     </div>`;
   });
 
-  // Mostrar créditos sin movimientos este mes también
+  // Mostrar créditos sin movimientos este mes (sin botón auto)
   CATS_CRED.filter(id=>filtroCredito==="todas"||filtroCredito===id).filter(id=>!catsMostrar.find(x=>x.id===id)).forEach(id=>{
     const c=CATS[id];
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;opacity:.8">
       <div style="width:36px;height:36px;border-radius:9px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.icon}</div>
-      <div style="flex:1"><div style="font-weight:700;font-size:14px;color:var(--text)">${c.label}</div><div style="font-size:11px;color:var(--dim)">Sin cuotas este mes</div></div>
-      <button onclick="pagoAutomatico('${id}',event)" style="padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit">⚡ Auto</button>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px;color:var(--text)">${c.label}</div><div style="font-size:11px;color:var(--dim)">Cargando...</div></div>
     </div>`;
   });
 
@@ -670,6 +665,36 @@ const GASTOS_FIJOS_CC = {
   gastos_comunes: {monto:85000, desc:"Gastos Comunes"},
   gastos_basicos: {monto:75000, desc:"Gastos Básicos"},
 };
+
+// Mes base: agosto 2026 = cuota 20 hipotecario, cuota 1 consumo
+const BASE_MES=7, BASE_ANIO=2026;
+
+let mesAutoInitKey=null;
+async function autoInicializarMes(){
+  if(!uid) return;
+  const key=anio+'-'+mes;
+  if(mesAutoInitKey===key) return;
+  mesAutoInitKey=key;
+  const mesStr=anio+'-'+String(mes+1).padStart(2,'0');
+  const offset=(anio-BASE_ANIO)*12+(mes-BASE_MES);
+  const entradas=[
+    {cuenta:'creditos',tipo:'gasto',cat:'hipotecario',monto:375000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:20+offset,cuotas_total:360,desc:'Hipotecario (cuota '+(20+offset)+'/360)'},
+    {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
+    {cuenta:'cc',tipo:'gasto',cat:'gastos_comunes',monto:85000,fecha:mesStr+'-01',desc:'Gastos Comunes'},
+    {cuenta:'cc',tipo:'gasto',cat:'gastos_basicos',monto:75000,fecha:mesStr+'-01',desc:'Gastos Básicos'},
+  ];
+  try{
+    const lote=db.batch();
+    let n=0;
+    entradas.forEach(function(e){
+      const existe=data.some(function(t){
+        return t.cuenta===e.cuenta&&t.cat===e.cat&&(e.mes_facturacion?(t.mes_facturacion||t.fecha.slice(0,7))===e.mes_facturacion:t.fecha.startsWith(mesStr));
+      });
+      if(!existe){lote.set(colUsuario().doc(),Object.assign({},e,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));n++;}
+    });
+    if(n>0) await lote.commit();
+  }catch(err){console.error('autoInit:',err);}
+}
 
 async function pagoAutomaticoCC(id, e){
   if(e) e.stopPropagation();
