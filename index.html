@@ -484,20 +484,9 @@ function renderResumen(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="summary-card rose"><div class="s-label" style="color:var(--accent)">💳 TC</div><div class="s-amount" style="color:#8A3050">${mxn(tcGastos)}</div><div class="s-sub" style="color:var(--dim)">${tcM.filter(t=>t.cat!=="pago").length} movimientos</div></div>
       <div class="summary-card sage"><div class="s-label" style="color:#2A7060">🏦 Cuenta Corriente</div><div class="s-amount" style="color:${saldoCC>=0?"#2A7060":"#8A4050"}">${mxn(saldoCC)}</div><div class="s-sub" style="color:var(--dim)">saldo actual</div></div>
-      <div class="summary-card mauve"><div class="s-label" style="color:#6A4070">💳 Gastos TC</div><div class="s-amount" style="color:#6A4070">${mxn(gastosVariable)}</div><div class="s-sub" style="color:var(--dim)">${tcM.filter(t=>t.cat!=="pago").length} movimientos</div></div>
+      <div class="summary-card" style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0"><div class="s-label" style="color:#3050A0">💙 Gonzalo</div><div class="s-amount" style="color:#3050A0">${mxn(gonzaloTotal)}</div><div class="s-sub" style="color:#6080C0">a depositar este mes</div></div>
       <div class="summary-card gold"><div class="s-label" style="color:#7A5030">🏛️ Créditos</div><div class="s-amount" style="color:#7A5030">${mxn(credTotal)}</div><div class="s-sub" style="color:#7A5030">${credM.length} cuotas</div></div>
     </div>`;
-
-  // TC breakdown
-  if(tcGastos>0){
-    const porCat=Object.keys(CATS).filter(id=>CATS_TC.includes(id)&&id!=="pago").map(id=>({
-      id,...CATS[id],total:tcM.filter(t=>t.cat===id).reduce((s,t)=>s+t.monto,0)
-    })).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
-    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px">
-      <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">Gastos TC del mes</div>
-      ${porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span style="color:var(--muted)">${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:#8A4050">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${(c.total/tcGastos*100).toFixed(1)}%;background:${c.color}"></div></div></div>`).join("")}
-    </div>`;
-  }
   document.getElementById("viewResumen").innerHTML=html;
 }
 
@@ -505,7 +494,7 @@ function renderResumen(){
 //  TC
 // ══════════════════════════════════════════
 function renderTC(){
-  const todos=data.filter(t=>t.cuenta==="tc");
+  const todos=allData().filter(t=>t.cuenta==="tc");
   let gm=delMes(todos);
   const totalGastos=gm.filter(t=>t.cat!=="pago").reduce((s,t)=>s+t.monto,0);
   const totalPagos=gm.filter(t=>t.cat==="pago").reduce((s,t)=>s+t.monto,0);
@@ -610,15 +599,6 @@ function renderCC(){
   if(gastos>0&&porCat.length){
     html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">Por categoría</div>${porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span style="color:var(--muted)">${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:#8A4050">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${(c.total/gastos*100).toFixed(1)}%;background:${c.color}"></div></div></div>`).join("")}</div>`;
   }
-  // Gastos fijos mensuales
-  const mesStrCC=anio+"-"+String(mes+1).padStart(2,"0");
-  let htmlFijos='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:14px 16px 10px">Gastos Fijos Mensuales</div>';
-  Object.entries(GASTOS_FIJOS_CC).forEach(function([id,cfg]){
-    const c=CATS[id];
-    htmlFijos+='<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--border)"><div style="width:34px;height:34px;border-radius:9px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">'+c.icon+'</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:var(--text)">'+c.label+'</div><div style="font-size:11px;color:var(--dim)">'+mxn(cfg.monto)+'/mes</div></div></div>';
-  });
-  htmlFijos+='</div>';
-  html+=htmlFijos;
   html+=`<div class="filter-bar"><select class="filter-select ${filtroCC!=="todas"?"on":""}" onchange="setFiltroCC(this.value)"><option value="todas">🗂️ Ver: Todos</option><option value="ingresos">✅ Ingresos</option><option value="gastos">🔴 Gastos</option>${porCat.map(c=>`<option value="${c.id}" ${filtroCC===c.id?"selected":""}>${c.icon} ${c.label}</option>`).join("")}</select></div>`;
   html+=`<div class="expense-list">${filtrados.length?filtrados.map(t=>{
     const c=CATS[t.cat]||{icon:"📋",color:"#9090A8"};
