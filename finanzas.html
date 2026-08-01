@@ -13,10 +13,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F5F6FC;--surface:#FFFFFF;--surface2:#EEF0FA;
-  --border:#E2E5F2;--border2:#C8CCEC;
-  --text:#1A1830;--muted:#6B6890;--dim:#9898B8;
-  --accent:#7C3AED;--accent2:#A855F7;
+  --bg:#EDEEF2;--surface:#FFFFFF;--surface2:#E4E6EE;
+  --border:#CDD0DC;--border2:#B0B5CC;
+  --text:#0F172A;--muted:#475569;--dim:#94A3B8;
+  --accent:#5B21B6;--accent2:#7C3AED;
   --green:#059669;--green2:#047857;
   --red:#DC2626;--red2:#B91C1C;
   --blue:#2563EB;--blue2:#1D4ED8;
@@ -50,11 +50,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .summary-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .summary-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .summary-card{border-radius:14px;padding:16px;min-width:0;overflow:hidden}
-.summary-card.purple{background:linear-gradient(135deg,#F3EEFF,#E9D8FF);border:1px solid #C8A8F0}
-.summary-card.green{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border:1px solid #6EE7B7}
-.summary-card.blue{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1px solid #93C5FD}
-.summary-card.gold{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1px solid #FCD34D}
-.summary-card.orange{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px solid #FDBA74}
+.summary-card.purple{background:var(--surface);border:1px solid var(--border)}
+.summary-card.green{background:var(--surface);border:1px solid var(--border)}
+.summary-card.blue{background:var(--surface);border:1px solid var(--border)}
+.summary-card.gold{background:var(--surface);border:1px solid var(--border)}
+.summary-card.orange{background:var(--surface);border:1px solid var(--border)}
 .summary-card.neutral{background:var(--surface);border:1px solid var(--border)}
 .s-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;overflow-wrap:anywhere}
 .s-amount{font-size:clamp(13px,4.2vw,20px);font-weight:700;font-family:'DM Mono',monospace;line-height:1.1;overflow-wrap:anywhere}
@@ -139,8 +139,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .tipo-btn.selected-retiro{background:#F43F5E18;border-color:var(--red);color:var(--red)}
 .modal-footer{display:flex;gap:10px;margin-top:6px}
 .modal-footer .btn-ghost{flex:1}.modal-footer .btn-primary{flex:2}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E2830;border:1px solid #2A4040;color:#7FFFB8;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;animation:fadeUp .3s ease;pointer-events:none}
-.pago-tc-banner{background:linear-gradient(135deg,#0A1E10,#0F2A18);border:1px solid #1A4A28;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E293B;border:1px solid #334155;color:#E2E8F0;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;animation:fadeUp .3s ease;pointer-events:none}
+.pago-tc-banner{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px 16px;margin-bottom:14px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:520px){.summary-grid-3{grid-template-columns:1fr 1fr}.tab{padding:6px 10px;font-size:12px}.tabs{gap:2px}}
 @media(max-width:380px){.summary-grid-3{grid-template-columns:1fr}.tabs{gap:1px}.tab{padding:5px 8px;font-size:11px}}
@@ -307,7 +307,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <button type="button" onclick="cambiarAnioMesPagoTC(1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:5px 12px;font-family:inherit;font-size:14px;cursor:pointer">→</button>
       </div>
       <div id="mesPagoTCGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
-      <button type="button" onclick="calcularTotalTCMes()" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;background:linear-gradient(135deg,#0A1E10,#0F2A18);border:1px solid #1A4A28;color:#6EE7B7;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">🔄 Calcular total TC del mes</button>
+      <button type="button" onclick="calcularTotalTCMes()" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:var(--green);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">🔄 Calcular total TC del mes</button>
     </div>
     <div class="field" id="fieldFecha"><label id="labelFecha">Fecha de compra</label><input id="fFecha" type="date"/></div>
     <div class="field" id="fieldMesFac" style="display:none">
@@ -917,42 +917,42 @@ function renderResumen(){
   const deudaJavi=tcJaviParaTotal+creditosJaviNeto;
   const mesLabel=MESES[m]+" "+a;
   document.getElementById("viewResumen").innerHTML=`
-    <div style="background:var(--surface);border:1px solid ${ccSaldoAcumulado>=0?'#0D4030':'#4A1020'};border-radius:14px;padding:14px 16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:${ccSaldoAcumulado>=0?'#6EE7B7':'#F87171'};font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'#6EE7B7':'#F87171'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
       <div class="grid-auto">
-        <div style="background:#10B98110;border-radius:9px;padding:8px 10px;border:1px solid #10B98130"><div style="font-size:10px;color:#6EE7B7;font-weight:700;text-transform:uppercase;margin-bottom:2px">Ingresos mes</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#6EE7B7">${mxn(ccIngresos)}</div></div>
-        <div style="background:#F43F5E10;border-radius:9px;padding:8px 10px;border:1px solid #F43F5E30"><div style="font-size:10px;color:#F87171;font-weight:700;text-transform:uppercase;margin-bottom:2px">Gastos mes</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#F87171">${mxn(ccGastos)}</div></div>
-        <div style="background:${ccSaldoAcumulado>=0?'#10B98110':'#F43F5E10'};border-radius:9px;padding:8px 10px;border:1px solid ${ccSaldoAcumulado>=0?'#10B98130':'#F43F5E30'}"><div style="font-size:10px;color:${ccSaldoAcumulado>=0?'#6EE7B7':'#F87171'};font-weight:700;text-transform:uppercase;margin-bottom:2px">Saldo actual</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${ccSaldoAcumulado>=0?'#6EE7B7':'#F87171'}">${mxn(ccSaldoAcumulado)}</div></div>
+        <div style="background:#05966912;border-radius:9px;padding:8px 10px;border:1px solid #05966930"><div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:2px">Ingresos mes</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">${mxn(ccIngresos)}</div></div>
+        <div style="background:#DC262612;border-radius:9px;padding:8px 10px;border:1px solid #DC262630"><div style="font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;margin-bottom:2px">Gastos mes</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--red)">${mxn(ccGastos)}</div></div>
+        <div style="background:${ccSaldoAcumulado>=0?'#05966912':'#DC262612'};border-radius:9px;padding:8px 10px;border:1px solid ${ccSaldoAcumulado>=0?'#05966930':'#DC262630'}"><div style="font-size:10px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};font-weight:700;text-transform:uppercase;margin-bottom:2px">Saldo actual</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'}">${mxn(ccSaldoAcumulado)}</div></div>
       </div>
     </div>
-    <div style="background:linear-gradient(135deg,#0A1830,#123A66);border:1px solid #2563EB;border-radius:18px;padding:20px 22px">
-      <div style="font-size:11px;color:#60A5FA;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">💰 Lo que debes — ${mesLabel}</div>
-      <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:clamp(22px,7vw,32px);color:#60A5FA;margin:6px 0 16px;overflow-wrap:anywhere">${mxn(deudaTotal)}</div>
+    <div style="background:linear-gradient(160deg,#1E293B,#0F172A);border:1px solid #334155;border-radius:18px;padding:20px 22px">
+      <div style="font-size:11px;color:#94A3B8;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">💰 Lo que debes — ${mesLabel}</div>
+      <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:clamp(22px,7vw,32px);color:#F1F5F9;margin:6px 0 16px;overflow-wrap:anywhere">${mxn(deudaTotal)}</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <!-- TC -->
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#ffffff08;border-radius:12px">
-          <span style="color:#93C5FD;font-size:14px;font-weight:600">💳 Tarjeta de crédito${pagoTCEsteMes?' <span style=\"background:#10B98120;border:1px solid #10B98160;color:#6EE7B7;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${pagoTCEsteMes?'#6EE7B7':'#F0EEF8'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.06);border-radius:12px">
+          <span style="color:#CBD5E1;font-size:14px;font-weight:600">💳 Tarjeta de crédito${pagoTCEsteMes?' <span style=\"background:#05966920;border:1px solid #05966950;color:#6EE7B7;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${pagoTCEsteMes?'#6EE7B7':'#F1F5F9'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span>
         </div>
         ${creditosTotal>0?`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#ffffff08;border-radius:12px">
-          <span style="color:#FDB579;font-size:14px;font-weight:600">🏛️ Créditos</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#FDB579;overflow-wrap:anywhere">${mxn(creditosTotal)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.06);border-radius:12px">
+          <span style="color:#CBD5E1;font-size:14px;font-weight:600">🏛️ Créditos</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#FCD34D;overflow-wrap:anywhere">${mxn(creditosTotal)}</span>
         </div>`:''}
         ${arriendoTotal>0?`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#10B98110;border-radius:12px;border:1px solid #10B98130">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:rgba(5,150,105,.12);border-radius:12px;border:1px solid rgba(5,150,105,.3)">
           <span style="color:#6EE7B7;font-size:14px;font-weight:600">🏢 Arriendo oficina recibido</span>
           <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#6EE7B7;overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
         </div>`:''}
         <!-- Split Gonzalo / Javi -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-          <div style="background:#8B5CF620;border:1px solid #8B5CF650;border-radius:10px;padding:10px 12px;min-width:0">
-            <div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo debe</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#C4B5FD;overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;min-width:0">
+            <div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo debe</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#E2E8F0;overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
           </div>
-          <div style="background:#EC489920;border:1px solid #EC489950;border-radius:10px;padding:10px 12px;min-width:0">
-            <div style="font-size:10px;color:#F9A8D4;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#F9A8D4;overflow-wrap:anywhere">${mxn(deudaJavi)}</div>
+          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;min-width:0">
+            <div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#E2E8F0;overflow-wrap:anywhere">${mxn(deudaJavi)}</div>
           </div>
         </div>
       </div>
