@@ -361,7 +361,7 @@ const auth=firebase.auth(),db=firebase.firestore();
 const javiConfig={apiKey:"AIzaSyD8LyP6k7H1AnKj8wcrBE9R-VZzkkDQnjk",authDomain:"finanzas-javi.firebaseapp.com",projectId:"finanzas-javi",storageBucket:"finanzas-javi.firebasestorage.app",messagingSenderId:"293458141690",appId:"1:293458141690:web:d74d6cdd51c8f71b8a4443"};
 const javiApp=firebase.initializeApp(javiConfig,"javi");
 const javiDb=javiApp.firestore(),javiAuth=javiApp.auth();
-let currentUser=null,unsubscribeData=null;
+let currentUser=null,unsubscribeData=null,unsubscribeCompartido=null,dataCompartido=[];
 auth.onAuthStateChanged(user=>{
   currentUser=user;
   if(user){
@@ -371,6 +371,7 @@ auth.onAuthStateChanged(user=>{
     document.getElementById("userAvatar").src=user.photoURL||"";
     escucharDatos();
     suscribirSL();
+    suscribirCompartido();
   }else{
     if(unsubscribeData){unsubscribeData();unsubscribeData=null;}
     data=[];
@@ -727,7 +728,14 @@ async function procesarExcel(input){
   }catch(err){mostrarToast("❌ Error: "+err.message);console.error(err);}
 }
 
-function logout(){if(unsubscribeData){unsubscribeData();unsubscribeData=null;}auth.signOut();}
+function logout(){if(unsubscribeData){unsubscribeData();unsubscribeData=null;}if(unsubscribeCompartido){unsubscribeCompartido();unsubscribeCompartido=null;}dataCompartido=[];auth.signOut();}
+function suscribirCompartido(){
+  if(unsubscribeCompartido){unsubscribeCompartido();unsubscribeCompartido=null;}
+  unsubscribeCompartido=db.collection("compartido_gonzalo").onSnapshot(snap=>{
+    dataCompartido=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(tabActual==="resumen")renderResumen();
+  },e=>console.warn("compartido_gonzalo read:",e.message));
+}
 function colUsuario(){return db.collection(`usuarios/${currentUser.uid}/transacciones`);}
 function escucharDatos(){
   if(unsubscribeData)unsubscribeData();
@@ -916,6 +924,9 @@ function renderResumen(){
   const deudaGonzalo=tcGonzaloParaTotal+creditosGonzaloNeto;
   const deudaJavi=tcJaviParaTotal+creditosJaviNeto;
   const mesLabel=MESES[m]+" "+a;
+  const ym=`${a}-${String(m+1).padStart(2,"0")}`;
+  const javiMes=dataCompartido.filter(t=>{const f=(t.fecha||"").slice(0,7);return f===ym;});
+  const javiTotalCompartido=javiMes.reduce((s,t)=>s+(t.monto||0),0);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -940,7 +951,7 @@ function renderResumen(){
         </div>
         <div style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:10px 12px;min-width:0">
           <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(totalGastosJavi)}</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(javiTotalCompartido)}</div>
         </div>
       </div>
       <!-- Línea divisora -->
