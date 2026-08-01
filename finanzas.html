@@ -425,12 +425,17 @@ function cambiarPerfil(p){
 function colSkinlux(){return javiDb.collection("skinlux_spa");}
 
 function suscribirSL(){
+  if(!javiAuth.currentUser){return;} // esperar a que javiAuth esté listo
   if(unsubscribeSL)unsubscribeSL();
   unsubscribeSL=colSkinlux().onSnapshot(snap=>{
     dataSL=snap.docs.map(doc=>({id:doc.id,...doc.data()}));
     if(perfil==="skinlux")render();
-  },err=>mostrarToast("⚠️ Error SL: "+err.message));
+  },err=>console.warn("SL snapshot error:",err.message));
 }
+// Cuando javiAuth se autentique, suscribir Skin Lux automáticamente
+javiAuth.onAuthStateChanged(javiUser=>{
+  if(javiUser&&currentUser)suscribirSL();
+});
 
 const PPM_TASA=0.00125;
 
