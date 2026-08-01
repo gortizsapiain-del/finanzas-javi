@@ -925,87 +925,87 @@ function renderResumen(){
         <div style="background:${ccSaldoAcumulado>=0?'#05966912':'#DC262612'};border-radius:9px;padding:8px 10px;border:1px solid ${ccSaldoAcumulado>=0?'#05966930':'#DC262630'}"><div style="font-size:10px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};font-weight:700;text-transform:uppercase;margin-bottom:2px">Saldo actual</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'}">${mxn(ccSaldoAcumulado)}</div></div>
       </div>
     </div>
-    <div style="background:linear-gradient(160deg,#1E293B,#0F172A);border:1px solid #334155;border-radius:18px;padding:20px 22px">
-      <div style="font-size:11px;color:#94A3B8;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">💰 Lo que debes — ${mesLabel}</div>
-      <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:clamp(22px,7vw,32px);color:#F1F5F9;margin:6px 0 16px;overflow-wrap:anywhere">${mxn(deudaTotal)}</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">💰 Lo que debes — ${mesLabel}</div>
+      <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:clamp(22px,7vw,32px);color:var(--text);margin:6px 0 16px;overflow-wrap:anywhere">${mxn(deudaTotal)}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
         <!-- TC -->
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.06);border-radius:12px">
-          <span style="color:#CBD5E1;font-size:14px;font-weight:600">💳 Tarjeta de crédito${pagoTCEsteMes?' <span style=\"background:#05966920;border:1px solid #05966950;color:#6EE7B7;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${pagoTCEsteMes?'#6EE7B7':'#F1F5F9'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+          <span style="color:var(--text);font-size:14px;font-weight:600">💳 Tarjeta de crédito${pagoTCEsteMes?' <span style=\"background:#DCFCE7;border:1px solid #BBF7D0;color:#15803D;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${pagoTCEsteMes?'var(--green)':'var(--text)'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span>
         </div>
         ${creditosTotal>0?`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.06);border-radius:12px">
-          <span style="color:#CBD5E1;font-size:14px;font-weight:600">🏛️ Créditos</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#FCD34D;overflow-wrap:anywhere">${mxn(creditosTotal)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+          <span style="color:var(--text);font-size:14px;font-weight:600">🏛️ Créditos</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--text);overflow-wrap:anywhere">${mxn(creditosTotal)}</span>
         </div>`:''}
         ${arriendoTotal>0?`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:rgba(5,150,105,.12);border-radius:12px;border:1px solid rgba(5,150,105,.3)">
-          <span style="color:#6EE7B7;font-size:14px;font-weight:600">🏢 Arriendo oficina recibido</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#6EE7B7;overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px">
+          <span style="color:#15803D;font-size:14px;font-weight:600">🏢 Arriendo oficina recibido</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--green);overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
         </div>`:''}
         <!-- Split Gonzalo / Javi -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;min-width:0">
-            <div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo debe</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#E2E8F0;overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo debe</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
           </div>
-          <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;min-width:0">
-            <div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#E2E8F0;overflow-wrap:anywhere">${mxn(deudaJavi)}</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaJavi)}</div>
           </div>
         </div>
       </div>
     </div>
-    <details style="background:linear-gradient(135deg,#1A0A2E,#2D1060);border:1px solid #4D20A0;border-radius:18px;padding:0;overflow:hidden">
-      <summary style="list-style:none;cursor:pointer;padding:16px 20px;font-size:11px;color:#A78BFA;font-weight:700;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;gap:10px">Detalle — todo lo gastado, ingresado y pagado<span style="font-size:14px">▾</span></summary>
-      <div style="padding:0 20px 20px">
-        <div style="display:flex;flex-direction:column;gap:10px">
+    <details style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden">
+      <summary style="list-style:none;cursor:pointer;padding:16px 20px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;gap:10px">Detalle — todo lo gastado, ingresado y pagado<span style="font-size:14px">▾</span></summary>
+      <div style="padding:0 16px 16px">
+        <div style="display:flex;flex-direction:column;gap:8px">
           <!-- TC -->
-          <details style="background:#ffffff08;border-radius:12px;overflow:hidden">
+          <details style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden">
             <summary style="list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0">
-              <span style="color:#C4B5FD;font-size:14px;font-weight:600">💳 Tarjeta de crédito${pagoTCEsteMes?' <span style=\"background:#10B98120;border:1px solid #10B98160;color:#6EE7B7;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
-              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${pagoTCEsteMes?'#6EE7B7':'#F0EEF8'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcTotal)}</span>
+              <span style="color:var(--text);font-size:14px;font-weight:600">💳 Tarjeta de crédito${pagoTCEsteMes?' <span style=\"background:#DCFCE7;border:1px solid #BBF7D0;color:#15803D;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
+              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${pagoTCEsteMes?'var(--green)':'var(--text)'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcTotal)}</span>
             </summary>
             ${togglesDetalle('detTC')}
             <div id="detTC_list" class="expense-list" style="padding:0 6px 8px">${tcM.length?tcM.map((t,i)=>filaTransaccion(t,i)).join(""):'<div style="padding:8px 10px;font-size:12px;color:var(--dim)">Sin movimientos</div>'}</div>
             <div id="detTC_chart" style="display:none">${graficoPorCategoria(tcM)}</div>
           </details>
           <!-- CC Ingresos -->
-          <details style="background:#10B98110;border:1px solid #10B98130;border-radius:12px;overflow:hidden">
+          <details style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;overflow:hidden">
             <summary style="list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0">
-              <span style="color:#6EE7B7;font-size:14px;font-weight:600">🏦 CC — Ingresos del mes</span>
-              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#6EE7B7;overflow-wrap:anywhere">+${mxn(ccIngresos)}</span>
+              <span style="color:#15803D;font-size:14px;font-weight:600">🏦 CC — Ingresos del mes</span>
+              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--green);overflow-wrap:anywhere">+${mxn(ccIngresos)}</span>
             </summary>
             ${togglesDetalle('detCCIn')}
             <div id="detCCIn_list" class="expense-list" style="padding:0 6px 8px">${ccIngresosM.length?ccIngresosM.map((t,i)=>filaTransaccion(t,i)).join(""):'<div style="padding:8px 10px;font-size:12px;color:var(--dim)">Sin movimientos</div>'}</div>
             <div id="detCCIn_chart" style="display:none">${graficoPorCategoria(ccIngresosM)}</div>
           </details>
           <!-- CC Gastos -->
-          <details style="background:#F43F5E10;border:1px solid #F43F5E30;border-radius:12px;overflow:hidden">
+          <details style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;overflow:hidden">
             <summary style="list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0">
-              <span style="color:#F87171;font-size:14px;font-weight:600">🏦 CC — Gastos del mes</span>
-              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#F87171;overflow-wrap:anywhere">-${mxn(ccGastosReales)}</span>
+              <span style="color:#B91C1C;font-size:14px;font-weight:600">🏦 CC — Gastos del mes</span>
+              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--red);overflow-wrap:anywhere">-${mxn(ccGastosReales)}</span>
             </summary>
             ${togglesDetalle('detCCGa')}
             <div id="detCCGa_list" class="expense-list" style="padding:0 6px 8px">${ccGastosRealesM.length?ccGastosRealesM.map((t,i)=>filaTransaccion(t,i)).join(""):'<div style="padding:8px 10px;font-size:12px;color:var(--dim)">Sin movimientos</div>'}</div>
             <div id="detCCGa_chart" style="display:none">${graficoPorCategoria(ccGastosRealesM)}</div>
           </details>
           ${creditosTotal>0?`
-          <details style="background:#ffffff08;border-radius:12px;overflow:hidden">
+          <details style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden">
             <summary style="list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0">
-              <span style="color:#FDB579;font-size:14px;font-weight:600">🏛️ Créditos</span>
-              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#FDB579;overflow-wrap:anywhere">-${mxn(creditosTotal)}</span>
+              <span style="color:var(--text);font-size:14px;font-weight:600">🏛️ Créditos</span>
+              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--gold);overflow-wrap:anywhere">-${mxn(creditosTotal)}</span>
             </summary>
             ${togglesDetalle('detCred')}
             <div id="detCred_list" class="expense-list" style="padding:0 6px 8px">${creditosM.length?creditosM.map((t,i)=>filaTransaccion(t,i)).join(""):'<div style="padding:8px 10px;font-size:12px;color:var(--dim)">Sin movimientos</div>'}</div>
             <div id="detCred_chart" style="display:none">${graficoPorCategoria(creditosM)}</div>
           </details>`:''}
           ${arriendoTotal>0?`
-          <details style="background:#10B98110;border:1px solid #10B98130;border-radius:12px;overflow:hidden">
+          <details style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;overflow:hidden">
             <summary style="list-style:none;cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0">
-              <span style="color:#6EE7B7;font-size:14px;font-weight:600">🏢 Arriendo oficina recibido</span>
-              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#6EE7B7;overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
+              <span style="color:#15803D;font-size:14px;font-weight:600">🏢 Arriendo oficina recibido</span>
+              <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--green);overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
             </summary>
             ${togglesDetalle('detArr')}
             <div id="detArr_list" class="expense-list" style="padding:0 6px 8px">${arriendoM.length?arriendoM.map((t,i)=>filaTransaccion(t,i)).join(""):'<div style="padding:8px 10px;font-size:12px;color:var(--dim)">Sin movimientos</div>'}</div>
@@ -1013,15 +1013,15 @@ function renderResumen(){
           </details>`:''}
           <!-- Split Gonzalo / Javi -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-            <div style="background:#ffffff10;border-radius:10px;padding:10px 12px;min-width:0">
-              <div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo</div>
-              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#F0EEF8;overflow-wrap:anywhere">${mxn(totalGastosGonzalo)}</div>
-              <div style="font-size:10px;color:#8B70D8;margin-top:2px">${totalGastos>0?(totalGastosGonzalo/totalGastos*100).toFixed(0):'0'}% del total</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0">
+              <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo</div>
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--text);overflow-wrap:anywhere">${mxn(totalGastosGonzalo)}</div>
+              <div style="font-size:10px;color:var(--dim);margin-top:2px">${totalGastos>0?(totalGastosGonzalo/totalGastos*100).toFixed(0):'0'}% del total</div>
             </div>
-            <div style="background:#ffffff10;border-radius:10px;padding:10px 12px;min-width:0">
-              <div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi</div>
-              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#94A3B8;overflow-wrap:anywhere">${mxn(totalGastosJavi)}</div>
-              <div style="font-size:10px;color:#475569;margin-top:2px">${totalGastos>0?(totalGastosJavi/totalGastos*100).toFixed(0):'0'}% del total</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0">
+              <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi</div>
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--text);overflow-wrap:anywhere">${mxn(totalGastosJavi)}</div>
+              <div style="font-size:10px;color:var(--dim);margin-top:2px">${totalGastos>0?(totalGastosJavi/totalGastos*100).toFixed(0):'0'}% del total</div>
             </div>
           </div>
         </div>
