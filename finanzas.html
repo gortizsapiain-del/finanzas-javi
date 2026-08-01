@@ -929,36 +929,42 @@ function renderResumen(){
       <!-- Principal: lo que debo yo -->
       <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px">💰 Lo que debo yo — ${mesLabel}</div>
       <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:clamp(26px,8vw,38px);color:var(--text);margin:6px 0 4px;overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
-      <div style="font-size:12px;color:var(--dim);margin-bottom:16px">
-        💳 TC ${mxn(tcGonzaloParaTotal)}${creditosGonzaloNeto>0?' · 🏛️ Créditos '+mxn(creditosGonzaloNeto):''}${arriendoTotal>0?' · 🏢 −'+mxn(arriendoTotal/2|0):''}
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px">
+        💳 TC ${mxn(tcGonzaloParaTotal)}${creditosGonzaloNeto>0?' · 🏛️ Créditos '+mxn(creditosGonzaloNeto):''}${arriendoTotal>0?' · 🏢 +'+mxn(arriendoGonzalo)+' recibido':''}
+      </div>
+      <!-- Tarjetas split -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo debe</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
+        </div>
+        <div style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:10px 12px;min-width:0">
+          <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(totalGastosJavi)}</div>
+        </div>
       </div>
       <!-- Línea divisora -->
-      <div style="border-top:1px solid var(--border);margin-bottom:12px"></div>
-      <!-- Totales secundarios -->
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="border-top:1px solid var(--border);margin-bottom:10px"></div>
+      <!-- Desglose secundario -->
+      <div style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <span style="font-size:13px;color:var(--muted);font-weight:600">Total entre los dos</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaTotal)}</span>
+          <span style="font-size:12px;color:var(--muted)">Total entre los dos</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--muted);overflow-wrap:anywhere">${mxn(deudaTotal)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <span style="font-size:13px;color:var(--muted);font-weight:600">💳 TC${pagoTCEsteMes?' <span style=\"background:#DCFCE7;border:1px solid #BBF7D0;color:#15803D;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${pagoTCEsteMes?'var(--green)':'var(--text)'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span>
+          <span style="font-size:12px;color:var(--muted)">💳 TC${pagoTCEsteMes?' <span style=\"background:#DCFCE7;border:1px solid #BBF7D0;color:#15803D;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px\">✓ pagada</span>':''}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:${pagoTCEsteMes?'var(--green)':'var(--muted)'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span>
         </div>
         ${creditosTotal>0?`
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <span style="font-size:13px;color:var(--muted);font-weight:600">🏛️ Créditos</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--text);overflow-wrap:anywhere">${mxn(creditosTotal)}</span>
+          <span style="font-size:12px;color:var(--muted)">🏛️ Créditos</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--muted);overflow-wrap:anywhere">${mxn(creditosTotal)}</span>
         </div>`:''}
         ${arriendoTotal>0?`
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <span style="font-size:13px;color:#15803D;font-weight:600">🏢 Arriendo recibido</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--green);overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
+          <span style="font-size:12px;color:#15803D">🏢 Arriendo recibido</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green);overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
         </div>`:''}
-        <!-- Javi secundario -->
-        <div style="border-top:1px solid #FBCFE8;margin-top:4px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <span style="font-size:13px;color:#BE185D;font-weight:600">👱‍♀️ Javi debe</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D;overflow-wrap:anywhere">${mxn(deudaJavi)}</span>
-        </div>
       </div>
     </div>
     <details style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden">
