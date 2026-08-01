@@ -384,9 +384,11 @@ const GONZALO_ESTIMADOS = [
 // ══════════════════════════════════════════
 let db, auth, uid;
 let data = [];
+let dataCompartido = []; // Transacciones de Gonzalo auto-sincronizadas
 let tabActual = "resumen";
 let perfil = "javiera"; // "javiera" | "skinlux"
 let unsubscribeDatos = null;
+let unsubscribeCompartido = null;
 let mes, anio;
 let modalTipo = "gasto";
 let editandoId = null;
@@ -444,13 +446,20 @@ function logout(){if(confirm("¿Cerrar sesión?"))auth.signOut();}
 
 function suscribirDatos(){
   if(unsubscribeDatos) unsubscribeDatos();
+  if(unsubscribeCompartido){unsubscribeCompartido();unsubscribeCompartido=null;dataCompartido=[];}
   unsubscribeDatos = colUsuario()
     .orderBy("fecha","desc")
     .onSnapshot(snap=>{
       data = snap.docs.map(d=>({id:d.id,...d.data()}));
       render();
     });
-  if(perfil==="javiera"){limpiarDatosViejos();limpiarDuplicadosAutoInit();}
+  if(perfil==="javiera"){
+    limpiarDatosViejos();limpiarDuplicadosAutoInit();
+    unsubscribeCompartido=db.collection("compartido_gonzalo").onSnapshot(snap=>{
+      dataCompartido=snap.docs.map(d=>({id:"cg_"+d.id,...d.data(),from_gonzalo:true,_cgId:d.id}));
+      render();
+    },e=>console.warn("compartido_gonzalo:",e.message));
+  }
   if(perfil==="skinlux") limpiarDatosSkinlux();
 }
 
@@ -623,7 +632,7 @@ function getVirtualItems(){
     });
   }).map(function(e,i){return Object.assign({},e,{id:'_v'+i});});
 }
-function allData(){return data.concat(getVirtualItems());}
+function allData(){return data.concat(getVirtualItems()).concat(dataCompartido);}
 
 // ══════════════════════════════════════════
 //  RESUMEN
@@ -640,7 +649,7 @@ function renderResumen(){
   const credTotal=credM.reduce((s,t)=>s+t.monto,0);
   const offset=(anio-2026)*12+(mes-7);
   const gonzaloFijosTotal=perfil==="javiera"?GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0):0;
-  const varMRes=delMes(data.filter(t=>t.cuenta==="gonzalo"));
+  const varMRes=delMes(allData().filter(t=>t.cuenta==="gonzalo"));
   // Para cada estimado: usar real si existe, si no usar referencia
   const gonzaloVarTotal=perfil==="javiera"?(GONZALO_ESTIMADOS.reduce((s,g)=>{
     const real=varMRes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
@@ -1006,8 +1015,8 @@ function renderGonzalo(){
   const offset=(anio-2026)*12+(mes-7);
   const totalFijos=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
 
-  // Gastos variables del mes (cuenta:'gonzalo' en Firebase)
-  const varM=delMes(data.filter(t=>t.cuenta==="gonzalo"));
+  // Gastos variables del mes (cuenta:'gonzalo' en Firebase + sincronizados de Gonzalo)
+  const varM=delMes(allData().filter(t=>t.cuenta==="gonzalo"));
   const totalVar=GONZALO_ESTIMADOS.reduce((s,g)=>{
     const real=varM.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
     return s+(real>0?real:g.ref);
@@ -1054,9 +1063,10 @@ function renderGonzalo(){
     html+='</div>';
     if(tieneReal){
       reales.forEach(function(t){
-        html+='</div><div style="display:flex;align-items:center;gap:10px;padding:6px 16px 6px 66px;background:#F8FFF8;border-left:3px solid '+g.color+';border-radius:0 0 10px 10px;cursor:pointer" onclick="abrirModal(\''+t.id+'\')">';
-        html+='<div style="flex:1;font-size:12px;color:var(--muted)">'+(t.desc||g.desc)+' · '+t.fecha+'</div>';
-        html+='<div style="font-size:12px;font-weight:600;color:#3A8A70">'+mxn(t.monto)+' ✏️</div>';
+        const editable=!t.from_gonzalo;
+        html+='</div><div style="display:flex;align-items:center;gap:10px;padding:6px 16px 6px 66px;background:#F8FFF8;border-left:3px solid '+g.color+';border-radius:0 0 10px 10px;'+(editable?'cursor:pointer':'')+'"'+(editable?' onclick="abrirModal(\''+t.id+'\')"':'')+' title="'+(editable?'Editar':'Sincronizado de Gonzalo')+'">';
+        html+='<div style="flex:1;font-size:12px;color:var(--muted)">'+(t.from_gonzalo?'📤 ':'')+''+(t.desc||g.desc)+' · '+t.fecha+'</div>';
+        html+='<div style="font-size:12px;font-weight:600;color:#3A8A70">'+mxn(t.monto)+(editable?' ✏️':'')+'</div>';
       });
     }
     html+='</div>';
@@ -1065,9 +1075,10 @@ function renderGonzalo(){
   const varSinEst=varM.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat));
   varSinEst.forEach(function(t){
     const c=CATS[t.cat]||{label:t.cat,icon:"📦",color:"#A08898"};
-    html+='<div class="expense-row" onclick="abrirModal(\''+t.id+'\')">';
-    html+='<div class="expense-icon" style="background:'+c.color+'22">'+c.icon+'</div>';
-    html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+'</div></div>';
+    const editable=!t.from_gonzalo;
+    html+='<div class="expense-row"'+(editable?' onclick="abrirModal(\''+t.id+'\')"':'')+' style="'+(t.from_gonzalo?'border-left:2px solid #3B82F680;opacity:.9':'')+'">';
+    html+='<div class="expense-icon" style="background:'+c.color+'22">'+(t.from_gonzalo?'📤':c.icon)+'</div>';
+    html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+(t.from_gonzalo?' · de Gonzalo':'')+'</div></div>';
     html+='<div class="expense-amount">'+mxn(t.monto)+'</div></div>';
   });
   html+='</div>';
