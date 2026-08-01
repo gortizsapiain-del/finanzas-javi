@@ -924,9 +924,12 @@ function renderResumen(){
   const deudaGonzalo=tcGonzaloParaTotal+creditosGonzaloNeto;
   const deudaJavi=tcJaviParaTotal+creditosJaviNeto;
   const mesLabel=MESES[m]+" "+a;
-  const ym=`${a}-${String(m+1).padStart(2,"0")}`;
-  const javiMes=dataCompartido.filter(t=>{const f=(t.fecha||"").slice(0,7);return f===ym;});
-  const javiTotalCompartido=javiMes.reduce((s,t)=>s+(t.monto||0),0);
+  // Total Javi desde compartido_gonzalo (misma fuente que app Javi)
+  const javiMes=dataCompartido.filter(t=>{
+    const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
+    return ref===mesStr;
+  });
+  const javiTotalCompartido=javiMes.length>0?javiMes.reduce((s,t)=>s+(t.monto||0),0):totalGastosJavi;
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
