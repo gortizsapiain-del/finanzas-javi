@@ -24,7 +24,7 @@
   --orange:#EA580C;--orange2:#C2410C;
 }
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:#C8CCEC;border-radius:4px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .header{background:#FFFFFF;border-bottom:1px solid var(--border);box-shadow:0 1px 10px rgba(100,60,200,.07);padding:14px 20px;position:sticky;top:0;z-index:50}
 .header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .header-label{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px}
@@ -149,7 +149,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <body>
 <div class="header">
   <div class="header-inner">
-    <div><div class="header-label">💰 Finanzas</div><div class="header-title" style="display:flex;align-items:center;gap:6px"><span id="headerTitle">Control Financiero</span><span onclick="togglePerfilMenu()" style="cursor:pointer;font-size:14px;opacity:.6">▼</span></div><div id="perfilMenu" style="display:none;position:absolute;top:56px;left:16px;background:#16161E;border:1px solid #2A2A38;border-radius:12px;padding:6px;z-index:200;min-width:160px"><button onclick="cambiarPerfil('gonzalo')" style="display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;color:#E8E6F0;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='#2A2A38'" onmouseout="this.style.background='none'">💰 Gonzalo</button><button onclick="cambiarPerfil('skinlux')" style="display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;color:#E8E6F0;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='#2A2A38'" onmouseout="this.style.background='none'">✨ Skin Lux</button></div></div>
+    <div><div class="header-label">💰 Finanzas</div><div class="header-title" style="display:flex;align-items:center;gap:6px"><span id="headerTitle">Control Financiero</span><span onclick="togglePerfilMenu()" style="cursor:pointer;font-size:14px;opacity:.6">▼</span></div><div id="perfilMenu" style="display:none;position:absolute;top:56px;left:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:200;min-width:160px"><button onclick="cambiarPerfil('gonzalo')" style="display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">💰 Gonzalo</button><button onclick="cambiarPerfil('skinlux')" style="display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✨ Skin Lux</button></div></div>
     <div style="display:flex;align-items:center;gap:10px">
       <div id="userInfo" style="display:none;align-items:center;gap:8px">
         <img id="userAvatar" src="" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);object-fit:cover"/>
@@ -159,7 +159,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
   </div>
 </div>
-<div style="background:#12121A;border-bottom:1px solid var(--border);padding:10px 20px">
+<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px">
   <div style="max-width:720px;margin:0 auto">
     <div class="tabs">
       <button class="tab tab-all active" onclick="setTab('resumen')">📊 Resumen</button>
@@ -196,9 +196,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <div class="overlay" id="loginOverlay" style="display:flex">
   <div class="modal" style="text-align:center;max-width:340px;padding:36px 28px">
     <div style="font-size:48px;margin-bottom:16px">💰</div>
-    <div style="font-weight:700;font-size:20px;color:#F0EEF8;margin-bottom:8px">Control Financiero</div>
+    <div style="font-weight:700;font-size:20px;color:var(--text);margin-bottom:8px">Control Financiero</div>
     <div style="color:var(--muted);font-size:14px;margin-bottom:28px;line-height:1.5">Inicia sesión para sincronizar tus datos entre PC y teléfono</div>
-    <button onclick="loginConGoogle()" id="btnGoogle" style="width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:#F0EEF8;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s" onmouseover="this.style.background='#2A2A3A'" onmouseout="this.style.background='var(--surface2)'">
+    <button onclick="loginConGoogle()" id="btnGoogle" style="width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s" onmouseover="this.style.background='#2A2A3A'" onmouseout="this.style.background='var(--surface2)'">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
       Continuar con Google
     </button>
@@ -248,7 +248,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <label>Monto en UF</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input id="fMontoUF" type="number" placeholder="0.00" min="0" step="0.01" oninput="convertirUFaCLP()" style="flex:1"/>
-        <div style="font-size:12px;color:var(--muted);white-space:nowrap">× <span id="valorUFLabel" style="color:#93C5FD;font-weight:700">…</span></div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap">× <span id="valorUFLabel" style="color:var(--blue);font-weight:700">…</span></div>
       </div>
       <div id="ufPreviewCLP" style="font-size:12px;color:var(--dim);margin-top:4px;text-align:right"></div>
     </div>
@@ -257,7 +257,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
     <!-- Banner Pago TC -->
     <div id="pagoTCBanner" style="display:none" class="pago-tc-banner">
-      <div style="font-size:10px;color:#6EE7B7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">💳 Detalle del pago TC</div>
+      <div style="font-size:10px;color:#15803D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">💳 Detalle del pago TC</div>
       <div id="pagoTCDetalle"></div>
     </div>
     <div class="field" id="fieldCat">
@@ -303,7 +303,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <label>Mes TC a pagar</label>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
         <button type="button" onclick="cambiarAnioMesPagoTC(-1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:5px 12px;font-family:inherit;font-size:14px;cursor:pointer">←</button>
-        <span id="mesPagoTCLabel" style="font-weight:700;color:#F0EEF8;font-size:15px"></span>
+        <span id="mesPagoTCLabel" style="font-weight:700;color:var(--text);font-size:15px"></span>
         <button type="button" onclick="cambiarAnioMesPagoTC(1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:5px 12px;font-family:inherit;font-size:14px;cursor:pointer">→</button>
       </div>
       <div id="mesPagoTCGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
@@ -315,7 +315,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <input id="fMesFac" type="hidden"/>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
         <button type="button" onclick="cambiarAnioMesFac(-1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:5px 12px;font-family:inherit;font-size:14px;cursor:pointer">←</button>
-        <span id="mesFacAnioLabel" style="font-weight:700;color:#F0EEF8;font-size:15px"></span>
+        <span id="mesFacAnioLabel" style="font-weight:700;color:var(--text);font-size:15px"></span>
         <button type="button" onclick="cambiarAnioMesFac(1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:5px 12px;font-family:inherit;font-size:14px;cursor:pointer">→</button>
       </div>
       <div id="mesFacGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
@@ -325,7 +325,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div style="display:flex;gap:8px;align-items:center">
         <button type="button" onclick="ajustarCuotas(-1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;width:36px;height:36px;font-size:18px;cursor:pointer;font-family:inherit">−</button>
         <div style="flex:1;text-align:center">
-          <span id="cuotasNum" style="font-size:22px;font-weight:700;color:#F0EEF8;font-family:'DM Mono',monospace">1</span>
+          <span id="cuotasNum" style="font-size:22px;font-weight:700;color:var(--text);font-family:'DM Mono',monospace">1</span>
           <span style="font-size:13px;color:var(--muted);margin-left:4px">cuota(s)</span>
         </div>
         <button type="button" onclick="ajustarCuotas(1)" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);border-radius:8px;width:36px;height:36px;font-size:18px;cursor:pointer;font-family:inherit">+</button>
@@ -487,35 +487,35 @@ function renderResumenSL(){
   const pendienteRemb=todasReembolsosAdeudo.reduce((s,t)=>s+(t.monto||0),0)-todosReembolsosPago.reduce((s,t)=>s+(t.monto||0),0);
   const hayDatos=todasVentas.length>0||todasCompras.length>0;
   let html=`
-  <div style="background:linear-gradient(135deg,#1D0E38,#2D1060);border:1px solid #3D1880;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
     <div style="min-width:0">
-      <div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo Cuenta Empresa · acumulado</div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo Cuenta Empresa · acumulado</div>
       <div style="font-size:clamp(22px,7vw,32px);font-weight:700;font-family:'DM Mono',monospace;color:${saldoCuenta>=0?"#C4B5FD":"#F87171"};overflow-wrap:anywhere">${mxn(saldoCuenta)}</div>
-      <div style="font-size:12px;color:#9060D0;margin-top:4px">ventas depositadas − compras cta empresa − reembolsos</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">ventas depositadas − compras cta empresa − reembolsos</div>
     </div>
     <div style="font-size:40px;opacity:.4;flex-shrink:0">✨</div>
   </div>
   <div class="summary-grid-2">
-    <div class="summary-card green" style="cursor:pointer" onclick="setTab('ventas')"><div class="s-label" style="color:#6EE7B7">💰 Ventas</div><div class="s-amount" style="color:#6EE7B7">${mxn(ventasBruto)}</div><div class="s-sub" style="color:#3A7060">dep. ${mxn(ventasDep)} · ${todasVentas.length} vtas</div></div>
-    <div class="summary-card orange" style="cursor:pointer" onclick="setTab('compras')"><div class="s-label" style="color:#FDB579">🛒 Compras</div><div class="s-amount" style="color:#FDB579">${mxn(comprasTotal)}</div><div class="s-sub" style="color:#6A3A20">${todasCompras.length} facturas</div></div>
-    <div class="summary-card purple" style="cursor:pointer" onclick="setTab('iva')"><div class="s-label" style="color:#C4B5FD">📊 IVA</div><div class="s-amount" style="color:${posIVA<=0?"#6EE7B7":"#FDB579"}">${mxn(Math.abs(posIVA))}</div><div class="s-sub" style="color:#7060A0">${ultimoMesIVA?MESES_SL[parseInt(ultimoMesIVA.split("-")[1])-1]+" · ":""}${posIVA<=0?"a favor":"a pagar"}</div></div>
+    <div class="summary-card green" style="cursor:pointer" onclick="setTab('ventas')"><div class="s-label" style="color:#6EE7B7">💰 Ventas</div><div class="s-amount" style="color:#6EE7B7">${mxn(ventasBruto)}</div><div class="s-sub" style="color:var(--green2)">dep. ${mxn(ventasDep)} · ${todasVentas.length} vtas</div></div>
+    <div class="summary-card orange" style="cursor:pointer" onclick="setTab('compras')"><div class="s-label" style="color:#FDB579">🛒 Compras</div><div class="s-amount" style="color:#FDB579">${mxn(comprasTotal)}</div><div class="s-sub" style="color:var(--muted)">${todasCompras.length} facturas</div></div>
+    <div class="summary-card purple" style="cursor:pointer" onclick="setTab('iva')"><div class="s-label" style="color:#C4B5FD">📊 IVA</div><div class="s-amount" style="color:${posIVA<=0?"#6EE7B7":"#FDB579"}">${mxn(Math.abs(posIVA))}</div><div class="s-sub" style="color:var(--muted)">${ultimoMesIVA?MESES_SL[parseInt(ultimoMesIVA.split("-")[1])-1]+" · ":""}${posIVA<=0?"a favor":"a pagar"}</div></div>
     <div class="summary-card neutral" style="cursor:pointer" onclick="setTab('reembolsos')"><div class="s-label" style="color:var(--muted)">👥 Reembolso socios</div><div class="s-amount" style="color:#F87171">${mxn(pendienteRemb>0?pendienteRemb:0)}</div><div class="s-sub" style="color:var(--dim)">pendiente</div></div>
   </div>
-  <div style="background:linear-gradient(135deg,#0A1830,#102045);border:1px solid #1A3060;border-radius:14px;padding:14px 16px;cursor:pointer" onclick="setTab('iva')">
-    <div style="font-size:10px;color:#93C5FD;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">📋 F29 · Total a pagar por mes (IVA + PPM)</div>
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer" onclick="setTab('iva')">
+    <div style="font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">📋 F29 · Total a pagar por mes (IVA + PPM)</div>
     <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;align-items:center;margin-bottom:4px">
-      <div style="font-size:10px;color:#4A6090"></div>
-      <div style="font-size:10px;color:#4A6090;text-align:right">IVA</div>
-      <div style="font-size:10px;color:#4A6090;text-align:right">PPM</div>
-      <div style="font-size:10px;color:#93C5FD;text-align:right;font-weight:700">Total F29</div>
+      <div style="font-size:10px;color:var(--dim)"></div>
+      <div style="font-size:10px;color:var(--dim);text-align:right">IVA</div>
+      <div style="font-size:10px;color:var(--dim);text-align:right">PPM</div>
+      <div style="font-size:10px;color:var(--blue);text-align:right;font-weight:700">Total F29</div>
     </div>
     ${f29Meses.map(r=>{
       const [ay,am]=r.m.split("-");
       const label=MESES_SL[parseInt(am)-1]+" "+ay;
-      return`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;align-items:center;padding:7px 0;border-bottom:1px solid #1A3060"><div style="font-size:13px;color:#93C5FD;font-weight:600">${label}</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:${r.aPagar>0?"#FDB579":"#6EE7B7"};text-align:right">${r.aPagar>0?mxn(r.aPagar):"favor"}</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:#93C5FD;text-align:right">${mxn(r.ppm)}</div><div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${r.totalF29>0?"#FDB579":"#6EE7B7"};text-align:right">${mxn(r.totalF29)}</div></div>`;
+      return`<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:4px 12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;color:var(--text);font-weight:600">${label}</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:${r.aPagar>0?"var(--gold)":"var(--green)"};text-align:right">${r.aPagar>0?mxn(r.aPagar):"favor"}</div><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--blue);text-align:right">${mxn(r.ppm)}</div><div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${r.totalF29>0?"var(--gold)":"var(--green)"};text-align:right">${mxn(r.totalF29)}</div></div>`;
     }).join("")}
   </div>
-  ${!hayDatos?`<div style="background:#1A1830;border:1px solid #3A2870;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="abrirImportExcel()"><div style="font-size:28px">📥</div><div><div style="font-weight:700;font-size:14px;color:#C4B5FD">Importar Excel</div><div style="font-size:12px;color:#7060A0">Toca para cargar Control Financiero SkinLux.xlsm</div></div></div>`:`<div style="background:#0A1A10;border:1px solid #1A4028;border-radius:12px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="abrirImportExcel()"><div style="font-size:13px;color:#6EE7B7;font-weight:600">📥 Actualizar desde Excel</div><div style="font-size:11px;color:#2A6040">re-importar</div></div>`}`;
+  ${!hayDatos?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="abrirImportExcel()"><div style="font-size:28px">📥</div><div><div style="font-weight:700;font-size:14px;color:#C4B5FD">Importar Excel</div><div style="font-size:12px;color:var(--muted)">Toca para cargar Control Financiero SkinLux.xlsm</div></div></div>`:`<div style="background:#0A1A10;border:1px solid #BBF7D0;border-radius:12px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="abrirImportExcel()"><div style="font-size:13px;color:#6EE7B7;font-weight:600">📥 Actualizar desde Excel</div><div style="font-size:11px;color:var(--muted)">re-importar</div></div>`}`;
   document.getElementById("viewResumen").innerHTML=html;
 }
 
@@ -524,12 +524,12 @@ function renderVentas(){
   const total=ventas.reduce((s,t)=>s+(t.monto||0),0);
   const dep=ventas.reduce((s,t)=>s+(t.depositado||0),0);
   let html=`<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 2px;margin-bottom:8px">Ventas · SkinLux SpA · acumulado</div>`;
-  html+=`<div style="background:linear-gradient(135deg,#062318,#0A3020);border:1px solid #0D4030;border-radius:16px;padding:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:#6EE7B7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total ventas</div><div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:#6EE7B7">${mxn(total)}</div><div style="font-size:12px;color:#3A7060;margin-top:3px">dep. ${mxn(dep)} · ${ventas.length} ventas</div></div><div style="font-size:36px;opacity:.4">💰</div></div>`;
+  html+=`<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:16px;padding:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:#15803D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total ventas</div><div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:#6EE7B7">${mxn(total)}</div><div style="font-size:12px;color:var(--green2);margin-top:3px">dep. ${mxn(dep)} · ${ventas.length} ventas</div></div><div style="font-size:36px;opacity:.4">💰</div></div>`;
   if(!ventas.length){html+=`<div style="text-align:center;padding:32px 20px;color:var(--dim);font-size:14px">Sin ventas. Importa el Excel.</div>`;document.getElementById("viewVentas").innerHTML=html;return;}
   ventas.forEach(t=>{
     const [ay,am]=((t.mes_facturacion||t.fecha||"").slice(0,7)).split("-");
     const mesLabel=am?MESES_SL[parseInt(am)-1]+" "+ay:"";
-    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div style="font-weight:700;font-size:13px;color:#E8E6F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.cliente||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.desc||""}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${mesLabel}${t.n_documento?" · "+t.n_documento:""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#6EE7B7">${mxn(t.monto||0)}</div><div style="font-size:10px;color:var(--dim)">dep. ${mxn(t.depositado||0)}</div><div style="font-size:10px;color:var(--dim)">IVA ${mxn(t.iva||0)}</div></div></div></div>`;
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div style="font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.cliente||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.desc||""}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${mesLabel}${t.n_documento?" · "+t.n_documento:""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--green)">${mxn(t.monto||0)}</div><div style="font-size:10px;color:var(--dim)">dep. ${mxn(t.depositado||0)}</div><div style="font-size:10px;color:var(--dim)">IVA ${mxn(t.iva||0)}</div></div></div></div>`;
   });
   document.getElementById("viewVentas").innerHTML=html;
 }
@@ -538,12 +538,12 @@ function renderComprasSL(){
   const compras=slData("compras").sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
   const total=compras.reduce((s,t)=>s+(t.monto||0),0);
   let html=`<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 2px;margin-bottom:8px">Compras · SkinLux SpA · acumulado</div>`;
-  html+=`<div style="background:linear-gradient(135deg,#1E0E04,#2A1508);border:1px solid #3A2010;border-radius:16px;padding:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:#FDB579;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total compras</div><div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:#FDB579">${mxn(total)}</div><div style="font-size:12px;color:#6A3A20;margin-top:3px">${compras.length} facturas</div></div><div style="font-size:36px;opacity:.4">🛒</div></div>`;
+  html+=`<div style="background:#FFFBEB;border:1px solid #FED7AA;border-radius:16px;padding:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total compras</div><div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:#FDB579">${mxn(total)}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${compras.length} facturas</div></div><div style="font-size:36px;opacity:.4">🛒</div></div>`;
   if(!compras.length){html+=`<div style="text-align:center;padding:32px 20px;color:var(--dim);font-size:14px">Sin compras. Importa el Excel.</div>`;document.getElementById("viewCompras").innerHTML=html;return;}
   compras.forEach(t=>{
     const [ay,am]=((t.mes_facturacion||t.fecha||"").slice(0,7)).split("-");
     const mesLabel=am?MESES_SL[parseInt(am)-1]+" "+ay:"";
-    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div style="font-weight:700;font-size:13px;color:#E8E6F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.proveedor||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.desc||""}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${mesLabel}${t.n_factura?" · F°"+t.n_factura:""}${t.forma_pago?" · "+t.forma_pago:""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#FDB579">${mxn(t.monto||0)}</div><div style="font-size:10px;color:var(--dim)">IVA ${mxn(t.iva||0)}</div></div></div></div>`;
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;min-width:0"><div style="min-width:0;flex:1"><div style="font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.proveedor||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.desc||""}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${mesLabel}${t.n_factura?" · F°"+t.n_factura:""}${t.forma_pago?" · "+t.forma_pago:""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--gold)">${mxn(t.monto||0)}</div><div style="font-size:10px;color:var(--dim)">IVA ${mxn(t.iva||0)}</div></div></div></div>`;
   });
   document.getElementById("viewCompras").innerHTML=html;
 }
@@ -570,9 +570,9 @@ function renderIVASL(){
     const [ay,am]=m.split("-");
     const label=MESES_SL[parseInt(am)-1]+" "+ay;
     html+=`<div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px">`;
-    html+=`<div style="background:linear-gradient(135deg,#1D0E38,#2D1060);padding:12px 16px;display:flex;justify-content:space-between;align-items:center">`;
+    html+=`<div style="background:var(--surface2);padding:12px 16px;display:flex;justify-content:space-between;align-items:center">`;
     html+=`<div style="font-weight:700;font-size:14px;color:#C4B5FD">📋 ${label}</div>`;
-    html+=`<div style="text-align:right"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#93C5FD">Total F29: ${mxn(totalF29)}</div><div style="font-size:11px;color:#7060A0;margin-top:2px">${aPagar>0?"IVA "+mxn(aPagar)+" + ":"IVA a favor · "}PPM ${mxn(ppm)}</div></div>`;
+    html+=`<div style="text-align:right"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#93C5FD">Total F29: ${mxn(totalF29)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${aPagar>0?"IVA "+mxn(aPagar)+" + ":"IVA a favor · "}PPM ${mxn(ppm)}</div></div>`;
     html+=`</div><div style="padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface)">`;
     html+=`<div style="font-size:12px;color:var(--muted)">Ventas netas</div><div style="font-size:12px;text-align:right;font-weight:600">${mxn(ventasNetas)}</div>`;
     html+=`<div style="font-size:12px;color:var(--muted)">IVA débito (19%)</div><div style="font-size:12px;text-align:right;font-weight:600;color:#6EE7B7">${mxn(debito)}</div>`;
@@ -604,8 +604,8 @@ function renderFlujoSL(){
     const [ay,am]=m.split("-");
     const label=MESES_SL[parseInt(am)-1]+" "+ay;
     html+=`<div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px">`;
-    html+=`<div style="background:linear-gradient(135deg,#0A1830,#102045);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">`;
-    html+=`<div style="font-weight:700;font-size:14px;color:#93C5FD">📈 ${label}</div>`;
+    html+=`<div style="background:var(--surface2);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">`;
+    html+=`<div style="font-weight:700;font-size:14px;color:var(--text)">📈 ${label}</div>`;
     html+=`<div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${flujoNeto>=0?"#6EE7B7":"#F87171"}">${mxn(flujoNeto)}</div></div>`;
     html+=`<div style="padding:10px 16px;display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface)">`;
     html+=`<div style="font-size:12px;color:var(--muted)">Ventas depositadas</div><div style="font-size:12px;text-align:right;color:#6EE7B7;font-weight:600">+${mxn(dep)}</div>`;
@@ -627,15 +627,15 @@ function renderReembolsosSL(){
   let html=`<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 2px;margin-bottom:8px">Reembolsos Socios · SkinLux SpA</div>`;
   html+=`<div class="summary-grid-2" style="margin-bottom:12px">`;
   html+=`<div class="summary-card neutral"><div class="s-label" style="color:var(--muted)">💸 Adeudado</div><div class="s-amount" style="color:#F87171">${mxn(totalAdeudo)}</div><div class="s-sub" style="color:var(--dim)">${adeudo.length} facturas</div></div>`;
-  html+=`<div class="summary-card green"><div class="s-label" style="color:#6EE7B7">✅ Pagado</div><div class="s-amount" style="color:#6EE7B7">${mxn(totalPagado)}</div><div class="s-sub" style="color:#3A7060">${pagos.length} pagos</div></div>`;
+  html+=`<div class="summary-card green"><div class="s-label" style="color:#6EE7B7">✅ Pagado</div><div class="s-amount" style="color:#6EE7B7">${mxn(totalPagado)}</div><div class="s-sub" style="color:var(--green2)">${pagos.length} pagos</div></div>`;
   html+=`</div>`;
-  html+=`<div style="background:${pendiente>0?"linear-gradient(135deg,#1E0A0A,#2A1010)":"linear-gradient(135deg,#062318,#0A3020)"};border:1px solid ${pendiente>0?"#4A1010":"#0D4030"};border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:14px;color:${pendiente>0?"#F87171":"#6EE7B7"}">Saldo pendiente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:${pendiente>0?"#F87171":"#6EE7B7"}">${mxn(pendiente)}</div></div>`;
+  html+=`<div style="background:${pendiente>0?"#FEF2F2":"#F0FDF4"};border:1px solid ${pendiente>0?"#FECACA":"#BBF7D0"};border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:14px;color:${pendiente>0?"var(--red)":"var(--green)"}">Saldo pendiente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:${pendiente>0?"var(--red)":"var(--green)"}">${mxn(pendiente)}</div></div>`;
   if(adeudo.length){
     html+=`<div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Facturas adeudadas</div>`;
     adeudo.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")).forEach(t=>{
       const [ay,am]=((t.mes_facturacion||t.fecha||"").slice(0,7)).split("-");
       const mesLabel=am?MESES_SL[parseInt(am)-1]+" "+ay:"";
-      html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:600;color:#E8E6F0">${t.proveedor||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.socio||""}${t.n_factura?" · F°"+t.n_factura:""}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${mesLabel}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#F87171;flex-shrink:0">${mxn(t.monto||0)}</div></div>`;
+      html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:600;color:#E8E6F0">${t.proveedor||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.socio||""}${t.n_factura?" · F°"+t.n_factura:""}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${mesLabel}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--red);flex-shrink:0">${mxn(t.monto||0)}</div></div>`;
     });
   }
   if(pagos.length){
@@ -643,7 +643,7 @@ function renderReembolsosSL(){
     pagos.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")).forEach(t=>{
       const [ay,am]=((t.mes_facturacion||t.fecha||"").slice(0,7)).split("-");
       const mesLabel=am?MESES_SL[parseInt(am)-1]+" "+ay:"";
-      html+=`<div style="background:var(--surface);border:1px solid #0D4030;border-radius:12px;padding:12px 14px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:600;color:#6EE7B7">${t.socio||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.desc||""}${t.medio?" · "+t.medio:""}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${mesLabel}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#6EE7B7;flex-shrink:0">+${mxn(t.monto||0)}</div></div>`;
+      html+=`<div style="background:var(--surface);border:1px solid #BBF7D0;border-radius:12px;padding:12px 14px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="min-width:0;flex:1"><div style="font-size:13px;font-weight:600;color:#6EE7B7">${t.socio||""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${t.desc||""}${t.medio?" · "+t.medio:""}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">${mesLabel}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#6EE7B7;flex-shrink:0">+${mxn(t.monto||0)}</div></div>`;
     });
   }
   document.getElementById("viewReembolsos").innerHTML=html;
@@ -1066,11 +1066,11 @@ function renderTC(){
       </select>
     </div>
     <div class="grid-3">
-      <div class="summary-card neutral"><div class="s-label" style="color:var(--muted)">Total facturado</div><div class="s-amount" style="color:#F0EEF8">${mxn(totalFacturado)}</div><div class="s-sub" style="color:var(--dim)">${gm.length} movimientos</div></div>
-      <div class="summary-card purple"><div class="s-label" style="color:#A78BFA">Gonzalo</div><div class="s-amount" style="color:#F0EEF8">${mxn(total)}</div><div class="s-sub" style="color:#7060A0">${totalFacturado>0?(total/totalFacturado*100).toFixed(0):'0'}% del total</div></div>
-      <div class="summary-card neutral" style="border-color:#64748B40"><div class="s-label" style="color:#94A3B8">Javi</div><div class="s-amount" style="color:#94A3B8">${mxn(totalJavi)}</div><div class="s-sub" style="color:#475569">${totalFacturado>0?(totalJavi/totalFacturado*100).toFixed(0):'0'}% del total</div></div>
+      <div class="summary-card neutral"><div class="s-label" style="color:var(--muted)">Total facturado</div><div class="s-amount" style="color:var(--text)">${mxn(totalFacturado)}</div><div class="s-sub" style="color:var(--dim)">${gm.length} movimientos</div></div>
+      <div class="summary-card purple"><div class="s-label" style="color:var(--muted)">Gonzalo</div><div class="s-amount" style="color:var(--text)">${mxn(total)}</div><div class="s-sub" style="color:var(--muted)">${totalFacturado>0?(total/totalFacturado*100).toFixed(0):'0'}% del total</div></div>
+      <div class="summary-card neutral" style="border-color:#64748B40"><div class="s-label" style="color:#94A3B8">Javi</div><div class="s-amount" style="color:var(--dim)">${mxn(totalJavi)}</div><div class="s-sub" style="color:#475569">${totalFacturado>0?(totalJavi/totalFacturado*100).toFixed(0):'0'}% del total</div></div>
     </div>
-    ${totalFacturado>0?`<div class="grid-auto" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px"><div><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total facturado</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#F0EEF8">${mxn(totalFacturado)}</div></div><div><div style="font-size:10px;color:#6EE7B7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Pagos realizados</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#6EE7B7">${mxn(totalPagos)}</div></div><div><div style="font-size:10px;color:${saldoPendiente>0?'#F87171':'#6EE7B7'};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Saldo pendiente</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${saldoPendiente>0?'#F87171':'#6EE7B7'}">${mxn(saldoPendiente)}</div></div></div><div style="background:var(--surface2);border-radius:6px;height:6px;overflow:hidden"><div style="height:6px;border-radius:6px;background:linear-gradient(90deg,var(--green),#059669);width:${totalFacturado>0?Math.min(totalPagos/totalFacturado*100,100).toFixed(1):0}%;transition:width .6s ease"></div></div>`:''}
+    ${totalFacturado>0?`<div class="grid-auto" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px"><div><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total facturado</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--text)">${mxn(totalFacturado)}</div></div><div><div style="font-size:10px;color:#15803D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Pagos realizados</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#6EE7B7">${mxn(totalPagos)}</div></div><div><div style="font-size:10px;color:${saldoPendiente>0?'#F87171':'#6EE7B7'};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Saldo pendiente</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${saldoPendiente>0?'#F87171':'#6EE7B7'}">${mxn(saldoPendiente)}</div></div></div><div style="background:var(--surface2);border-radius:6px;height:6px;overflow:hidden"><div style="height:6px;border-radius:6px;background:linear-gradient(90deg,var(--green),#059669);width:${totalFacturado>0?Math.min(totalPagos/totalFacturado*100,100).toFixed(1):0}%;transition:width .6s ease"></div></div>`:''}
     <div style="display:flex;gap:6px;background:var(--surface2);border-radius:12px;padding:4px;border:1px solid var(--border)">
       <button onclick="setVistaTC('categorias')" style="flex:1;padding:7px;border-radius:9px;border:none;background:${vistaTC==='categorias'?'var(--accent)':'transparent'};color:${vistaTC==='categorias'?'#fff':'var(--muted)'};font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s">📊 Por categoría</button>
       <button onclick="setVistaTC('lista')" style="flex:1;padding:7px;border-radius:9px;border:none;background:${vistaTC==='lista'?'var(--accent)':'transparent'};color:${vistaTC==='lista'?'#fff':'var(--muted)'};font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s">📋 Lista</button>
@@ -1084,14 +1084,14 @@ function renderTC(){
       const montoVisible=filtroPersonaTC==='javi'?totalJaviCat:filtroPersonaTC==='gonzalo'?c.total:totalBruto;
       const baseTotal=filtroPersonaTC==='javi'?totalJavi:filtroPersonaTC==='gonzalo'?total:totalFacturado;
       const pct=(baseTotal!==0?Math.abs(montoVisible)/Math.abs(baseTotal)*100:0).toFixed(1);
-      const badgeRegla=c.regla==="gonzalo"?`<span style="background:#8B5CF620;border:1px solid #8B5CF660;color:#C4B5FD;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Gonzalo</span>`:c.regla==="javi"?`<span style="background:#64748B20;border:1px solid #64748B60;color:#94A3B8;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Javi</span>`:c.regla==="50_50"?`<span style="background:#3B82F620;border:1px solid #3B82F660;color:#93C5FD;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">50% · 50%</span>`:`<span style="background:#10B98120;border:1px solid #10B98160;color:#6EE7B7;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">60% G · 40% J</span>`;
-      const badgePago=c.id==="pago"?`<span style="background:#10B98120;border:1px solid #10B98160;color:#6EE7B7;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">↓ Resta de Gonzalo</span>`:'';
+      const badgeRegla=c.regla==="gonzalo"?`<span style="background:#8B5CF620;border:1px solid #8B5CF660;color:var(--text);font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Gonzalo</span>`:c.regla==="javi"?`<span style="background:#F1F5F9;border:1px solid #CBD5E1;color:#475569;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Javi</span>`:c.regla==="50_50"?`<span style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">50% · 50%</span>`:`<span style="background:#10B98120;border:1px solid #10B98160;color:#15803D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">60% G · 40% J</span>`;
+      const badgePago=c.id==="pago"?`<span style="background:#10B98120;border:1px solid #10B98160;color:#15803D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">↓ Resta de Gonzalo</span>`:'';
       const montoColor=(c.id==="pago"&&filtroPersonaTC!=='javi')?'#6EE7B7':'#F0EEF8';
       return`<div style="background:var(--surface);border:1px solid ${abierta?c.color+'60':'var(--border)'};border-radius:14px;overflow:hidden;transition:border-color .2s">
         <div onclick="toggleCat('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer">
           <div style="width:36px;height:36px;border-radius:9px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.icon}</div>
           <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px"><span style="font-weight:700;font-size:14px;color:#F0EEF8">${c.label}</span>${badgeRegla}${badgePago}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px"><span style="font-weight:700;font-size:14px;color:var(--text)">${c.label}</span>${badgeRegla}${badgePago}</div>
             <div style="background:var(--surface2);border-radius:3px;height:4px;width:100%;margin-top:4px"><div style="height:4px;border-radius:3px;width:${Math.min(parseFloat(pct),100)}%;background:${c.id==='pago'?'#10B981':c.color};box-shadow:0 0 6px ${c.id==='pago'?'#10B98160':c.color+'60'}"></div></div>
           </div>
           <div style="text-align:right;flex-shrink:1;margin-left:8px;min-width:0"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${montoColor};overflow-wrap:anywhere">${mxn(montoVisible)}</div><div style="font-size:11px;color:${c.id==='pago'?'#10B981':c.color};font-weight:600">${pct}% · ${c.items.length} mov.</div></div>
@@ -1100,7 +1100,7 @@ function renderTC(){
         ${abierta?`<div style="border-top:1px solid var(--border2);background:var(--surface2)">
           <div class="grid-auto" style="padding:10px 14px 8px;border-bottom:1px solid var(--border)">
             <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid ${c.id==='pago'?'#10B98130':'#8B5CF630'}"><div style="font-size:10px;color:${c.id==='pago'?'#6EE7B7':'#C4B5FD'};font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${c.id==='pago'?'#6EE7B7':'#F0EEF8'}">${mxn(c.total)}</div></div>
-            ${totalJaviCat>0?`<div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #64748B30"><div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#F0EEF8">${mxn(totalJaviCat)}</div></div>`:''}
+            ${totalJaviCat>0?`<div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #64748B30"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--text)">${mxn(totalJaviCat)}</div></div>`:''}
             ${totalBruto>c.rawTotal?`<div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid var(--border2)"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Total bruto</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--muted)">${mxn(totalBruto)}</div></div>`:''}
           </div>
           <div style="padding:10px 12px;display:flex;flex-direction:column;gap:5px">
@@ -1110,9 +1110,9 @@ function renderTC(){
               const tcRow=TARJETAS[t.tarjeta];
               const tcRowBadge=tcRow?`<span style="background:${tcRow.color}22;border:1px solid ${tcRow.color}60;color:${tcRow.color};font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px">${tcRow.icon} ${tcRow.label}</span>`:'';
               return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--surface);border:1px solid var(--border)">
-                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#E8E6F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.desc)}</div>
-                <div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span>${fecha}</span>${tcRowBadge}${tieneJavi?`<span style="color:#C4B5FD">G: ${mxn(t.monto)}</span><span style="color:#94A3B8">J: ${mxn(t.monto_javi)}</span><span style="color:var(--dim)">Total: ${mxn(t.monto_total||t.monto+t.monto_javi)}</span>`:''}</div></div>
-                <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#F0EEF8;flex-shrink:0">${mxn(t.monto)}</div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.desc)}</div>
+                <div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span>${fecha}</span>${tcRowBadge}${tieneJavi?`<span style="color:var(--muted)">G: ${mxn(t.monto)}</span><span style="color:var(--dim)">J: ${mxn(t.monto_javi)}</span><span style="color:var(--dim)">Total: ${mxn(t.monto_total||t.monto+t.monto_javi)}</span>`:''}</div></div>
+                <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--text);flex-shrink:0">${mxn(t.monto)}</div>
                 <button class="btn-icon" onclick="event.stopPropagation();abrirModal('${t.id}')" title="Editar">✏️</button>
                 <button class="btn-icon" onclick="event.stopPropagation();eliminar('${t.id}')" title="Eliminar">🗑️</button>
               </div>`;
@@ -1182,10 +1182,10 @@ function renderDeudaTC(){
     inner=`
       <div style="padding:14px 16px;border-top:1px solid var(--border2)">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${chipsHtml}</div>
-        <div style="background:${deuda>0?"linear-gradient(135deg,#200A0C,#2A0F12)":"linear-gradient(135deg,#062318,#0A3020)"};border:1px solid ${deuda>0?"#4A1020":"#0D4030"};border-radius:14px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        <div style="background:${deuda>0?"#FEF2F2":"#F0FDF4"};border:1px solid ${deuda>0?"#FECACA":"#BBF7D0"};border-radius:14px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div style="font-size:10px;color:${deuda>0?"#F87171":"#6EE7B7"};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Deuda pendiente total</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:24px;color:${deuda>0?"#F87171":"#6EE7B7"}">${mxn(deuda)}</div>
+            <div style="font-size:10px;color:${deuda>0?"var(--red)":"var(--green)"};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Deuda pendiente total</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:24px;color:${deuda>0?"var(--red)":"var(--green)"}">${mxn(deuda)}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Corte: día 23</div>
@@ -1194,24 +1194,24 @@ function renderDeudaTC(){
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
           <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px">
-            <div style="font-size:10px;color:#FBBF24;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">⏳ Sin facturar aún</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#FBBF24">${mxn(pendienteSinFacturar)}</div>
+            <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">⏳ Sin facturar aún</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--gold)">${mxn(pendienteSinFacturar)}</div>
             <div style="font-size:10px;color:var(--dim);margin-top:2px">Gastos período actual</div>
           </div>
           <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px">
-            <div style="font-size:10px;color:#60A5FA;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">📅 Cuotas futuras</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#60A5FA">${mxn(cuotasFuturas)}</div>
+            <div style="font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">📅 Cuotas futuras</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--blue)">${mxn(cuotasFuturas)}</div>
             <div style="font-size:10px;color:var(--dim);margin-top:2px">Próximas facturas</div>
           </div>
         </div>
         ${totalJavi>0?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div style="background:var(--surface2);border:1px solid #8B5CF630;border-radius:10px;padding:10px 12px">
-            <div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#F0EEF8">${mxn(Math.max(0,totalGonzalo))}</div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--text)">${mxn(Math.max(0,totalGonzalo))}</div>
           </div>
           <div style="background:var(--surface2);border:1px solid #64748B30;border-radius:10px;padding:10px 12px">
-            <div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#F0EEF8">${mxn(Math.max(0,totalJavi))}</div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--text)">${mxn(Math.max(0,totalJavi))}</div>
           </div>
         </div>`:""}
       </div>`;
@@ -1220,7 +1220,7 @@ function renderDeudaTC(){
     <div onclick="toggleDeudaTC()" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:34px;height:34px;border-radius:9px;background:#F43F5E18;display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>
-        <span style="font-weight:700;font-size:15px;color:#F0EEF8">Deuda total TC</span>
+        <span style="font-weight:700;font-size:15px;color:var(--text)">Deuda total TC</span>
       </div>
       <span style="color:var(--dim);font-size:12px">${chevron}</span>
     </div>
@@ -1242,17 +1242,17 @@ function renderCC(){
   const porCat=Object.keys(CATS).map(id=>({id,...CATS[id],total:gm.filter(t=>t.cat===id&&t.tipo==="gasto").reduce((s,t)=>s+t.monto,0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
   const filtrados=(filtroCC==="todas"?gm:filtroCC==="ingresos"?gm.filter(t=>t.tipo==="ingreso"):filtroCC==="gastos"?gm.filter(t=>t.tipo==="gasto"):gm.filter(t=>t.cat===filtroCC&&t.tipo==="gasto")).sort((a,b)=>b.fecha.localeCompare(a.fecha));
   let html=`
-    <div style="background:${saldoAcumulado>=0?'linear-gradient(135deg,#062318,#0A3020)':'linear-gradient(135deg,#200A0C,#2A0F12)'};border:1px solid ${saldoAcumulado>=0?'#0D4030':'#4A1020'};border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div style="min-width:0"><div style="font-size:10px;color:${saldoAcumulado>=0?'#6EE7B7':'#F87171'};font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo actual</div><div style="font-size:clamp(20px,6.5vw,28px);font-weight:700;font-family:'DM Mono',monospace;color:${saldoAcumulado>=0?'#6EE7B7':'#F87171'};overflow-wrap:anywhere">${mxn(saldoAcumulado)}</div><div style="font-size:11px;color:${saldoAcumulado>=0?'#34794A':'#7A3040'};margin-top:3px">Acumulado hasta ${MESES[mes]} ${anio}</div></div>
+    <div style="background:${saldoAcumulado>=0?'#F0FDF4':'#FEF2F2'};border:1px solid ${saldoAcumulado>=0?'#BBF7D0':'#FECACA'};border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="min-width:0"><div style="font-size:10px;color:${saldoAcumulado>=0?'var(--green)':'var(--red)'};font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo actual</div><div style="font-size:clamp(20px,6.5vw,28px);font-weight:700;font-family:'DM Mono',monospace;color:${saldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(saldoAcumulado)}</div><div style="font-size:11px;color:${saldoAcumulado>=0?'#34794A':'#7A3040'};margin-top:3px">Acumulado hasta ${MESES[mes]} ${anio}</div></div>
       <div style="font-size:36px;opacity:.4;flex-shrink:0">${saldoAcumulado>=0?'🏦':'⚠️'}</div>
     </div>
     <div class="grid-auto">
-      <div style="background:linear-gradient(135deg,#062318,#0A3020);border:1px solid #0D4030;border-radius:12px;padding:14px"><div style="font-size:10px;color:#6EE7B7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Ingresos</div><div class="mono" style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#6EE7B7">${mxn(ingresos)}</div></div>
-      <div style="background:linear-gradient(135deg,#200A0C,#2A0F12);border:1px solid #4A1020;border-radius:12px;padding:14px"><div style="font-size:10px;color:#F87171;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Gastos</div><div class="mono" style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#F87171">${mxn(gastos)}</div></div>
-      <div style="background:${balance>=0?'linear-gradient(135deg,#062318,#0A3020)':'linear-gradient(135deg,#200A0C,#2A0F12)'};border:1px solid ${balance>=0?'#0D4030':'#4A1020'};border-radius:12px;padding:14px"><div style="font-size:10px;color:${balance>=0?'#6EE7B7':'#F87171'};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Mes</div><div class="mono" style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:${balance>=0?'#6EE7B7':'#F87171'}">${mxn(balance)}</div></div>
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px"><div style="font-size:10px;color:#15803D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Ingresos</div><div class="mono" style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#6EE7B7">${mxn(ingresos)}</div></div>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px"><div style="font-size:10px;color:var(--red);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Gastos</div><div class="mono" style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#F87171">${mxn(gastos)}</div></div>
+      <div style="background:${balance>=0?'#F0FDF4':'#FEF2F2'};border:1px solid ${balance>=0?'#BBF7D0':'#FECACA'};border-radius:12px;padding:14px"><div style="font-size:10px;color:${balance>=0?'var(--green)':'var(--red)'};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Mes</div><div class="mono" style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:${balance>=0?'var(--green)':'var(--red)'}">${mxn(balance)}</div></div>
     </div>`;
   if(porCat.length&&gastos>0){
-    html+=`<div class="card"><div class="section-label" style="margin-bottom:14px">Gastos por categoría</div>${porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span>${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:#C0B8D8">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${(c.total/gastos*100).toFixed(1)}%;background:${c.color};box-shadow:0 0 8px ${c.color}60"></div></div></div>`).join("")}</div>`;
+    html+=`<div class="card"><div class="section-label" style="margin-bottom:14px">Gastos por categoría</div>${porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span>${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--muted)">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${(c.total/gastos*100).toFixed(1)}%;background:${c.color};box-shadow:0 0 8px ${c.color}60"></div></div></div>`).join("")}</div>`;
   }
   html+=`<div class="filter-bar"><select class="filter-select ${filtroCC!=='todas'?'on':''}" onchange="setFiltroCC(this.value)"><option value="todas" ${filtroCC==="todas"?"selected":""}>🗂 Ver: Todos</option><option value="ingresos" ${filtroCC==="ingresos"?"selected":""}>✅ Ingresos</option><option value="gastos" ${filtroCC==="gastos"?"selected":""}>🔴 Gastos</option>${porCat.map(c=>`<option value="${c.id}" ${filtroCC===c.id?"selected":""}>${c.icon} ${c.label}</option>`).join("")}</select></div>`;
   html+=`<div class="expense-list">${filtrados.length?filtrados.map((t,i)=>filaTransaccion(t,i)).join(""):emptyState("🏦","Sin movimientos este mes","Agrega ingresos o gastos con el botón de arriba")}</div>`;
@@ -1284,8 +1284,8 @@ function renderAhorros(){
     ${cuentasHtml}
     ${chipsHtml}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div style="background:linear-gradient(135deg,#062318,#0A3020);border:1px solid #0D4030;border-radius:12px;padding:14px;min-width:0"><div style="font-size:10px;color:#6EE7B7;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Depósitos del mes</div><div style="font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:#6EE7B7;overflow-wrap:anywhere">+${mxn(depositos)}</div></div>
-      <div style="background:linear-gradient(135deg,#200A0C,#2A0F12);border:1px solid #4A1020;border-radius:12px;padding:14px;min-width:0"><div style="font-size:10px;color:#F87171;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Retiros del mes</div><div style="font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:#F87171;overflow-wrap:anywhere">-${mxn(retiros)}</div></div>
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px;min-width:0"><div style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Depósitos del mes</div><div style="font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green);overflow-wrap:anywhere">+${mxn(depositos)}</div></div>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px;min-width:0"><div style="font-size:10px;color:var(--red);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Retiros del mes</div><div style="font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red);overflow-wrap:anywhere">-${mxn(retiros)}</div></div>
     </div>`;
   html+=`<div class="expense-list">${filtrados.length?filtrados.map((t,i)=>filaTransaccion(t,i)).join(""):emptyState("💎","Sin movimientos este mes","Registra depósitos o retiros de tus ahorros")}</div>`;
   document.getElementById("viewAhorros").innerHTML=html;
@@ -1311,7 +1311,7 @@ function filaTransaccion(t,i){
     <div style="flex:1;min-width:0">
       <div class="expense-desc">${esc(t.desc)}${badge}</div>
       <div class="expense-meta">${metaLabel}${extraMeta}</div>
-      ${t.cat==="pago_tc"&&t.monto_javi?`<div style="font-size:11px;color:var(--dim);margin-top:2px"><span style="color:#C4B5FD">G: ${mxn(t.monto)}</span> <span style="color:#94A3B8">J: ${mxn(t.monto_javi)}</span></div>`:''}
+      ${t.cat==="pago_tc"&&t.monto_javi?`<div style="font-size:11px;color:var(--dim);margin-top:2px"><span style="color:var(--muted)">G: ${mxn(t.monto)}</span> <span style="color:var(--dim)">J: ${mxn(t.monto_javi)}</span></div>`:''}
     </div>
     <div class="expense-amount ${amountClass}">${signo}${mxn(montoMostrar)}</div>
     <div style="display:flex;gap:2px;flex-shrink:0">
@@ -1328,7 +1328,7 @@ function filaTransaccionTC(t,i){
   const tcBadge=tc?`<span style="background:${tc.color}22;border:1px solid ${tc.color}60;color:${tc.color};font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:5px">${tc.icon} ${tc.label}</span>`:'';
   return`<div class="expense-row" style="animation-delay:${i*35}ms">
     <div class="expense-icon" style="background:${c.color}22">${c.icon}</div>
-    <div style="flex:1;min-width:0"><div class="expense-desc">${esc(t.desc)}${tcBadge}</div><div class="expense-meta">${c.label} · ${fecha}${tieneJavi?` · <span style="color:#C4B5FD">G:${mxn(t.monto)}</span> <span style="color:#94A3B8">J:${mxn(t.monto_javi)}</span>`:''}</div></div>
+    <div style="flex:1;min-width:0"><div class="expense-desc">${esc(t.desc)}${tcBadge}</div><div class="expense-meta">${c.label} · ${fecha}${tieneJavi?` · <span style="color:var(--muted)">G:${mxn(t.monto)}</span> <span style="color:var(--dim)">J:${mxn(t.monto_javi)}</span>`:''}</div></div>
     <div class="expense-amount amount-gasto">-${mxn(montoTotal)}</div>
     <div style="display:flex;gap:2px;flex-shrink:0"><button class="btn-icon" onclick="abrirModal('${t.id}')" title="Editar">✏️</button><button class="btn-icon" onclick="eliminar('${t.id}')" title="Eliminar">🗑️</button></div>
   </div>`;
@@ -1344,16 +1344,16 @@ function graficoPorCategoria(items){
   return`<div style="display:flex;flex-direction:column;gap:10px;padding:6px 10px 10px">${arr.map(c=>`
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px">
-        <span style="font-size:12px;color:#E8E6F0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.icon} ${esc(c.label)}</span>
-        <span style="font-family:'DM Mono',monospace;font-size:12px;color:#E8E6F0;font-weight:700">${mxn(c.total)}</span>
+        <span style="font-size:12px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.icon} ${esc(c.label)}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text);font-weight:700">${mxn(c.total)}</span>
       </div>
-      <div style="background:#ffffff10;border-radius:4px;height:6px;width:100%"><div style="height:6px;border-radius:4px;width:${Math.max(4,(c.total/max*100)).toFixed(0)}%;background:${c.color};box-shadow:0 0 6px ${c.color}80"></div></div>
+      <div style="background:var(--surface2);border-radius:4px;height:6px;width:100%"><div style="height:6px;border-radius:4px;width:${Math.max(4,(c.total/max*100)).toFixed(0)}%;background:${c.color};box-shadow:0 0 6px ${c.color}80"></div></div>
     </div>`).join('')}</div>`;
 }
 function togglesDetalle(id){
   return`<div style="display:flex;gap:6px;padding:0 10px 8px">
-    <button id="${id}_btnLista" onclick="toggleVistaDetalle('${id}','lista')" style="flex:1;padding:6px;border-radius:8px;border:1px solid #ffffff20;background:#ffffff10;color:#E8E6F0;font-size:11px;font-weight:700;cursor:pointer;opacity:1">📋 Listado</button>
-    <button id="${id}_btnGrafico" onclick="toggleVistaDetalle('${id}','grafico')" style="flex:1;padding:6px;border-radius:8px;border:1px solid #ffffff20;background:#ffffff08;color:#E8E6F0;font-size:11px;font-weight:700;cursor:pointer;opacity:.5">📊 Gráfico</button>
+    <button id="${id}_btnLista" onclick="toggleVistaDetalle('${id}','lista')" style="flex:1;padding:6px;border-radius:8px;border:1px solid #ffffff20;background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;opacity:1">📋 Listado</button>
+    <button id="${id}_btnGrafico" onclick="toggleVistaDetalle('${id}','grafico')" style="flex:1;padding:6px;border-radius:8px;border:1px solid #ffffff20;background:var(--surface2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;opacity:.5">📊 Gráfico</button>
   </div>`;
 }
 function toggleVistaDetalle(id,vista){
@@ -1390,11 +1390,11 @@ function calcularTotalTCMes(){
   document.getElementById("fMonto").value=totalGeneral.toLocaleString('es-CL');
   document.getElementById("pagoTCDetalle").innerHTML=`
     <div class="grid-auto" style="margin-top:4px">
-      <div style="background:#ffffff08;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#6EE7B7;font-weight:700;text-transform:uppercase;margin-bottom:3px">Total TC</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#6EE7B7">${mxn(totalGeneral)}</div></div>
-      <div style="background:#ffffff08;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#C4B5FD;font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#C4B5FD">${mxn(totalGonzalo)}</div></div>
-      <div style="background:#ffffff08;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#94A3B8;font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#94A3B8">${mxn(totalJavi)}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#15803D;font-weight:700;text-transform:uppercase;margin-bottom:3px">Total TC</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--green)">${mxn(totalGeneral)}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--text)">${mxn(totalGonzalo)}</div></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--dim)">${mxn(totalJavi)}</div></div>
     </div>
-    <div style="margin-top:8px;font-size:12px;color:#6EE7B7;opacity:.7">Mes TC: ${MESES[mesPagoTCMes]} ${mesPagoTCAnio} · Descuenta ${mxn(totalGeneral)} de CC</div>`;
+    <div style="margin-top:8px;font-size:12px;color:var(--green);opacity:.9">Mes TC: ${MESES[mesPagoTCMes]} ${mesPagoTCAnio} · Descuenta ${mxn(totalGeneral)} de CC</div>`;
   document.getElementById("pagoTCBanner").style.display="";
   mostrarToast(`✅ TC ${MESES_CORTOS[mesPagoTCMes]} ${mesPagoTCAnio}: ${mxn(totalGeneral)}`);
 }
@@ -1803,8 +1803,8 @@ function mostrarDialogoCuotas(callback){
   const overlay=document.createElement("div");
   overlay.style.cssText="position:fixed;inset:0;background:#000000a0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
   overlay.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:20px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:10px;font-family:inherit">
-    <div style="font-size:15px;font-weight:700;color:#F0EEF8;margin-bottom:2px">¿Qué quieres eliminar?</div>
-    <button id="optSola" style="padding:12px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:#F0EEF8;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:left">Solo esta cuota</button>
+    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px">¿Qué quieres eliminar?</div>
+    <button id="optSola" style="padding:12px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:left">Solo esta cuota</button>
     <button id="optFuturas" style="padding:12px 14px;border-radius:10px;border:1px solid #F43F5E40;background:#F43F5E18;color:#F87171;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;text-align:left">Esta y todas las futuras</button>
     <button id="optCancelar" style="padding:10px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;margin-top:2px">Cancelar</button>
   </div>`;
@@ -1906,16 +1906,16 @@ function renderCreditos(){
   const hastaElMes=todos.filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return t.cat!=="arriendo_oficina"&&((d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes));});
   const acumuladoTotal=hastaElMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   let html=`
-    <div style="background:linear-gradient(135deg,#1E0E04,#2A1508);border:1px solid #4A2010;border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div style="min-width:0"><div style="font-size:10px;color:#FDB579;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Pagado acumulado hasta ${MESES[mes]} ${anio}</div><div style="font-size:clamp(20px,6.5vw,28px);font-weight:700;font-family:'DM Mono',monospace;color:#FDB579;overflow-wrap:anywhere">${mxn(acumuladoTotal)}</div></div>
+    <div style="background:#FFFBEB;border:1px solid #FED7AA;border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="min-width:0"><div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Pagado acumulado hasta ${MESES[mes]} ${anio}</div><div style="font-size:clamp(20px,6.5vw,28px);font-weight:700;font-family:'DM Mono',monospace;color:var(--gold);overflow-wrap:anywhere">${mxn(acumuladoTotal)}</div></div>
       <div style="font-size:36px;opacity:.4;flex-shrink:0">🏛️</div>
     </div>
     <div class="grid-auto">
-      <div style="background:linear-gradient(135deg,#1E0E04,#2A1508);border:1px solid #3A2010;border-radius:12px;padding:14px"><div style="font-size:10px;color:#FDB579;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total créditos</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:#FDB579">${mxn(totalMes)}</div><div style="font-size:10px;color:#7A3A10;margin-top:3px">sin arriendo</div></div>
-      <div style="background:linear-gradient(135deg,#1D0E38,#2D1060);border:1px solid #3D1880;border-radius:12px;padding:14px"><div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Gonzalo neto</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:#C4B5FD">${mxn(costoNetoGonzalo)}</div><div style="font-size:10px;color:#7060A0;margin-top:3px">créditos - arriendo</div></div>
-      <div style="background:var(--surface);border:1px solid #64748B30;border-radius:12px;padding:14px"><div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Javi neto</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:#94A3B8">${mxn(costoNetoJavi)}</div><div style="font-size:10px;color:#475569;margin-top:3px">créditos - arriendo</div></div>
+      <div style="background:#FFFBEB;border:1px solid #FED7AA;border-radius:12px;padding:14px"><div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Total créditos</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:var(--gold)">${mxn(totalMes)}</div><div style="font-size:10px;color:var(--gold);margin-top:3px">sin arriendo</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Gonzalo neto</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text)">${mxn(costoNetoGonzalo)}</div><div style="font-size:10px;color:var(--muted);margin-top:3px">créditos - arriendo</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Javi neto</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text)">${mxn(costoNetoJavi)}</div><div style="font-size:10px;color:var(--dim);margin-top:3px">créditos - arriendo</div></div>
     </div>
-    ${categorias.length||totalArriendo>0?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase">Costo neto del mes</div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">${categorias.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span style="font-size:13px;color:var(--muted)">${c.cat.icon} ${c.cat.label}</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:#F87171;overflow-wrap:anywhere">${mxn(c.total)}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span style="font-size:13px;color:var(--muted)">🏢 Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:#6EE7B7;overflow-wrap:anywhere">+${mxn(totalArriendo)}</span></div><div style="border-top:1px solid var(--border2);padding-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span style="font-size:13px;font-weight:700;color:#F0EEF8">Costo neto</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${costoNetoGeneral<=0?'#6EE7B7':'#F87171'};overflow-wrap:anywhere">${costoNetoGeneral<=0?'+':''}${mxn(Math.abs(costoNetoGeneral))}</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px"><div style="background:var(--surface2);border-radius:9px;padding:8px 10px;border:1px solid #8B5CF630;text-align:center;min-width:0"><div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo neto</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${costoNetoGonzalo<=0?'#6EE7B7':'#F87171'};overflow-wrap:anywhere">${costoNetoGonzalo<=0?'+':''}${mxn(Math.abs(costoNetoGonzalo))}</div></div><div style="background:var(--surface2);border-radius:9px;padding:8px 10px;border:1px solid #64748B30;text-align:center;min-width:0"><div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi neto</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${costoNetoJavi<=0?'#6EE7B7':'#F87171'};overflow-wrap:anywhere">${costoNetoJavi<=0?'+':''}${mxn(Math.abs(costoNetoJavi))}</div></div></div></div></div>`:''}`;
+    ${categorias.length||totalArriendo>0?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase">Costo neto del mes</div><div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">${categorias.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span style="font-size:13px;color:var(--muted)">${c.cat.icon} ${c.cat.label}</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--red);overflow-wrap:anywhere">${mxn(c.total)}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span style="font-size:13px;color:var(--muted)">🏢 Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--green);overflow-wrap:anywhere">+${mxn(totalArriendo)}</span></div><div style="border-top:1px solid var(--border2);padding-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0"><span style="font-size:13px;font-weight:700;color:var(--text)">Costo neto</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${costoNetoGeneral<=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${costoNetoGeneral<=0?'+':''}${mxn(Math.abs(costoNetoGeneral))}</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px"><div style="background:var(--surface2);border-radius:9px;padding:8px 10px;border:1px solid #8B5CF630;text-align:center;min-width:0"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo neto</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${costoNetoGonzalo<=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${costoNetoGonzalo<=0?'+':''}${mxn(Math.abs(costoNetoGonzalo))}</div></div><div style="background:var(--surface2);border-radius:9px;padding:8px 10px;border:1px solid var(--border);text-align:center;min-width:0"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi neto</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${costoNetoJavi<=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${costoNetoJavi<=0?'+':''}${mxn(Math.abs(costoNetoJavi))}</div></div></div></div></div>`:''}`;
   // Filter dropdown para créditos
   const todasLasCats=[...categorias,{id:"arriendo_oficina",items:arriendo,total:totalArriendo,cat:CATS["arriendo_oficina"],esIngreso:true}].filter(x=>x.items.length>0||x.total>0);
   html+=`<div class="filter-bar"><select class="filter-select ${filtroCredito!=='todas'?'on':''}" onchange="setFiltroCredito(this.value)"><option value="todas" ${filtroCredito==="todas"?"selected":""}>🏛️ Ver: Todos los créditos</option>${todasLasCats.map(x=>`<option value="${x.id}" ${filtroCredito===x.id?"selected":""}>${x.cat.icon} ${x.cat.label}</option>`).join("")}</select></div>`;
@@ -1924,28 +1924,28 @@ function renderCreditos(){
     const abierta=catExpandidaCredito===id||filtroCredito===id;
     const gonzaloTotal=items.reduce((s,t)=>s+t.monto,0);const javiTotal=items.reduce((s,t)=>s+(t.monto_javi||0),0);
     const pct=acumuladoTotal>0?(catTotal/acumuladoTotal*100).toFixed(1):"0.0";
-    const badgeRegla=c.regla==="gonzalo"?`<span style="background:#8B5CF620;border:1px solid #8B5CF660;color:#C4B5FD;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Gonzalo</span>`:`<span style="background:#3B82F620;border:1px solid #3B82F660;color:#93C5FD;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">50% · 50%</span>`;
-    const badgeIngreso=esIngreso?`<span style="background:#10B98120;border:1px solid #10B98160;color:#6EE7B7;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">↑ Ingreso</span>`:'';
+    const badgeRegla=c.regla==="gonzalo"?`<span style="background:#8B5CF620;border:1px solid #8B5CF660;color:var(--text);font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Gonzalo</span>`:`<span style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">50% · 50%</span>`;
+    const badgeIngreso=esIngreso?`<span style="background:#10B98120;border:1px solid #10B98160;color:#15803D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">↑ Ingreso</span>`:'';
     const montoColor=esIngreso?'#6EE7B7':'#F0EEF8';const montoSigno=esIngreso?'+':'';
     html+=`<div style="background:var(--surface);border:1px solid ${abierta?c.color+'60':'var(--border)'};border-radius:14px;overflow:hidden;transition:border-color .2s">
       <div onclick="toggleCatCredito('${id}')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer">
         <div style="width:36px;height:36px;border-radius:9px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.icon}</div>
-        <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px"><span style="font-weight:700;font-size:14px;color:#F0EEF8">${c.label}</span>${badgeRegla}${badgeIngreso}</div><div style="background:var(--surface2);border-radius:3px;height:4px;width:100%;margin-top:4px"><div style="height:4px;border-radius:3px;width:${Math.min(parseFloat(pct),100)}%;background:${c.color};box-shadow:0 0 6px ${c.color}60"></div></div></div>
+        <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px"><span style="font-weight:700;font-size:14px;color:var(--text)">${c.label}</span>${badgeRegla}${badgeIngreso}</div><div style="background:var(--surface2);border-radius:3px;height:4px;width:100%;margin-top:4px"><div style="height:4px;border-radius:3px;width:${Math.min(parseFloat(pct),100)}%;background:${c.color};box-shadow:0 0 6px ${c.color}60"></div></div></div>
         <div style="text-align:right;flex-shrink:1;margin-left:8px;min-width:0"><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:${montoColor};overflow-wrap:anywhere">${montoSigno}${mxn(catTotal)}</div><div style="font-size:11px;color:${c.color};font-weight:600">${items.length} mov. este mes</div></div>
         ${!esIngreso?`<button onclick="pagoAutomatico('${id}',event)" title="Registrar pago automático este mes" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap;transition:all .2s">⚡ Auto</button>`:''}
         <div style="color:var(--dim);font-size:12px;margin-left:4px">${abierta?'▲':'▼'}</div>
       </div>
       ${abierta?`<div style="border-top:1px solid var(--border2);background:var(--surface2)">
         <div class="grid-auto" style="padding:10px 14px 8px;border-bottom:1px solid var(--border)">
-          <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #8B5CF630"><div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(gonzaloTotal)}</div></div>
-          ${c.regla==="50_50"?`<div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #64748B30"><div style="font-size:10px;color:#94A3B8;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(javiTotal)}</div></div>`:''}
+          <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #8B5CF630"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(gonzaloTotal)}</div></div>
+          ${c.regla==="50_50"?`<div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #64748B30"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Javi</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(javiTotal)}</div></div>`:''}
           <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid var(--border2)"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Total mes</div><div class="mono" style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(catTotal)}</div></div>
         </div>
         <div style="padding:10px 12px;display:flex;flex-direction:column;gap:5px">
           ${items.length?items.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(t=>{
             const fecha=fechaLocal(t.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"});
             const tieneJavi=(t.monto_javi||0)>0;const montoMostrar=t.monto_total||t.monto;
-            return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--surface);border:1px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#E8E6F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.desc)}</div><div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap"><span>${fecha}</span>${t.cuota_actual&&t.cuotas_total?`<span style="background:#3B82F620;border:1px solid #3B82F660;color:#93C5FD;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">Cuota ${t.cuota_actual}/${t.cuotas_total}</span>`:''} ${t.monto_uf?`<span style="color:#93C5FD;font-weight:700">${t.monto_uf} UF</span>`:''} ${tieneJavi?`<span style="color:#C4B5FD">G: ${mxn(t.monto)}</span><span style="color:#94A3B8">J: ${mxn(t.monto_javi)}</span>`:''}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${montoColor};flex-shrink:0">${montoSigno}${mxn(montoMostrar)}</div><button class="btn-icon" onclick="event.stopPropagation();abrirModal('${t.id}')" title="Editar">✏️</button><button class="btn-icon" onclick="event.stopPropagation();eliminar('${t.id}')" title="Eliminar">🗑️</button></div>`;
+            return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--surface);border:1px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.desc)}</div><div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap"><span>${fecha}</span>${t.cuota_actual&&t.cuotas_total?`<span style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">Cuota ${t.cuota_actual}/${t.cuotas_total}</span>`:''} ${t.monto_uf?`<span style="color:var(--blue);font-weight:700">${t.monto_uf} UF</span>`:''} ${tieneJavi?`<span style="color:var(--muted)">G: ${mxn(t.monto)}</span><span style="color:var(--dim)">J: ${mxn(t.monto_javi)}</span>`:''}</div></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${montoColor};flex-shrink:0">${montoSigno}${mxn(montoMostrar)}</div><button class="btn-icon" onclick="event.stopPropagation();abrirModal('${t.id}')" title="Editar">✏️</button><button class="btn-icon" onclick="event.stopPropagation();eliminar('${t.id}')" title="Eliminar">🗑️</button></div>`;
           }).join(""):`<div style="text-align:center;padding:16px;color:var(--dim);font-size:13px">Sin movimientos este mes</div>`}
         </div>
       </div>`:''}
