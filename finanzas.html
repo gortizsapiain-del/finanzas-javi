@@ -1589,29 +1589,21 @@ function initMesFacPicker(valorInicial){
   renderMesFacGrid();
 }
 
-/* SYNC JAVI */
-function esperarJaviAuth(timeout=5000){
-  return new Promise(resolve=>{
-    if(javiAuth.currentUser){resolve(javiAuth.currentUser);return;}
-    const t=setTimeout(()=>{unsub();resolve(null);},timeout);
-    const unsub=javiAuth.onAuthStateChanged(u=>{if(u){clearTimeout(t);unsub();resolve(u);}});
-  });
-}
+/* SYNC JAVI — escribe en Firebase propio (db), no necesita javiAuth */
 async function sincronizarConJavi(docId,trans,montoJavi){
-  const javiUser=await esperarJaviAuth();
-  if(!javiUser){mostrarToast("⚠️ Sin sync con Javi (recarga la página)");return;}
   if(montoJavi>0&&trans.cat&&!CATS_NO_SYNC_JAVI.includes(trans.cat)){
-    const entrada={fecha:trans.fecha||"",cuenta:"gonzalo",tipo:"gasto",cat:trans.cat,desc:trans.desc||"",monto:montoJavi,from_gonzalo:true,...(trans.mes_facturacion?{mes_facturacion:trans.mes_facturacion}:{})};
-    try{await javiDb.collection("compartido_gonzalo").doc(docId).set(entrada);mostrarToast("✅ Transacción agregada y sincronizada con Javi");}
+    // Usar mes_facturacion como fecha efectiva para que aparezca en el mes correcto en app de Javi
+    const fechaEfectiva=trans.mes_facturacion?(trans.mes_facturacion+"-01"):(trans.fecha||"");
+    const entrada={fecha:fechaEfectiva,cuenta:"gonzalo",tipo:"gasto",cat:trans.cat,desc:trans.desc||"",monto:montoJavi,from_gonzalo:true,...(trans.mes_facturacion?{mes_facturacion:trans.mes_facturacion}:{})};
+    try{await db.collection("compartido_gonzalo").doc(docId).set(entrada);mostrarToast("✅ Transacción agregada y sincronizada con Javi");}
     catch(e){mostrarToast("⚠️ Guardado, pero error al sincronizar con Javi: "+e.message);}
   }else{
-    try{await javiDb.collection("compartido_gonzalo").doc(docId).delete();}catch(e){}
+    try{await db.collection("compartido_gonzalo").doc(docId).delete();}catch(e){}
+    if(montoJavi===undefined)return; // llamado desde borrarUnaTransaccion
   }
 }
 async function eliminarSyncJavi(id){
-  const javiUser=await esperarJaviAuth(3000);
-  if(!javiUser)return;
-  try{await javiDb.collection("compartido_gonzalo").doc(id).delete();}catch(e){console.warn("Sync Javi delete:",e.message);}
+  try{await db.collection("compartido_gonzalo").doc(id).delete();}catch(e){console.warn("Sync Javi delete:",e.message);}
 }
 
 /* GUARDAR */

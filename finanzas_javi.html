@@ -405,6 +405,10 @@ let vistaTC = "categorias";
 firebase.initializeApp(FIREBASE_CONFIG);
 db = firebase.firestore();
 auth = firebase.auth();
+// Firebase de Gonzalo (solo lectura pública de compartido_gonzalo)
+const gonzaloConfig={apiKey:"AIzaSyBoBOVQ4yE3HVT0_JX6t7GtnAg5xXGt7X0",authDomain:"control-financiero-9409a.firebaseapp.com",projectId:"control-financiero-9409a",storageBucket:"control-financiero-9409a.firebasestorage.app",messagingSenderId:"272320737217",appId:"1:272320737217:web:687367a43cd321a7d4c940"};
+const gonzaloApp=firebase.initializeApp(gonzaloConfig,"gonzalo");
+const gonzaloDb=gonzaloApp.firestore();
 
 function colUsuario(){
   if(perfil==="skinlux") return db.collection("skinlux_spa");
@@ -455,7 +459,7 @@ function suscribirDatos(){
     });
   if(perfil==="javiera"){
     limpiarDatosViejos();limpiarDuplicadosAutoInit();
-    unsubscribeCompartido=db.collection("compartido_gonzalo").onSnapshot(snap=>{
+    unsubscribeCompartido=gonzaloDb.collection("compartido_gonzalo").onSnapshot(snap=>{
       dataCompartido=snap.docs.map(d=>({id:"cg_"+d.id,...d.data(),from_gonzalo:true,_cgId:d.id}));
       render();
     },e=>console.warn("compartido_gonzalo:",e.message));
