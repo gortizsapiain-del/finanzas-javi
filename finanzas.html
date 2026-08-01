@@ -1590,17 +1590,27 @@ function initMesFacPicker(valorInicial){
 }
 
 /* SYNC JAVI */
+function esperarJaviAuth(timeout=5000){
+  return new Promise(resolve=>{
+    if(javiAuth.currentUser){resolve(javiAuth.currentUser);return;}
+    const t=setTimeout(()=>{unsub();resolve(null);},timeout);
+    const unsub=javiAuth.onAuthStateChanged(u=>{if(u){clearTimeout(t);unsub();resolve(u);}});
+  });
+}
 async function sincronizarConJavi(docId,trans,montoJavi){
-  if(!javiAuth.currentUser)return;
+  const javiUser=await esperarJaviAuth();
+  if(!javiUser){mostrarToast("⚠️ Sin sync con Javi (recarga la página)");return;}
   if(montoJavi>0&&trans.cat&&!CATS_NO_SYNC_JAVI.includes(trans.cat)){
     const entrada={fecha:trans.fecha||"",cuenta:"gonzalo",tipo:"gasto",cat:trans.cat,desc:trans.desc||"",monto:montoJavi,from_gonzalo:true,...(trans.mes_facturacion?{mes_facturacion:trans.mes_facturacion}:{})};
-    try{await javiDb.collection("compartido_gonzalo").doc(docId).set(entrada);}catch(e){console.warn("Sync Javi:",e.message);}
+    try{await javiDb.collection("compartido_gonzalo").doc(docId).set(entrada);mostrarToast("✅ Transacción agregada y sincronizada con Javi");}
+    catch(e){mostrarToast("⚠️ Guardado, pero error al sincronizar con Javi: "+e.message);}
   }else{
     try{await javiDb.collection("compartido_gonzalo").doc(docId).delete();}catch(e){}
   }
 }
 async function eliminarSyncJavi(id){
-  if(!javiAuth.currentUser)return;
+  const javiUser=await esperarJaviAuth(3000);
+  if(!javiUser)return;
   try{await javiDb.collection("compartido_gonzalo").doc(id).delete();}catch(e){console.warn("Sync Javi delete:",e.message);}
 }
 
@@ -1714,8 +1724,9 @@ async function guardar(){
           mostrarToast(`✅ ${cuotasRestantes} cuotas creadas (${mesInicioLabel} → ${mesFinLabel})`);
         }else{
           const trans={...tranBase,desc,monto:monto_gonzalo,...((cuenta==="tc"||cuenta==="creditos")?{mes_facturacion:mesFac}:{}),...((cuenta==="tc"||cuenta==="creditos"||cuenta==="cc")&&monto_javi_calc>0?{monto_javi:monto_javi_calc,monto_total:monto_total_calc}:{}),...(cuenta==="creditos"&&cat==="credito_hipotecario"&&montoUFval?{monto_uf:montoUFval,valor_uf:valorUF}:{}),...(cuenta==="creditos"&&cuotaActual?{cuota_actual:cuotaActual}:{}),...(cuenta==="creditos"&&cuotasTotal?{cuotas_total:cuotasTotal}:{})};
-          const newDocRef=await colUsuario().add(trans);mostrarToast("✅ Transacción agregada");
+          const newDocRef=await colUsuario().add(trans);
           await sincronizarConJavi(newDocRef.id,trans,monto_javi_calc);
+          if(!monto_javi_calc||CATS_NO_SYNC_JAVI.includes(cat))mostrarToast("✅ Transacción agregada");
         }
       }
     }
