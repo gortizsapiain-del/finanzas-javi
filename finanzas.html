@@ -828,7 +828,6 @@ function setTab(t){
     el.classList.toggle("active",tName===t);
   });
   document.getElementById("monthNav").style.display=perfil==="skinlux"?"none":"";
-  document.getElementById("btnAgregar").style.display="none";
   render();
 }
 function render(){
@@ -838,6 +837,9 @@ function render(){
   // Show/hide tabs
   document.querySelectorAll(".tab-gonzalo").forEach(el=>el.style.display=perfil==="gonzalo"?"":"none");
   document.querySelectorAll(".tab-skinlux").forEach(el=>el.style.display=perfil==="skinlux"?"":"none");
+  // Botón agregar: visible en tabs con formulario, oculto en resumen/iva/flujo
+  const TABS_SIN_AGREGAR=["resumen","iva","flujo"];
+  document.getElementById("btnAgregar").style.display=TABS_SIN_AGREGAR.includes(tabActual)?"none":"";
   // Personal tabs
   document.getElementById("viewResumen").style.display=tabActual==="resumen"?"":"none";
   document.getElementById("viewTC").style.display=(tabActual==="tc"&&perfil==="gonzalo")?"":"none";
