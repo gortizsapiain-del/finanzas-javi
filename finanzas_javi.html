@@ -660,7 +660,8 @@ function renderResumen(){
     return s+(real>0?real:g.ref);
   },0)+varMRes.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0)):varMRes.reduce((s,t)=>s+t.monto,0);
   const pagosJaviResumen=allData().filter(function(t){
-    if(t.cat!=="pago_javi")return false;
+    return t.cat==="pago_javi"&&t.from_gonzalo;
+  }).filter(function(t){
     const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?t.fecha.slice(0,7):"";
     return ref===(anio+"-"+String(mes+1).padStart(2,"0"));
   });
@@ -1032,7 +1033,8 @@ function renderGonzalo(){
     return s+(real>0?real:g.ref);
   },0)+varM.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
   const pagosAJaviMes=allData().filter(function(t){
-    if(t.cat!=="pago_javi")return false;
+    return t.cat==="pago_javi"&&t.from_gonzalo;
+  }).filter(function(t){
     const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?t.fecha.slice(0,7):"";
     return ref===(anio+"-"+String(mes+1).padStart(2,"0"));
   });
