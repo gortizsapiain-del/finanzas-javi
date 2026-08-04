@@ -1036,7 +1036,7 @@ function renderGonzalo(){
   const totalFijos=GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0);
 
   // Gastos variables del mes (cuenta:'gonzalo' en Firebase + sincronizados de Gonzalo)
-  const varM=delMes(allData().filter(t=>t.cuenta==="gonzalo"));
+  const varM=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_gonzalo"));
   const totalVar=GONZALO_ESTIMADOS.reduce((s,g)=>{
     const real=varM.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
     return s+(real>0?real:g.ref);
