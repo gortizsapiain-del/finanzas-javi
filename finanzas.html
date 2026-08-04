@@ -952,11 +952,7 @@ function renderResumen(){
   const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
   const javiMes=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const _gVar=_GEST.reduce((s,g)=>{const real=javiMes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMes.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
-  const pagosAJaviMes=data.filter(t=>{
-    if(t.cat!=="pago_javi")return false;
-    const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";
-    return ref===mesStr;
-  });
+  const pagosAJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesStr;});
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar-totalPagosJavi);
   document.getElementById("viewResumen").innerHTML=`
@@ -981,11 +977,6 @@ function renderResumen(){
           <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Total entre los dos</div>
           <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaTotal)}</div>
         </div>
-        ${totalPagosJavi>0?`
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#DCFCE7;border-radius:9px;border:1px solid #BBF7D0;margin-bottom:5px">
-          <span style="color:#15803D;font-size:12px;font-weight:700">💚 Abono de Javi</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#15803D">-${mxn(totalPagosJavi)}</span>
-        </div>`:''}
         <div style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:10px 12px;min-width:0">
           <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
           <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(javiTotalCompartido)}</div>
@@ -1013,6 +1004,11 @@ function renderResumen(){
           <span style="font-size:12px;color:#15803D">🏢 Arriendo recibido</span>
           <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green);overflow-wrap:anywhere">+${mxn(arriendoTotal)}</span>
         </div>`:''}
+        ${totalPagosJavi>0?`
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="font-size:12px;color:#BE185D">💚 Pago de Javi</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D;overflow-wrap:anywhere">+${mxn(totalPagosJavi)}</span>
+        </div>`:''}\n
       </div>
     </div>
     <details style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden">
