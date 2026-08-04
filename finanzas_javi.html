@@ -659,7 +659,13 @@ function renderResumen(){
     const real=varMRes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
     return s+(real>0?real:g.ref);
   },0)+varMRes.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0)):varMRes.reduce((s,t)=>s+t.monto,0);
-  const gonzaloTotal=gonzaloFijosTotal+gonzaloVarTotal;
+  const pagosJaviResumen=allData().filter(function(t){
+    if(t.cat!=="pago_javi")return false;
+    const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?t.fecha.slice(0,7):"";
+    return ref===(anio+"-"+String(mes+1).padStart(2,"0"));
+  });
+  const totalDescuentos=pagosJaviResumen.reduce((s,t)=>s+(t.monto||0),0);
+  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal-totalDescuentos);
   // Total = TC Pendiente + Créditos + Gonzalo
   const totalGastos=tcPendiente+credTotal+gonzaloTotal;
   // Saldo CC acumulado
@@ -755,7 +761,7 @@ function renderResumen(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="summary-card rose"><div class="s-label" style="color:var(--accent)">💳 TC · Pendiente</div><div class="s-amount" style="color:${tcPendiente>0?"#C05060":"#3A8A70"}">${mxn(tcPendiente)}</div><div class="s-sub" style="color:var(--dim)">Gastado ${mxn(tcGastos)} · Pagado ${mxn(tcPagos)}</div></div>
       <div class="summary-card sage"><div class="s-label" style="color:#2A7060">🏦 Cuenta Corriente</div><div class="s-amount" style="color:${saldoCC>=0?"#2A7060":"#8A4050"}">${mxn(saldoCC)}</div><div class="s-sub" style="color:var(--dim)">saldo actual</div></div>
-      <div class="summary-card" style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0"><div class="s-label" style="color:#3050A0">💙 Gonzalo</div><div class="s-amount" style="color:#3050A0">${mxn(gonzaloTotal)}</div><div class="s-sub" style="color:#6080C0">a depositar este mes</div></div>
+      <div class="summary-card" style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0"><div class="s-label" style="color:#3050A0">💙 Gonzalo</div><div class="s-amount" style="color:#3050A0">${mxn(gonzaloTotal)}</div>${totalDescuentos>0?`<div class='s-sub' style='color:#1D4ED8;font-weight:700'>💙 Descuento: −${mxn(totalDescuentos)}</div>`:''}<div class="s-sub" style="color:#6080C0">a depositar este mes</div></div>
       <div class="summary-card gold"><div class="s-label" style="color:#7A5030">🏛️ Créditos</div><div class="s-amount" style="color:#7A5030">${mxn(credTotal)}</div><div class="s-sub" style="color:#7A5030">${credM.length} cuotas</div></div>
     </div>`;
   }
@@ -1025,22 +1031,19 @@ function renderGonzalo(){
     const real=varM.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
     return s+(real>0?real:g.ref);
   },0)+varM.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
-  // Descuentos: pagos registrados por Gonzalo que reducen el depósito de Javi
-  const mesStr2=anio+'-'+String(mes+1).padStart(2,'0');
-  const pagosJaviMes=allData().filter(function(t){
+  const pagosAJaviMes=allData().filter(function(t){
     if(t.cat!=="pago_javi")return false;
     const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?t.fecha.slice(0,7):"";
-    return ref===mesStr2;
+    return ref===(anio+"-"+String(mes+1).padStart(2,"0"));
   });
-  const totalAbonado=pagosJaviMes.reduce((s,t)=>s+(t.monto||0),0);
+  const totalAbonado=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const total=Math.max(0,totalFijos+totalVar-totalAbonado);
-
-
 
   let html='<div style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">';
   html+='<div style="min-width:0">';
   html+='<div style="font-size:10px;color:#3050A0;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">💙 Depósito a Gonzalo — '+MESES[mes]+' '+anio+'</div>';
   html+='<div style="font-size:clamp(22px,7vw,30px);font-weight:700;font-family:\'DM Mono\',monospace;color:#3050A0;overflow-wrap:anywhere">'+mxn(total)+'</div>';
+  html+=(totalAbonado>0?'<div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:3px">💙 Descuento: −'+mxn(totalAbonado)+'</div>':'');
   html+='<div style="font-size:12px;color:#6080C0;margin-top:4px">Fijos '+mxn(totalFijos)+(totalVar>0?' + Variables '+mxn(totalVar):'')+'</div>';
   html+='</div><div style="font-size:36px;opacity:.4;flex-shrink:0">💙</div></div>';
 
