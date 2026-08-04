@@ -954,7 +954,10 @@ function renderResumen(){
   const _gVar=_GEST.reduce((s,g)=>{const real=javiMes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMes.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
   const pagosAJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesStr;});
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
-  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar-totalPagosJavi);
+  // Pagos directos de Javi (registrados por ella en su app)
+  const pagosDirectosJavi=dataCompartido.filter(t=>t.cat==="pago_gonzalo"&&t.from_javi).filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion:(t.fecha||"").slice(0,7);return ref===mesStr;});
+  const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
+  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar-totalPagosJavi-totalPagosDirectos);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -1008,6 +1011,10 @@ function renderResumen(){
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
           <span style="font-size:12px;color:#BE185D">💚 Pago de Javi</span>
           <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D;overflow-wrap:anywhere">+${mxn(totalPagosJavi)}</span>
+        </div>`:''}\n        ${totalPagosDirectos>0?`
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="font-size:12px;color:#BE185D">💙 Transferencia Javi</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D;overflow-wrap:anywhere">+${mxn(totalPagosDirectos)}</span>
         </div>`:''}\n
       </div>
     </div>
