@@ -925,9 +925,9 @@ function renderResumen(){
   const ccIngresos=ccIngresosM.reduce((s,t)=>s+t.monto,0);
   // ccGastos: todos (para saldo real CC); ccGastosReales: excluye traspasos (pago_tc, ahorros)
   // ccGastos para panel CC: excluir pago_tc (no es gasto real, es pago de deuda TC ya contabilizada)
-  const ccGastos=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc").reduce((s,t)=>s+(t.monto_total||t.monto),0);
-  const ccGastosReales=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&!t.ahorro_ref).reduce((s,t)=>s+(t.monto_total||t.monto),0);
-  const ccGastosRealesM=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&!t.ahorro_ref);
+  const ccGastos=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&t.cat!=="pago_javi").reduce((s,t)=>s+(t.monto_total||t.monto),0);
+  const ccGastosReales=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&t.cat!=="pago_javi"&&!t.ahorro_ref).reduce((s,t)=>s+(t.monto_total||t.monto),0);
+  const ccGastosRealesM=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&t.cat!=="pago_javi"&&!t.ahorro_ref);
   const ccGastosGonzalo=ccGastosRealesM.reduce((s,t)=>s+t.monto,0),ccGastosJavi=ccGastosRealesM.reduce((s,t)=>s+(t.monto_javi||0),0);
   // Saldo CC acumulado real: incluir pago_tc + saldo inicial pre-registro
   const ccSaldoAcumulado=SALDO_INICIAL_CC+data.filter(t=>t.cuenta==="cc").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-(t.monto_total||t.monto),0);
@@ -943,22 +943,22 @@ function renderResumen(){
   const totalGastosGonzalo=tcGonzalo+ccGastosGonzalo+creditosGonzaloNeto;
   const totalGastosJavi=tcJavi+ccGastosJavi+creditosJaviNeto;
   // Deuda real a pagar: TC pendiente (0 si ya pagada) + Créditos netos (descontando arriendo oficina, que casi lo compensa). CC NO se incluye: ya salió de la cuenta, no es un pago pendiente.
-  const pagosAJaviMes=data.filter(t=>{
-    if(t.cat!=="pago_javi")return false;
-    const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;
-    const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;
-  });
-  const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const deudaTotal=tcParaTotal+creditosTotalNeto;
   const deudaGonzalo=tcGonzaloParaTotal+creditosGonzaloNeto;
-  const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto-totalPagosJavi);
+  const deudaJavi=tcJaviParaTotal+creditosJaviNeto;
   const mesLabel=MESES[m]+" "+a;
   // Total Javi usando misma fórmula que su app (GONZALO_FIJOS + estimados/reales variables)
   const _GFIJOS=375000+85000+75000; // 535,000 fijos hardcodeados en app Javi
   const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
   const javiMes=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const _gVar=_GEST.reduce((s,g)=>{const real=javiMes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMes.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
-  const javiTotalCompartido=_GFIJOS+_gVar;
+  const pagosAJaviMes=data.filter(t=>{
+    if(t.cat!=="pago_javi")return false;
+    const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";
+    return ref===mesStr;
+  });
+  const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
+  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar-totalPagosJavi);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -1581,7 +1581,7 @@ function actualizarOpcionesCat(cuenta){
   Array.from(select.options).forEach(opt=>{
     if(cuenta==="creditos"){opt.style.display=CATS_CREDITOS.includes(opt.value)?"":"none";}
     else if(cuenta==="cc"){opt.style.display=CATS_CREDITOS.includes(opt.value)?"none":"";}
-    else{opt.style.display=(CATS_CREDITOS.includes(opt.value)||opt.value==="pago_tc")?"none":"";}
+    else{opt.style.display=(CATS_CREDITOS.includes(opt.value)||opt.value==="pago_tc"||opt.value==="pago_javi")?"none":"";}
   });
   if(cuenta==="creditos"&&!CATS_CREDITOS.includes(select.value))select.value="credito_consumo";
   else if(cuenta!=="creditos"&&CATS_CREDITOS.includes(select.value))select.value=cuenta==="cc"?"pago_tc":"cuotas_personales";
