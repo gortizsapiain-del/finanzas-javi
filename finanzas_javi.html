@@ -1786,6 +1786,7 @@ async function guardar(){
   const numCuotas=parseInt(document.getElementById("fCuotas").value)||1;
   if(!monto||!fecha){mostrarToast("⚠️ Completa monto y fecha");return;}
   const esCuota=cuenta==="tc"&&numCuotas>1;
+  const esPagoGonzalo=(cuenta==="gonzalo"&&cat==="pago_gonzalo");
   const cuotaActual=(cuenta==="creditos"&&parseInt(document.getElementById("fCuotaActual")?.value))||null;
   const cuotasTotal=(cuenta==="creditos"&&parseInt(document.getElementById("fCuotasTotal")?.value))||null;
   const tranBase={fecha,cuenta,tipo:modalTipo,cat};
@@ -1809,7 +1810,7 @@ async function guardar(){
       // Auto-descuento CC: al pagar TC o hacer transferencia/gonzalo como gasto
       const esPagoTC=(cuenta==="tc"&&cat==="pago");
       const esTransfCC=(cuenta==="cc"&&cat==="transferencia"&&modalTipo==="gasto");
-      const esGastoGonzalo=(cuenta==="gonzalo"&&cat!=="pago_gonzalo");
+      const esGastoGonzalo=(cuenta==="gonzalo"&&!esPagoGonzalo);
       if(esPagoTC){
         // Crear gasto en CC por el monto del pago TC
         lote.set(colUsuario().doc(),{
