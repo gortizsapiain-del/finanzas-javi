@@ -1025,7 +1025,17 @@ function renderGonzalo(){
     const real=varM.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
     return s+(real>0?real:g.ref);
   },0)+varM.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
-  const total=totalFijos+totalVar;
+  // Descuentos: pagos registrados por Gonzalo que reducen el depósito de Javi
+  const mesStr2=anio+'-'+String(mes+1).padStart(2,'0');
+  const pagosJaviMes=allData().filter(function(t){
+    if(t.cat!=="pago_javi")return false;
+    const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?t.fecha.slice(0,7):"";
+    return ref===mesStr2;
+  });
+  const totalAbonado=pagosJaviMes.reduce((s,t)=>s+(t.monto||0),0);
+  const total=Math.max(0,totalFijos+totalVar-totalAbonado);
+
+
 
   let html='<div style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">';
   html+='<div style="min-width:0">';
