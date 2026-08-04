@@ -653,7 +653,7 @@ function renderResumen(){
   const credTotal=credM.reduce((s,t)=>s+t.monto,0);
   const offset=(anio-2026)*12+(mes-7);
   const gonzaloFijosTotal=perfil==="javiera"?GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0):0;
-  const varMRes=delMes(allData().filter(t=>t.cuenta==="gonzalo"));
+  const varMRes=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_javi"));
   // Para cada estimado: usar real si existe, si no usar referencia
   const gonzaloVarTotal=perfil==="javiera"?(GONZALO_ESTIMADOS.reduce((s,g)=>{
     const real=varMRes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
