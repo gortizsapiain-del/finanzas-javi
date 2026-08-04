@@ -292,6 +292,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <option value="chancheo_salida">🐷 Chancheo Salida</option>
         <option value="cafe">☕ Café</option>
         <option value="skin_lux">💆‍♀️ Skin Lux</option>
+        <option value="pago_javi">💚 Pago a Javi</option>
         <option value="credito_consumo">💼 Crédito Consumo</option>
         <option value="credito_consumo_2">💼 Crédito Consumo 2</option>
         <option value="credito_hipotecario">🏠 Crédito Hipotecario</option>
@@ -774,6 +775,7 @@ const CATS={
   chancheo_salida:{label:"Chancheo Salida",icon:"🐷",color:"#FB923C",regla:"60_40",pct_g:0.6,pct_j:0.4},
   cafe:{label:"Café",icon:"☕",color:"#A16207",regla:"gonzalo",pct_g:1,pct_j:0},
   skin_lux:{label:"Skin Lux",icon:"💆‍♀️",color:"#EC4899",regla:"javi",pct_g:0,pct_j:1},
+  pago_javi:{label:"Pago a Javi",icon:"💚",color:"#10B981",regla:"gonzalo",pct_g:1,pct_j:0,es_pago_javi:true},
   credito_consumo:{label:"Crédito Consumo",icon:"💼",color:"#F97316",regla:"gonzalo",pct_g:1,pct_j:0},
   credito_consumo_2:{label:"Crédito Consumo 2",icon:"💼",color:"#EA580C",regla:"gonzalo",pct_g:1,pct_j:0},
   credito_hipotecario:{label:"Crédito Hipotecario",icon:"🏠",color:"#3B82F6",regla:"50_50",pct_g:0.5,pct_j:0.5},
@@ -912,9 +914,15 @@ function renderResumen(){
   const totalGastosGonzalo=tcGonzalo+ccGastosGonzalo+creditosGonzaloNeto;
   const totalGastosJavi=tcJavi+ccGastosJavi+creditosJaviNeto;
   // Deuda real a pagar: TC pendiente (0 si ya pagada) + Créditos netos (descontando arriendo oficina, que casi lo compensa). CC NO se incluye: ya salió de la cuenta, no es un pago pendiente.
+  const pagosAJaviMes=data.filter(t=>{
+    if(t.cat!=="pago_javi")return false;
+    const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;
+    const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;
+  });
+  const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const deudaTotal=tcParaTotal+creditosTotalNeto;
   const deudaGonzalo=tcGonzaloParaTotal+creditosGonzaloNeto;
-  const deudaJavi=tcJaviParaTotal+creditosJaviNeto;
+  const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto-totalPagosJavi);
   const mesLabel=MESES[m]+" "+a;
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid ${ccSaldoAcumulado>=0?'#0D4030':'#4A1020'};border-radius:14px;padding:14px 16px">
@@ -950,6 +958,11 @@ function renderResumen(){
             <div style="font-size:10px;color:#C4B5FD;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Gonzalo debe</div>
             <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#C4B5FD;overflow-wrap:anywhere">${mxn(deudaGonzalo)}</div>
           </div>
+          ${totalPagosJavi>0?`
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;background:#DCFCE7;border-radius:9px;border:1px solid #BBF7D0;margin-bottom:6px">
+            <span style="color:#15803D;font-size:12px;font-weight:700">💚 Abono de Javi</span>
+            <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#15803D">−${mxn(totalPagosJavi)}</span>
+          </div>`:''}
           <div style="background:#EC489920;border:1px solid #EC489950;border-radius:10px;padding:10px 12px;min-width:0">
             <div style="font-size:10px;color:#F9A8D4;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div>
             <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#F9A8D4;overflow-wrap:anywhere">${mxn(deudaJavi)}</div>
