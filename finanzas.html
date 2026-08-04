@@ -1645,6 +1645,13 @@ function initMesFacPicker(valorInicial){
 
 /* SYNC JAVI — escribe en Firebase propio (db), no necesita javiAuth */
 async function sincronizarConJavi(docId,trans,montoJavi){
+  // pago_javi: sincronizar siempre con monto completo como descuento para Javi
+  if(trans.cat==="pago_javi"&&trans.monto>0){
+    const fechaEfectiva=trans.mes_facturacion?(trans.mes_facturacion+"-01"):(trans.fecha||"");
+    const entrada={fecha:fechaEfectiva,cuenta:"gonzalo",tipo:"descuento_javi",cat:"pago_javi",desc:trans.desc||"Pago a Javi",monto:trans.monto,from_gonzalo:true,...(trans.mes_facturacion?{mes_facturacion:trans.mes_facturacion}:{})};
+    try{await db.collection("compartido_gonzalo").doc(docId).set(entrada);}catch(e){console.warn("Sync pago_javi:",e.message);}
+    return;
+  }
   if(montoJavi>0&&trans.cat&&!CATS_NO_SYNC_JAVI.includes(trans.cat)){
     // Usar mes_facturacion como fecha efectiva para que aparezca en el mes correcto en app de Javi
     const fechaEfectiva=trans.mes_facturacion?(trans.mes_facturacion+"-01"):(trans.fecha||"");
