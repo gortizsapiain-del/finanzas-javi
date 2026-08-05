@@ -733,6 +733,13 @@ function logout(){if(unsubscribeData){unsubscribeData();unsubscribeData=null;}au
 function colUsuario(){return db.collection(`usuarios/${currentUser.uid}/transacciones`);}
 function escucharDatos(){
   if(unsubscribeData)unsubscribeData();
+  // Listener pagos de Javi desde compartido_gonzalo
+  let unsubscribeJaviPagos=null;
+  if(unsubscribeJaviPagos)unsubscribeJaviPagos();
+  unsubscribeJaviPagos=db.collection("compartido_gonzalo").where("cat","==","pago_gonzalo").onSnapshot(snap=>{
+    dataCompartidoJavi=snap.docs.map(d=>({id:d.id,...d.data()}));
+    render();
+  },e=>console.warn("pagos javi:",e.message));
   unsubscribeData=colUsuario().onSnapshot(snapshot=>{
     data=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
     const gastosTCNoCuota=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&!((t.desc||"").match(/\(cuota \d+\/\d+\)$/)));
@@ -791,7 +798,7 @@ const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","
 const MESES_CORTOS=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 /* ESTADO */
-let data=[],mes=new Date().getMonth(),anio=new Date().getFullYear();
+let data=[],dataCompartidoJavi=[],mes=new Date().getMonth(),anio=new Date().getFullYear();
 let tabActual="resumen",filtroTC="todas",filtroCC="todas",filtroPersonaTC="todas",filtroTarjeta="todas",filtroAhorro="todas",filtroCredito="todas";
 const TARJETAS={
   visa_singular:{label:"Visa Singular",icon:"💳",color:"#3B82F6"},
@@ -922,7 +929,7 @@ function renderResumen(){
     const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;
   });
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
-  const pagosDirectosJavi=dataCompartido.filter(t=>t.cat==="pago_gonzalo").filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
+  const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
   const deudaTotal=tcParaTotal+creditosTotalNeto;
   const deudaGonzalo=tcGonzaloParaTotal+creditosGonzaloNeto;
