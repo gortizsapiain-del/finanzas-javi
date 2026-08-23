@@ -1637,7 +1637,52 @@ function renderPagos(){
   });
   html+=`</div></div>`;
 
-  // ── SECCIÓN 3: Historial de pagos del mes ──
+  // ── SECCIÓN 3: Deuda de Javi ──
+  const _GFIJOS=375000+85000+75000;
+  const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
+  const javiMesPagos=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo";});
+  const _gVar=_GEST.reduce((s,g)=>{const real=javiMesPagos.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMesPagos.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
+  const pagosAJaviMesP=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesVisto;});
+  const totalPagosJaviP=pagosAJaviMesP.reduce((s,t)=>s+(t.monto||0),0);
+  const pagosDirectosJaviP=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto;});
+  const totalPagosDirectosP=pagosDirectosJaviP.reduce((s,t)=>s+(t.monto||0),0);
+  const deudaTotalJavi=_GFIJOS+_gVar;
+  const saldoPendienteJavi=Math.max(0,deudaTotalJavi-totalPagosJaviP-totalPagosDirectosP);
+  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:#BE185D22;display:flex;align-items:center;justify-content:center;font-size:18px">💚</div>
+      <div>
+        <div style="font-weight:700;font-size:15px">Deuda de Javi</div>
+        <div style="font-size:11px;color:var(--dim)">Se suma a tu Cuenta Corriente</div>
+      </div>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Total debe</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">${mxn(deudaTotalJavi)}</div>
+        </div>
+        <div style="background:#F0FDF4;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:3px">Ya pagó</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--green)">${mxn(totalPagosJaviP+totalPagosDirectosP)}</div>
+        </div>
+        <div style="background:${saldoPendienteJavi>0?'#FFF1F6':'#F0FDF4'};border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:${saldoPendienteJavi>0?'#BE185D':'var(--green)'};font-weight:700;text-transform:uppercase;margin-bottom:3px">Pendiente</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${saldoPendienteJavi>0?'#BE185D':'var(--green)'}">${mxn(saldoPendienteJavi)}</div>
+        </div>
+      </div>
+      ${saldoPendienteJavi>0&&esMesActual?`
+        <div style="display:flex;gap:8px">
+          <button onclick="registrarPagoDeJavi(${saldoPendienteJavi},'total','${mesVisto}')" style="flex:1;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit">✅ Pago total ${mxn(saldoPendienteJavi)}</button>
+          <button onclick="registrarPagoDeJavi(${saldoPendienteJavi},'parcial','${mesVisto}')" style="flex:1;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #FBCFE8;background:#FFF1F6;color:#BE185D;font-family:inherit">💰 Pago parcial</button>
+        </div>`
+      :saldoPendienteJavi===0?`<div style="text-align:center;padding:10px;color:var(--green);font-weight:700;font-size:13px">✅ Javi está al día este mes</div>`:''}
+      ${pagosAJaviMesP.length>0?`<div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Pagos registrados</div>
+        ${pagosAJaviMesP.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:8px"><span style="font-size:12px;color:var(--muted)">${fechaLocal(t.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"})} · ${esc(t.desc||'Pago Javi')}</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green)">+${mxn(t.monto)}</span></div>`).join('')}
+      </div>`:''}
+    </div>
+  </div>`;
   const pagosDelMes=data.filter(t=>{
     if(!["pago_tc","pago_javi_credito","credito_consumo","credito_consumo_2","credito_hipotecario"].includes(t.cat))return false;
     const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);
@@ -1662,6 +1707,47 @@ function renderPagos(){
   }
 
   document.getElementById("viewPagos").innerHTML=html||emptyState("💸","Sin pagos este mes","Usa los botones de arriba para registrar pagos");
+}
+
+async function registrarPagoDeJavi(saldo,modo,mesVisto){
+  let monto=saldo;
+  if(modo==="parcial"){
+    const overlay=document.createElement("div");
+    overlay.style.cssText="position:fixed;inset:0;background:#000000a0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)";
+    overlay.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:24px;max-width:340px;width:100%;font-family:inherit">
+      <div style="font-weight:700;font-size:17px;margin-bottom:6px">💰 Pago parcial de Javi</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Saldo pendiente: <strong style="color:#BE185D">${mxn(saldo)}</strong></div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px">Monto que pagó</div>
+      <input id="inputPagoJaviMes" type="text" placeholder="0" oninput="formatearMonto(this)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:12px 13px;border-radius:10px;font-family:'DM Mono',monospace;font-size:18px;font-weight:700;margin-bottom:16px"/>
+      <div style="display:flex;gap:10px">
+        <button onclick="this.closest('.pago-javi-overlay').remove()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:inherit;cursor:pointer">Cancelar</button>
+        <button onclick="confirmarPagoJaviMes(${saldo},'${mesVisto}',this)" style="flex:2;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;font-family:inherit;font-weight:700;cursor:pointer">Registrar ingreso</button>
+      </div>
+    </div>`;
+    overlay.className="pago-javi-overlay";
+    overlay.onclick=ev=>{if(ev.target===overlay)overlay.remove();};
+    document.body.appendChild(overlay);
+    setTimeout(()=>document.getElementById("inputPagoJaviMes")?.focus(),50);
+    return;
+  }
+  // Pago total
+  await _guardarPagoJaviMes(monto,mesVisto);
+}
+async function confirmarPagoJaviMes(saldo,mesVisto,btn){
+  const raw=document.getElementById("inputPagoJaviMes").value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  const monto=parseInt(raw)||0;
+  if(monto<=0){mostrarToast("⚠️ Ingresa un monto válido");return;}
+  if(monto>saldo){mostrarToast(`⚠️ No puede superar ${mxn(saldo)}`);return;}
+  btn.closest(".pago-javi-overlay").remove();
+  await _guardarPagoJaviMes(monto,mesVisto);
+}
+async function _guardarPagoJaviMes(monto,mesVisto){
+  const hoy=new Date();
+  const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  try{
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi",desc:`Pago Javi — ${MESES[parseInt(mesVisto.slice(5,7))-1]} ${mesVisto.slice(0,4)}`,monto,fecha:fechaHoy,mes_facturacion:mesVisto});
+    mostrarToast(`✅ +${mxn(monto)} abonado a tu CC`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
 /* ── SKIN LUX (stubs) ── */
