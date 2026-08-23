@@ -587,7 +587,7 @@ function renderResumen(){
   const ccGastosReales=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&t.cat!=="pago_javi"&&!t.ahorro_ref).reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const ccGastosRealesM=ccM.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&t.cat!=="pago_javi"&&!t.ahorro_ref);
   const ccGastosGonzalo=ccGastosRealesM.reduce((s,t)=>s+t.monto,0),ccGastosJavi=ccGastosRealesM.reduce((s,t)=>s+(t.monto_javi||0),0);
-  const ccSaldoAcumulado=SALDO_INICIAL_CC+data.filter(t=>t.cuenta==="cc"&&t.cat!=="pago_javi").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-(t.monto_total||t.monto),0);
+  const ccSaldoAcumulado=SALDO_INICIAL_CC+data.filter(t=>t.cuenta==="cc").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-(t.monto_total||t.monto),0);
   const ahTotal=data.filter(t=>t.cuenta==="ahorros").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="deposito"?s+t.monto:s-t.monto,0);
   const creditosM=data.filter(t=>t.cuenta==="creditos"&&t.cat!=="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
   const creditosTotal=creditosM.reduce((s,t)=>s+(t.monto_total||t.monto),0),creditosGonzalo=creditosM.reduce((s,t)=>s+t.monto,0),creditosJavi=creditosM.reduce((s,t)=>s+(t.monto_javi||0),0);
@@ -1054,12 +1054,6 @@ async function pagoAutomatico(catId,e){
   const hoy=new Date();
   const mesFacAuto=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
   const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
-  // Si ya existe cuota automática este mes, advertir pero permitir continuar
-  const yaExiste=data.find(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.mes_facturacion||t.fecha.slice(0,7))===mesFacAuto&&t.pagado_automatico===true);
-  if(yaExiste){
-    const continuar=confirm(`⚠️ ${CATS[catId]?.label||catId} ya tiene un pago registrado para ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}.\n\n¿Registrar otro pago de todas formas?`);
-    if(!continuar)return;
-  }
   const nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:catId,pagado_automatico:true,
     desc:ultima.desc.replace(/cuota \d+\/\d+/i,`cuota ${(ultima.cuota_actual||1)+1}/${ultima.cuotas_total||'?'}`),
     monto:ultima.monto,fecha:fechaHoy,mes_facturacion:mesFacAuto,
