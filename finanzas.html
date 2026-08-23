@@ -1054,11 +1054,11 @@ async function pagoAutomatico(catId,e){
   const hoy=new Date();
   const mesFacAuto=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
   const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
-  // Verificar si ya existe cuota de crédito este mes
-  const yaExiste=data.find(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.mes_facturacion||t.fecha.slice(0,7))===mesFacAuto);
+  // Si ya existe cuota automática este mes, advertir pero permitir continuar
+  const yaExiste=data.find(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.mes_facturacion||t.fecha.slice(0,7))===mesFacAuto&&t.pagado_automatico===true);
   if(yaExiste){
-    mostrarToast(`⚠️ Ya existe pago de ${MESES[hoy.getMonth()]} — revisa los registros`);
-    return;
+    const continuar=confirm(`⚠️ ${CATS[catId]?.label||catId} ya tiene un pago registrado para ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}.\n\n¿Registrar otro pago de todas formas?`);
+    if(!continuar)return;
   }
   const nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:catId,pagado_automatico:true,
     desc:ultima.desc.replace(/cuota \d+\/\d+/i,`cuota ${(ultima.cuota_actual||1)+1}/${ultima.cuotas_total||'?'}`),
