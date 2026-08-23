@@ -521,10 +521,24 @@ function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 function delMes(lista){return lista.filter(t=>{const ref=((t.cuenta==="tc"||t.cuenta==="creditos")&&t.mes_facturacion)?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===mes&&d.getFullYear()===anio;});}
 function mesFacDeCuota(base,offset){const[anioB,mesB]=base.split('-').map(Number);const total=(mesB-1)+offset;return`${anioB+Math.floor(total/12)}-${String((total%12)+1).padStart(2,'0')}`;}
 function emptyState(icon,title,sub){return`<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-title">${title}</div><div class="empty-sub">${sub}</div></div>`;}
-function calcularTotalTCDeMes(mesStr){
+function calcularTotalTCDeMes(mesStr,tarjeta=null){
   const[anioTC,mesTC]=mesStr.split('-').map(Number);
-  const gastos=data.filter(t=>{if(t.cuenta!=="tc"||t.tipo!=="gasto"||t.cat==="pago"||t.cat==="pago_tc")return false;const ref=t.mes_facturacion||t.fecha.slice(0,7);const[a,m]=ref.split('-').map(Number);return a===anioTC&&m===mesTC;});
+  const gastos=data.filter(t=>{if(t.cuenta!=="tc"||t.tipo!=="gasto"||t.cat==="pago"||t.cat==="pago_tc")return false;const ref=t.mes_facturacion||t.fecha.slice(0,7);const[a,m]=ref.split('-').map(Number);if(a!==anioTC||m!==mesTC)return false;if(tarjeta&&(t.tarjeta||"")!==tarjeta)return false;return true;});
   return{totalGeneral:gastos.reduce((s,t)=>s+(t.monto_total||t.monto),0),totalGonzalo:gastos.reduce((s,t)=>s+t.monto,0),totalJavi:gastos.reduce((s,t)=>s+(t.monto_javi||0),0)};
+}
+async function pagarTarjetaMes(tarjeta,mesStr,totalGeneral,totalGonzalo,totalJavi){
+  const v=TARJETAS[tarjeta];
+  const confirmar=confirm(`¿Registrar pago de ${v.icon} ${v.label}?\n\nMes: ${MESES[parseInt(mesStr.slice(5,7))-1]} ${mesStr.slice(0,4)}\nTotal: ${mxn(totalGeneral)}\nGonzalo: ${mxn(totalGonzalo)}${totalJavi>0?`\nJavi: ${mxn(totalJavi)}`:''}\n\nSe descuenta de Cuenta Corriente.`);
+  if(!confirmar)return;
+  const hoy=new Date();
+  const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  try{
+    // Registro en CC
+    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",desc:`Pago ${v.label} — ${MESES[parseInt(mesStr.slice(5,7))-1]} ${mesStr.slice(0,4)}`,monto:totalGonzalo,monto_javi:totalJavi,monto_total:totalGeneral,fecha:fechaHoy,tc_mes_pagado:mesStr,tarjeta_pagada:tarjeta});
+    // Registro pago en TC
+    await colUsuario().add({cuenta:"tc",tipo:"gasto",cat:"pago",desc:`Pago ${v.label}`,monto:totalGeneral,fecha:fechaHoy,mes_facturacion:mesStr,tarjeta,pago_tc_ref:true});
+    mostrarToast(`✅ ${v.label} pagada — ${mxn(totalGeneral)} descontado de CC`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
 /* TABS */
@@ -755,10 +769,11 @@ function setDeudaTCTarjeta(t){deudaTCTarjeta=t;renderTC();}
 function renderDeudaTC(){
   const chevron=deudaTCExpandida?"▲":"▼";let inner="";
   if(deudaTCExpandida){
-    const chipsHtml=Object.entries(TARJETAS).map(([k,v])=>`<button onclick="setDeudaTCTarjeta('${k}')" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${deudaTCTarjeta===k?v.color:"var(--border2)"};background:${deudaTCTarjeta===k?v.color+"22":"var(--surface2)"};color:${deudaTCTarjeta===k?v.color:"var(--muted)"};font-family:inherit">${v.icon} ${v.label}</button>`).join("");
+    const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
+    const chipsHtml=Object.entries(TARJETAS).filter(([k])=>k!=="cc").map(([k,v])=>`<button onclick="setDeudaTCTarjeta('${k}')" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${deudaTCTarjeta===k?v.color:"var(--border2)"};background:${deudaTCTarjeta===k?v.color+"22":"var(--surface2)"};color:${deudaTCTarjeta===k?v.color:"var(--muted)"};font-family:inherit">${v.icon} ${v.label}</button>`).join("");
     const hoy=new Date();const diaCierre=23;
     const ultimoCierre=hoy.getDate()>diaCierre?new Date(hoy.getFullYear(),hoy.getMonth(),diaCierre):new Date(hoy.getFullYear(),hoy.getMonth()-1,diaCierre);
-    const gastos=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&(t.tarjeta||"")=== deudaTCTarjeta);
+    const gastos=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&(t.tarjeta||"")===deudaTCTarjeta);
     let deuda=0,deudaGonzalo=0,deudaJavi=0,pendienteSinFacturar=0,cuotasFuturas=0;
     gastos.forEach(t=>{
       const fechaCompra=new Date((t.fecha||"")+"T12:00:00");const montoTotal=t.monto_total||t.monto;const montoCuota=t.monto||montoTotal;const cuotasTotales=montoCuota>0?Math.round(montoTotal/montoCuota):1;let pendiente=0;
@@ -766,16 +781,33 @@ function renderDeudaTC(){
       else{const mesesFacturados=(ultimoCierre.getFullYear()-fechaCompra.getFullYear())*12+(ultimoCierre.getMonth()-fechaCompra.getMonth())+1;const cuotasFacturadas=Math.min(cuotasTotales,mesesFacturados);const cuotasRestantes=Math.max(0,cuotasTotales-cuotasFacturadas);pendiente=cuotasRestantes*montoCuota;cuotasFuturas+=pendiente;}
       deuda+=pendiente;const fracJavi=montoTotal>0?(t.monto_javi||0)/montoTotal:0;deudaJavi+=pendiente*fracJavi;deudaGonzalo+=pendiente*(1-fracJavi);
     });
+    // Verificar si ya pagó esta tarjeta este mes
+    const yaPageTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===deudaTCTarjeta);
+    const {totalGeneral,totalGonzalo,totalJavi}=calcularTotalTCDeMes(mesVisto,deudaTCTarjeta);
+    const v=TARJETAS[deudaTCTarjeta];
     inner=`<div style="padding:14px 16px;border-top:1px solid var(--border2)">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${chipsHtml}</div>
       <div style="background:${deuda>0?"#FEF2F2":"#F0FDF4"};border:1px solid ${deuda>0?"#FECACA":"#BBF7D0"};border-radius:14px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
         <div><div style="font-size:10px;color:${deuda>0?"var(--red)":"var(--green)"};font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Deuda pendiente total</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:24px;color:${deuda>0?"var(--red)":"var(--green)"}">${mxn(deuda)}</div></div>
         <div style="text-align:right"><div style="font-size:10px;color:var(--muted);margin-bottom:2px">Corte: día 23</div><div style="font-size:11px;color:var(--dim)">${ultimoCierre.toLocaleDateString("es-CL",{day:"numeric",month:"short"})}</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px"><div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;margin-bottom:4px">⏳ Sin facturar</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--gold)">${mxn(pendienteSinFacturar)}</div></div>
         <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:12px"><div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;margin-bottom:4px">📅 Cuotas futuras</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:var(--blue)">${mxn(cuotasFuturas)}</div></div>
       </div>
+      ${totalGeneral>0?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px">Facturado ${MESES[mes]} ${anio}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:18px">${mxn(totalGeneral)}</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:2px">G: ${mxn(totalGonzalo)}${totalJavi>0?` · J: ${mxn(totalJavi)}`:''}</div>
+          </div>
+          ${yaPageTC
+            ?`<div style="padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D">✅ Pagada este mes</div>`
+            :`<button onclick="pagarTarjetaMes('${deudaTCTarjeta}','${mesVisto}',${totalGeneral},${totalGonzalo},${totalJavi})" style="padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid ${v.color}60;background:${v.color}18;color:${v.color};font-family:inherit">⚡ Pagar ${v.icon} ${v.label}</button>`
+          }
+        </div>
+      </div>`:''}
     </div>`;
   }
   return`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;margin-top:4px"><div onclick="toggleDeudaTC()" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer"><div style="display:flex;align-items:center;gap:10px"><div style="width:34px;height:34px;border-radius:9px;background:#F43F5E18;display:flex;align-items:center;justify-content:center;font-size:18px">💳</div><span style="font-weight:700;font-size:15px">Deuda total TC</span></div><span style="color:var(--dim);font-size:12px">${chevron}</span></div>${inner}</div>`;
