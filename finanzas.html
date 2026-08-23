@@ -924,18 +924,16 @@ function renderCreditos(){
     const badgeRegla=c.regla==="gonzalo"?`<span style="background:#8B5CF620;border:1px solid #8B5CF660;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">100% Gonzalo</span>`:`<span style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">50%·50%</span>`;
     const badgeIngreso=esIngreso?`<span style="background:#10B98120;border:1px solid #10B98160;color:#15803D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">↑ Ingreso</span>`:'';
     const montoColor=esIngreso?'var(--green)':'var(--text)';const montoSigno=esIngreso?'+':'';
-    // "Pagado" solo si existe gasto espejo en CC creado por el botón ⚡ Pagar
-    // (credito_cc_ref apunta al doc en Créditos; credito_consumo_ref para consumo via TC)
     const cuotasEsteMes=items.filter(t=>(t.mes_facturacion||t.fecha.slice(0,7))===mesVisto);
-    const yaPagado=cuotasEsteMes.some(t=>
-      data.some(x=>x.cuenta==="cc"&&x.credito_cc_ref===t.id) ||
-      data.some(x=>x.cuenta==="tc"&&x.credito_consumo_ref===true&&x.credito_cc_ref===t.id)
-    );
+    const hoyStr=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const esMesActual=mesVisto===hoyStr;
+    // Pagado solo si existe cuota con campo pagado_automatico=true (creada con botón ⚡ Pagar)
+    const yaPagadoAutomatico=esMesActual&&cuotasEsteMes.some(t=>t.pagado_automatico===true);
     let btnPagar='';
     if(!esIngreso){
-      if(yaPagado){
+      if(yaPagadoAutomatico){
         btnPagar=`<div style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ Pagado</div>`;
-      }else{
+      }else if(esMesActual){
         btnPagar=`<button onclick="pagoAutomatico('${id}',event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`;
       }
     }
@@ -1056,9 +1054,13 @@ async function pagoAutomatico(catId,e){
   const hoy=new Date();
   const mesFacAuto=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
   const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  // Verificar si ya existe cuota de crédito este mes
   const yaExiste=data.find(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.mes_facturacion||t.fecha.slice(0,7))===mesFacAuto);
-  if(yaExiste){mostrarToast(`⚠️ Ya hay un pago registrado para ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}`);return;}
-  const nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:catId,
+  if(yaExiste){
+    mostrarToast(`⚠️ Ya existe pago de ${MESES[hoy.getMonth()]} — revisa los registros`);
+    return;
+  }
+  const nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:catId,pagado_automatico:true,
     desc:ultima.desc.replace(/cuota \d+\/\d+/i,`cuota ${(ultima.cuota_actual||1)+1}/${ultima.cuotas_total||'?'}`),
     monto:ultima.monto,fecha:fechaHoy,mes_facturacion:mesFacAuto,
     ...(ultima.monto_total?{monto_total:ultima.monto_total}:{}),
