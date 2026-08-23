@@ -505,7 +505,7 @@ const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","
 const MESES_CORTOS=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 let data=[],dataCompartidoJavi=[],mes=new Date().getMonth(),anio=new Date().getFullYear();
 let tabActual="resumen",filtroTC="todas",filtroCC="todas",filtroPersonaTC="todas",filtroTarjeta="todas",filtroAhorro="todas",filtroCredito="todas";
-const TARJETAS={visa_singular:{label:"Visa Singular",icon:"💳",color:"#3B82F6"},visa_signature:{label:"Visa Signature",icon:"💎",color:"#8B5CF6"},cencosud:{label:"Cencosud",icon:"🏪",color:"#10B981"}};
+const TARJETAS={visa_singular:{label:"Visa Singular",icon:"💳",color:"#3B82F6"},visa_signature:{label:"Visa Signature",icon:"💎",color:"#8B5CF6"},cencosud:{label:"Cencosud",icon:"🏪",color:"#10B981"},cc:{label:"Cta. Corriente",icon:"🏦",color:"#F59E0B"}};
 const CUENTAS_AHORRO={renta_plus:{label:"Renta Plus",icon:"📈",color:"#F59E0B"},racional:{label:"Racional",icon:"🧠",color:"#8B5CF6"},mercado_pago:{label:"Mercado Pago",icon:"💙",color:"#3B82F6"}};
 let vistaTC="categorias",catExpandida=null,catExpandidaCredito=null;
 let editandoId=null,modalTipo="gasto",toastTimer=null;
@@ -1036,11 +1036,16 @@ async function confirmarTarjetaPago(){
   if(!confirmar){_pagoCredPendiente=null;return;}
   try{
     const docCred=await colUsuario().add(nuevaCuota);
-    // Gasto espejo en TC
-    await colUsuario().add({cuenta:"tc",tipo:"gasto",cat:catId,desc:nuevaCuota.desc,monto:nuevaCuota.monto,fecha:nuevaCuota.fecha,mes_facturacion:nuevaCuota.mes_facturacion,tarjeta:_pagoCredTarjetaElegida,credito_consumo_ref:true,credito_cc_ref:docCred.id,...(nuevaCuota.monto_total?{monto_total:nuevaCuota.monto_total}:{}),...(nuevaCuota.monto_javi?{monto_javi:nuevaCuota.monto_javi}:{})});
-    // Gasto espejo en CC (el pago sale de tu cuenta)
-    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:catId,desc:nuevaCuota.desc,monto:nuevaCuota.monto,fecha:nuevaCuota.fecha,credito_cc_ref:docCred.id,...(nuevaCuota.monto_total?{monto_total:nuevaCuota.monto_total}:{})});
-    mostrarToast(`✅ ${c.label} registrado — descontado de CC y ${TARJETAS[_pagoCredTarjetaElegida].label}${montoJavi>0?' · Javi debe '+mxn(montoJavi):''}`);
+    if(_pagoCredTarjetaElegida==="cc"){
+      // Pago directo desde CC — solo gasto en CC, sin espejo TC
+      await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:catId,desc:nuevaCuota.desc,monto:nuevaCuota.monto,fecha:nuevaCuota.fecha,credito_cc_ref:docCred.id,...(nuevaCuota.monto_total?{monto_total:nuevaCuota.monto_total}:{})});
+      mostrarToast(`✅ ${c.label} registrado — descontado de CC${montoJavi>0?' · Javi debe '+mxn(montoJavi):''}`);
+    }else{
+      // Pago con TC — espejo en TC + gasto en CC
+      await colUsuario().add({cuenta:"tc",tipo:"gasto",cat:catId,desc:nuevaCuota.desc,monto:nuevaCuota.monto,fecha:nuevaCuota.fecha,mes_facturacion:nuevaCuota.mes_facturacion,tarjeta:_pagoCredTarjetaElegida,credito_consumo_ref:true,credito_cc_ref:docCred.id,...(nuevaCuota.monto_total?{monto_total:nuevaCuota.monto_total}:{}),...(nuevaCuota.monto_javi?{monto_javi:nuevaCuota.monto_javi}:{})});
+      await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:catId,desc:nuevaCuota.desc,monto:nuevaCuota.monto,fecha:nuevaCuota.fecha,credito_cc_ref:docCred.id,...(nuevaCuota.monto_total?{monto_total:nuevaCuota.monto_total}:{})});
+      mostrarToast(`✅ ${c.label} registrado — descontado de CC y ${TARJETAS[_pagoCredTarjetaElegida].label}${montoJavi>0?' · Javi debe '+mxn(montoJavi):''}`);
+    }
   }catch(err){mostrarToast("❌ Error: "+err.message);}
   _pagoCredPendiente=null;
 }
