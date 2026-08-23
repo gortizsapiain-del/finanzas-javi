@@ -923,9 +923,9 @@ function renderCreditos(){
     const badgeIngreso=esIngreso?`<span style="background:#10B98120;border:1px solid #10B98160;color:#15803D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">↑ Ingreso</span>`:'';
     const montoColor=esIngreso?'var(--green)':'var(--text)';const montoSigno=esIngreso?'+':'';
     const descuentaTC=["credito_consumo","credito_consumo_2"].includes(id);
-    // Verificar si ya existe pago del mes
-    const hoy=new Date();const mesFacAuto=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-    const yaExistePago=data.find(t=>t.cuenta==="creditos"&&t.cat===id&&(t.mes_facturacion||t.fecha.slice(0,7))===mesFacAuto);
+    // Verificar si ya existe pago del mes visualizado
+    const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
+    const yaExistePago=data.find(t=>t.cuenta==="creditos"&&t.cat===id&&(t.mes_facturacion||t.fecha.slice(0,7))===mesVisto);
     html+=`<div style="background:var(--surface);border:1px solid ${abierta?c.color+'60':'var(--border)'};border-radius:14px;overflow:hidden">
       <div onclick="toggleCatCredito('${id}')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer">
         <div style="width:36px;height:36px;border-radius:9px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.icon}</div>
@@ -966,10 +966,10 @@ function renderCreditos(){
                 <button class="btn-icon" onclick="event.stopPropagation();abrirModal('${t.id}')">✏️</button>
                 <button class="btn-icon" onclick="event.stopPropagation();eliminar('${t.id}')">🗑️</button>
               </div>
-              ${tieneJavi?`<div style="padding:6px 10px 8px;border-top:1px solid var(--border);background:${yaPagoJavi?'#F0FDF4':'#FFFBEB'}">
+              ${tieneJavi?`<div style="padding:6px 10px 8px;border-top:1px solid var(--border);background:${yaPagoJavi?'#F0FDF4':'#FFFBEB'};display:flex;align-items:center;justify-content:space-between;gap:8px">
                 ${yaPagoJavi
-                  ?`<div style="font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:6px">✅ Javi pagó ${mxn(t.monto_javi)} <span style="font-weight:400;color:var(--dim)">· ${fechaLocal(yaPagoJavi.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"})}</span></div>`
-                  :`<button onclick="registrarPagoJaviCredito('${t.id}',event)" style="width:100%;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">💚 Javi pagó ${mxn(t.monto_javi)}</button>`
+                  ?`<div style="font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:6px;flex:1">✅ Javi pagó ${mxn(t.monto_javi)} <span style="font-weight:400;color:var(--dim)">· ${fechaLocal(yaPagoJavi.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"})}</span></div><button onclick="pagoAutomaticoJavi('${t.cat}',event)" style="padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit;white-space:nowrap">⚡ Pagar siguiente</button>`
+                  :`<div style="font-size:11px;color:#92400E;font-weight:600;flex:1">💰 Javi debe ${mxn(t.monto_javi)}</div><button onclick="registrarPagoJaviCredito('${t.id}',event)" style="padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit;white-space:nowrap">💚 Registrar pago</button>`
                 }
               </div>`:''}
             </div>`;
@@ -1050,13 +1050,63 @@ async function pagoAutomatico(catId,e){
     // Abrir modal para elegir tarjeta
     abrirModalTarjeta(catId,nuevaCuota,montoJavi);
   }else{
-    // Crédito hipotecario o similar — solo registrar en Créditos
+    // Crédito hipotecario / arriendo — registra en Créditos + gasto espejo en CC
     const c=CATS[catId];const montoTotal=nuevaCuota.monto_total||nuevaCuota.monto;
-    const confirmar=confirm(`¿Registrar pago de ${c.icon} ${c.label}?\n\nMonto: ${mxn(montoTotal)}\nMes: ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}${nuevaCuota.cuota_actual?`\nCuota: ${nuevaCuota.cuota_actual}/${nuevaCuota.cuotas_total}`:''}`);
+    const confirmar=confirm(`¿Registrar pago de ${c.icon} ${c.label}?\n\nMonto: ${mxn(montoTotal)}\nMes: ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}${nuevaCuota.cuota_actual?`\nCuota: ${nuevaCuota.cuota_actual}/${nuevaCuota.cuotas_total}`:''}\n🏦 Descuenta de Cuenta Corriente`);
     if(!confirmar)return;
-    try{await colUsuario().add(nuevaCuota);mostrarToast(`✅ ${c.label} registrado`);}
+    try{
+      const docCred=await colUsuario().add(nuevaCuota);
+      // Gasto espejo en CC
+      await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:catId,desc:nuevaCuota.desc,monto:nuevaCuota.monto,fecha:nuevaCuota.fecha,mes_facturacion:nuevaCuota.mes_facturacion,credito_cc_ref:docCred.id,...(nuevaCuota.monto_total?{monto_total:nuevaCuota.monto_total}:{}),...(nuevaCuota.monto_javi?{monto_javi:nuevaCuota.monto_javi}:{})});
+      mostrarToast(`✅ ${c.label} registrado — descontado de CC`);
+    }
     catch(err){mostrarToast("❌ Error: "+err.message);}
   }
+}
+
+/* ── PAGO AUTOMÁTICO JAVI (siguiente cuota en CC) ── */
+async function pagoAutomaticoJavi(catId,e){
+  e.stopPropagation();
+  // Buscar la última cuota de esta categoría que tiene monto_javi
+  const historial=data.filter(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.monto_javi||0)>0)
+    .sort((a,b)=>{const ra=a.mes_facturacion||a.fecha;const rb=b.mes_facturacion||b.fecha;return rb.localeCompare(ra);});
+  if(!historial.length){mostrarToast("⚠️ No hay cuotas con parte de Javi en esta categoría");return;}
+  const ultima=historial[0];
+  const hoy=new Date();
+  const mesFacAuto=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+  const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  // Verificar si ya existe cuota del crédito para este mes
+  const cuotaEsteMes=data.find(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.monto_javi||0)>0&&(t.mes_facturacion||t.fecha.slice(0,7))===mesFacAuto);
+  if(cuotaEsteMes){
+    // Ya existe la cuota — verificar si Javi ya pagó
+    const yaRegistrado=data.find(x=>x.cuenta==="cc"&&x.cat==="pago_javi_credito"&&x.credito_ref===cuotaEsteMes.id);
+    if(yaRegistrado){mostrarToast("⚠️ Ya se registró el pago de Javi este mes");return;}
+    // Registrar el pago de Javi para la cuota existente
+    const confirmar=confirm(`¿Registrar pago de Javi en CC?\n\n${cuotaEsteMes.desc}\nMonto Javi: ${mxn(cuotaEsteMes.monto_javi)}\nFecha: hoy (${fechaHoy})`);
+    if(!confirmar)return;
+    try{
+      await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi_credito",desc:`Pago Javi — ${cuotaEsteMes.desc}`,monto:cuotaEsteMes.monto_javi,fecha:fechaHoy,credito_ref:cuotaEsteMes.id});
+      mostrarToast(`✅ Pago Javi registrado: ${mxn(cuotaEsteMes.monto_javi)} en CC`);
+    }catch(err){mostrarToast("❌ Error: "+err.message);}
+    return;
+  }
+  // No existe cuota del mes — crear cuota nueva y registrar pago Javi
+  const nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:catId,
+    desc:ultima.desc.replace(/cuota \d+\/\d+/i,`cuota ${(ultima.cuota_actual||1)+1}/${ultima.cuotas_total||'?'}`),
+    monto:ultima.monto,fecha:fechaHoy,mes_facturacion:mesFacAuto,
+    ...(ultima.monto_total?{monto_total:ultima.monto_total}:{}),
+    ...(ultima.monto_javi?{monto_javi:ultima.monto_javi}:{}),
+    ...(ultima.monto_uf?{monto_uf:ultima.monto_uf}:{}),
+    ...(ultima.cuotas_total?{cuotas_total:ultima.cuotas_total,cuota_actual:(ultima.cuota_actual||1)+1}:{}),
+  };
+  const c=CATS[catId];const montoJavi=nuevaCuota.monto_javi||0;const montoTotal=nuevaCuota.monto_total||nuevaCuota.monto;
+  const confirmar=confirm(`¿Registrar pago Javi de ${c.icon} ${c.label}?\n\nCuota: ${mxn(montoTotal)} total\nJavi paga: ${mxn(montoJavi)}\nSe crea la cuota y se registra el pago de Javi en CC.`);
+  if(!confirmar)return;
+  try{
+    const docCred=await colUsuario().add(nuevaCuota);
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi_credito",desc:`Pago Javi — ${nuevaCuota.desc}`,monto:montoJavi,fecha:fechaHoy,credito_ref:docCred.id});
+    mostrarToast(`✅ Cuota creada y pago Javi registrado: ${mxn(montoJavi)}`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
 /* ── REGISTRO PAGO JAVI EN CC ── */
