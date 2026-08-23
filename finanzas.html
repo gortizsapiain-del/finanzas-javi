@@ -161,6 +161,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <button class="tab tab-gonzalo" onclick="setTab('cc')">🏦 Cta. Corriente</button>
       <button class="tab tab-gonzalo" onclick="setTab('ahorros')">💎 Ahorros</button>
       <button class="tab tab-gonzalo" onclick="setTab('creditos')">🏛️ Créditos</button>
+      <button class="tab tab-gonzalo" onclick="setTab('pagos')">💸 Pagos</button>
       <button class="tab tab-skinlux" style="display:none" onclick="setTab('ventas')">💰 Ventas</button>
       <button class="tab tab-skinlux" style="display:none" onclick="setTab('compras')">🛒 Compras</button>
       <button class="tab tab-skinlux" style="display:none" onclick="setTab('iva')">📋 IVA F29</button>
@@ -180,6 +181,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div id="viewCC" style="display:none"></div>
   <div id="viewAhorros" style="display:none"></div>
   <div id="viewCreditos" style="display:none"></div>
+  <div id="viewPagos" style="display:none"></div>
   <div id="viewVentas" style="display:none"></div>
   <div id="viewCompras" style="display:none"></div>
   <div id="viewIVA" style="display:none"></div>
@@ -555,13 +557,14 @@ function render(){
   document.getElementById("monthNav").style.display=perfil==="skinlux"?"none":"";
   document.querySelectorAll(".tab-gonzalo").forEach(el=>el.style.display=perfil==="gonzalo"?"":"none");
   document.querySelectorAll(".tab-skinlux").forEach(el=>el.style.display=perfil==="skinlux"?"":"none");
-  const TABS_SIN_AGREGAR=["iva","flujo"];
+  const TABS_SIN_AGREGAR=["iva","flujo","pagos"];
   document.getElementById("btnAgregar").style.display=TABS_SIN_AGREGAR.includes(tabActual)?"none":"";
   document.getElementById("viewResumen").style.display=tabActual==="resumen"?"":"none";
   document.getElementById("viewTC").style.display=(tabActual==="tc"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewCC").style.display=(tabActual==="cc"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewAhorros").style.display=(tabActual==="ahorros"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewCreditos").style.display=(tabActual==="creditos"&&perfil==="gonzalo")?"":"none";
+  document.getElementById("viewPagos").style.display=(tabActual==="pagos"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewVentas").style.display=(tabActual==="ventas"&&perfil==="skinlux")?"":"none";
   document.getElementById("viewCompras").style.display=(tabActual==="compras"&&perfil==="skinlux")?"":"none";
   document.getElementById("viewIVA").style.display=(tabActual==="iva"&&perfil==="skinlux")?"":"none";
@@ -573,6 +576,7 @@ function render(){
     if(tabActual==="cc")renderCC();
     if(tabActual==="ahorros")renderAhorros();
     if(tabActual==="creditos")renderCreditos();
+    if(tabActual==="pagos")renderPagos();
   }else{
     if(tabActual==="resumen")renderResumenSL();
     if(tabActual==="ventas")renderVentas();
@@ -1552,6 +1556,113 @@ function mostrarToast(msg){clearTimeout(toastTimer);let t=document.getElementByI
 async function cargarValorUF(){if(valorUF)return valorUF;try{const hoy=new Date();const dd=String(hoy.getDate()).padStart(2,'0');const mm=String(hoy.getMonth()+1).padStart(2,'0');const yyyy=hoy.getFullYear();const res=await fetch(`https://mindicador.cl/api/uf/${dd}-${mm}-${yyyy}`);const json=await res.json();valorUF=json.serie[0].valor;}catch(e){valorUF=38500;}return valorUF;}
 function mostrarCampoUF(mostrar){document.getElementById("fieldUF").style.display=mostrar?"":"none";document.getElementById("labelMonto").textContent=mostrar?"Monto (CLP, calculado)":"Monto (CLP)";if(!mostrar){document.getElementById("fMontoUF").value="";document.getElementById("ufPreviewCLP").textContent="";}}
 async function convertirUFaCLP(){const uf=parseFloat(document.getElementById("fMontoUF").value)||0;if(uf<=0){document.getElementById("fMonto").value="";document.getElementById("ufPreviewCLP").textContent="";return;}const vuf=await cargarValorUF();const clp=Math.round(uf*vuf);document.getElementById("fMonto").value=clp;document.getElementById("ufPreviewCLP").textContent=`${uf} UF × $${Math.round(vuf).toLocaleString('es-CL')} = ${mxn(clp)}`;actualizarPreviewCuotas();}
+
+/* ── PAGOS ── */
+function renderPagos(){
+  const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const hoyStr=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  const esMesActual=mesVisto===hoyStr;
+  let html='';
+
+  // ── SECCIÓN 1: TC por tarjeta ──
+  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:#8B5CF622;display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>
+      <div style="font-weight:700;font-size:15px">Tarjetas de crédito</div>
+    </div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:8px">`;
+  Object.entries(TARJETAS).filter(([k])=>k!=="cc").forEach(([k,v])=>{
+    const{totalGeneral,totalGonzalo,totalJavi}=calcularTotalTCDeMes(mesVisto,k);
+    const yaPageTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===k);
+    if(totalGeneral===0&&!yaPageTC)return;
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${yaPageTC?'#BBF7D0':'var(--border)'}">
+      <div style="min-width:0">
+        <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px">${v.icon} ${v.label}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${mxn(totalGeneral)} facturado${totalJavi>0?` · J: ${mxn(totalJavi)}`:''}</div>
+      </div>
+      ${yaPageTC
+        ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagada</div>`
+        :(esMesActual&&totalGeneral>0?`<button onclick="pagarTarjetaMes('${k}','${mesVisto}',${totalGeneral},${totalGonzalo},${totalJavi})" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${v.color}60;background:${v.color}18;color:${v.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`:'')
+      }
+    </div>`;
+  });
+  html+=`</div></div>`;
+
+  // ── SECCIÓN 2: Créditos ──
+  const creditosCats=["credito_consumo","credito_consumo_2","credito_hipotecario"];
+  const gm=data.filter(t=>t.cuenta==="creditos").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===mes&&d.getFullYear()===anio;});
+  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:#F59E0B22;display:flex;align-items:center;justify-content:center;font-size:18px">🏛️</div>
+      <div style="font-weight:700;font-size:15px">Créditos</div>
+    </div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:8px">`;
+  creditosCats.forEach(catId=>{
+    const c=CATS[catId];
+    const cuotasEsteMes=gm.filter(t=>t.cat===catId);
+    const total=cuotasEsteMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
+    const yaPagado=cuotasEsteMes.some(t=>t.pagado_automatico===true);
+    if(total===0&&!yaPagado)return;
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${yaPagado?'#BBF7D0':'var(--border)'}">
+      <div style="min-width:0">
+        <div style="font-weight:700;font-size:14px">${c.icon} ${c.label}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${mxn(total)}</div>
+      </div>
+      ${yaPagado
+        ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div>`
+        :(esMesActual?`<button onclick="pagoAutomatico('${catId}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`:'')
+      }
+    </div>`;
+    // Sub-fila Javi si aplica
+    const javiTotal=cuotasEsteMes.reduce((s,t)=>s+(t.monto_javi||0),0);
+    if(javiTotal>0){
+      cuotasEsteMes.forEach(t=>{
+        if(!(t.monto_javi>0))return;
+        const pagosJavi=data.filter(x=>x.cuenta==="cc"&&x.cat==="pago_javi_credito"&&x.credito_ref===t.id);
+        const totalPagadoJavi=pagosJavi.reduce((s,x)=>s+(x.monto||0),0);
+        const saldoJavi=Math.max(0,(t.monto_javi||0)-totalPagadoJavi);
+        const pagadoTotal=saldoJavi===0&&totalPagadoJavi>0;
+        html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px 10px 28px;background:#FFFBEB;border-radius:10px;border:1px solid ${pagadoTotal?'#BBF7D0':'#FDE68A'}">
+          <div style="min-width:0">
+            <div style="font-size:12px;font-weight:600;color:#92400E">💰 Javi — ${c.label}</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:1px">${pagadoTotal?'Pagado completo':`Debe ${mxn(saldoJavi)}${totalPagadoJavi>0?` · ya pagó ${mxn(totalPagadoJavi)}`:''}`}</div>
+          </div>
+          ${pagadoTotal
+            ?`<div style="font-size:11px;font-weight:700;color:#15803D">✅</div>`
+            :`<button onclick="abrirModalPagoJavi('${t.id}',${t.monto_javi||0},${totalPagadoJavi},event)" style="flex-shrink:0;padding:7px 12px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit;white-space:nowrap">💚 Registrar</button>`
+          }
+        </div>`;
+      });
+    }
+  });
+  html+=`</div></div>`;
+
+  // ── SECCIÓN 3: Historial de pagos del mes ──
+  const pagosDelMes=data.filter(t=>{
+    if(!["pago_tc","pago_javi_credito","credito_consumo","credito_consumo_2","credito_hipotecario"].includes(t.cat))return false;
+    const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);
+    return d.getMonth()===mes&&d.getFullYear()===anio&&(t.cuenta==="cc"||(t.cuenta==="creditos"&&t.pagado_automatico));
+  }).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(pagosDelMes.length){
+    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border)"><div style="font-weight:700;font-size:15px">📋 Historial de pagos — ${MESES[mes]}</div></div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:6px">
+        ${pagosDelMes.map(t=>{
+          const c=CATS[t.cat]||{icon:"💸",label:"Pago"};
+          const fecha=fechaLocal(t.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"});
+          const monto=t.monto_total||t.monto;
+          return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border-radius:10px">
+            <div style="width:30px;height:30px;border-radius:8px;background:#10B98120;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${c.icon}</div>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(t.desc||c.label)}</div><div style="font-size:11px;color:var(--dim)">${fecha}</div></div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(monto)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById("viewPagos").innerHTML=html||emptyState("💸","Sin pagos este mes","Usa los botones de arriba para registrar pagos");
+}
 
 /* ── SKIN LUX (stubs) ── */
 function renderResumenSL(){document.getElementById("viewResumen").innerHTML='<div class="empty"><div class="empty-icon">✨</div><div class="empty-title">Skin Lux</div><div class="empty-sub">Módulo disponible</div></div>';}
