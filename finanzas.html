@@ -617,9 +617,9 @@ function renderResumen(){
   const totalGastos=tcTotal+ccGastosReales+creditosTotalNeto;
   const totalGastosGonzalo=tcGonzalo+ccGastosGonzalo+creditosGonzaloNeto;
   const totalGastosJavi=tcJavi+ccGastosJavi+creditosJaviNeto;
-  const deudaTotal=tcParaTotal+creditosTotalNeto;
-  const deudaGonzalo=tcGonzaloParaTotal+creditosGonzaloNeto;
-  const deudaJavi=tcJaviParaTotal+creditosJaviNeto;
+  const deudaTotal=Math.max(0,tcParaTotal+creditosTotalNeto);
+  const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
+  const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
   const _GFIJOS=375000+85000+75000;
   const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
