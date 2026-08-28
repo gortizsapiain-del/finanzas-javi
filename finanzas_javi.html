@@ -366,19 +366,10 @@ const SALDO_INICIAL_CC = 325289;
 
 // Gastos fijos mensuales de Gonzalo (lo que Javi le debe depositar)
 const GONZALO_FIJOS = [
-  {cat:"hipotecario",    desc:"Hipotecario",    icon:"🏠", color:"#C9A87A", monto:375000, cuota_base:20, cuotas_total:360},
-  {cat:"gastos_comunes", desc:"Gastos Comunes", icon:"🏢", color:"#7BB5A0", monto:85000},
-  {cat:"gastos_basicos", desc:"Gastos Básicos", icon:"💡", color:"#9B8AB0", monto:75000},
+  {cat:"gastos_basicos", desc:"Gastos Básicos (parte Javi)", icon:"💡", color:"#9B8AB0", monto:74000},
 ];
-// Estimados variables (referencia mensual, el monto real puede variar)
-const GONZALO_ESTIMADOS = [
-  {cat:"cuotas_comp",     desc:"Cuotas Compartidas",  icon:"🤝", color:"#A07848", ref:204096},
-  {cat:"extra_super",     desc:"Extra Supermercado",  icon:"🛒", color:"#B8906A", ref:12765},
-  {cat:"comida_chancheo", desc:"Comida Chancheo",     icon:"🍔", color:"#E8855A", ref:8392},
-  {cat:"plataformas",     desc:"Plataformas",         icon:"📱", color:"#7A9AB0", ref:1596},
-  {cat:"farmacia_gonz",   desc:"Farmacia",            icon:"💊", color:"#7AB0D4", ref:1186},
-  {cat:"varios_gonz",     desc:"Varios",              icon:"📦", color:"#A08898", ref:14990},
-];
+// Variables: 100% desde Firebase (compartido_gonzalo), sin estimados hardcodeados
+const GONZALO_ESTIMADOS = [];
 
 // ══════════════════════════════════════════
 //  ESTADO
@@ -655,11 +646,12 @@ function renderResumen(){
   const offset=(anio-2026)*12+(mes-7);
   const gonzaloFijosTotal=perfil==="javiera"?GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0):0;
   const varMRes=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo"));
-  // Para cada estimado: usar real si existe, si no usar referencia
-  const gonzaloVarTotal=perfil==="javiera"?(GONZALO_ESTIMADOS.reduce((s,g)=>{
-    const real=varMRes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
-    return s+(real>0?real:g.ref);
-  },0)+varMRes.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0)):varMRes.reduce((s,t)=>s+t.monto,0);
+  const gonzaloVarTotal=varMRes.reduce((s,t)=>s+t.monto,0);
+  const mesStrRes=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const creditosGonzaloRes=dataCompartido.filter(t=>{
+    const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
+    return ref===mesStrRes&&t.cat==="credito_hipotecario";
+  }).reduce((s,t)=>s+(t.monto||0),0);
   const pagosJaviResumen=allData().filter(function(t){
     return t.cat==="pago_javi"&&t.from_gonzalo;
   }).filter(function(t){
@@ -675,7 +667,7 @@ function renderResumen(){
     return ref===(anio+"-"+String(mes+1).padStart(2,"0"));
   });
   const totalPagosGonzalo=pagosGonzaloMes.reduce((s,t)=>s+(t.monto||0),0);
-  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal-totalDescuentos-totalPagosGonzalo);
+  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal+creditosGonzaloRes-totalDescuentos-totalPagosGonzalo);
   // Total = TC Pendiente + Créditos + Gonzalo
   const totalGastos=tcPendiente+credTotal+gonzaloTotal;
   // Saldo CC acumulado
@@ -1037,10 +1029,12 @@ function renderGonzalo(){
 
   // Gastos variables del mes (cuenta:'gonzalo' en Firebase + sincronizados de Gonzalo)
   const varM=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_gonzalo"));
-  const totalVar=GONZALO_ESTIMADOS.reduce((s,g)=>{
-    const real=varM.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);
-    return s+(real>0?real:g.ref);
-  },0)+varM.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
+  const totalVar=varM.reduce((s,t)=>s+t.monto,0);
+  const mesStrGonz=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const creditosGonzGonzalo=dataCompartido.filter(t=>{
+    const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
+    return ref===mesStrGonz&&t.cat==="credito_hipotecario";
+  }).reduce((s,t)=>s+(t.monto||0),0);
   const pagosAJaviMes=allData().filter(function(t){
     return t.cat==="pago_javi"&&t.from_gonzalo;
   }).filter(function(t){
@@ -1055,7 +1049,7 @@ function renderGonzalo(){
     return ref===(anio+"-"+String(mes+1).padStart(2,"0"));
   });
   const totalPagosGonzaloTab=pagosGonzaloTab.reduce((s,t)=>s+(t.monto||0),0);
-  const total=Math.max(0,totalFijos+totalVar-totalAbonado-totalPagosGonzaloTab);
+  const total=Math.max(0,totalFijos+totalVar+creditosGonzGonzalo-totalAbonado-totalPagosGonzaloTab);
 
   let html='<div style="background:linear-gradient(135deg,#EEF4FF,#E0EAFF);border:1px solid #B0C8F0;border-radius:16px;padding:20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">';
   html+='<div style="min-width:0">';
@@ -1063,7 +1057,7 @@ function renderGonzalo(){
   html+='<div style="font-size:clamp(22px,7vw,30px);font-weight:700;font-family:\'DM Mono\',monospace;color:#3050A0;overflow-wrap:anywhere">'+mxn(total)+'</div>';
   html+=(totalAbonado>0?'<div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:3px">💙 Descuento: −'+mxn(totalAbonado)+'</div>':'');
   html+=(totalPagosGonzaloTab>0?'<div style="font-size:12px;color:#1D4ED8;font-weight:700;margin-top:3px">💙 Pago directo: −'+mxn(totalPagosGonzaloTab)+'</div>':'');
-  html+='<div style="font-size:12px;color:#6080C0;margin-top:4px">Fijos '+mxn(totalFijos)+(totalVar>0?' + Variables '+mxn(totalVar):'')+'</div>';
+  html+='<div style="font-size:12px;color:#6080C0;margin-top:4px">Básicos '+mxn(totalFijos)+(totalVar>0?' + Variables '+mxn(totalVar):'')+(creditosGonzGonzalo>0?' + Hipotecario '+mxn(creditosGonzGonzalo):'')+'</div>';
   html+='</div><div style="font-size:36px;opacity:.4;flex-shrink:0">💙</div></div>';
 
   // ── Fijos ──
@@ -1117,6 +1111,7 @@ function renderGonzalo(){
     html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+(t.from_gonzalo?' · de Gonzalo':'')+'</div></div>';
     html+='<div class="expense-amount">'+mxn(t.monto)+'</div></div>';
   });
+  } // end if(false)
   html+='</div>';
 
   html+='<div style="background:#EEF4FF;border:2px solid #B0C8F0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">';
