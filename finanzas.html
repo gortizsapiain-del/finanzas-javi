@@ -470,8 +470,8 @@ const CATS={
   cuotas_personales:{label:"Cuotas Personales",icon:"💳",color:"#8B5CF6",regla:"gonzalo",pct_g:1,pct_j:0},
   cuotas_depto:{label:"Cuotas Depto",icon:"🏠",color:"#3B82F6",regla:"50_50",pct_g:0.5,pct_j:0.5},
   dividendo_depto:{label:"Dividendo Depto",icon:"🏦",color:"#F59E0B",regla:"50_50",pct_g:0.5,pct_j:0.5},
-  gastos_comunes_depto:{label:"Gastos Comunes Depto",icon:"🔧",color:"#06B6D4",regla:"60_40",pct_g:0.6,pct_j:0.4},
-  gastos_comunes_oficina:{label:"Gastos Comunes Ofic.",icon:"🏢",color:"#14B8A6",regla:"60_40",pct_g:0.6,pct_j:0.4},
+  gastos_comunes_depto:{label:"Gastos Comunes Depto",icon:"🔧",color:"#06B6D4",regla:"gonzalo",pct_g:1,pct_j:0},
+  gastos_comunes_oficina:{label:"Gastos Comunes Ofic.",icon:"🏢",color:"#14B8A6",regla:"gonzalo",pct_g:1,pct_j:0},
   varios_gonzalo:{label:"Varios Gonzalo",icon:"🧾",color:"#A855F7",regla:"gonzalo",pct_g:1,pct_j:0},
   gastos_varios:{label:"Gastos Varios",icon:"📦",color:"#6B7280",regla:"60_40",pct_g:0.6,pct_j:0.4},
   salidas:{label:"Salidas",icon:"🍽️",color:"#F97316",regla:"60_40",pct_g:0.6,pct_j:0.4},
@@ -625,7 +625,7 @@ function renderResumen(){
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
-  const _GFIJOS=70000;
+  const _GFIJOS=74000;
   const pagosAJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesStr;});
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
@@ -1820,8 +1820,8 @@ function renderBasicos(){
   const basicosMes=data.filter(t=>t.cuenta==="cc"&&t.cat==="gastos_depto").filter(t=>{const d=fechaLocal(t.fecha);return d.getMonth()===mes&&d.getFullYear()===anio;});
   const totalBasicos=basicosMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const javiBasicos=basicosMes.reduce((s,t)=>s+(t.monto_javi||0),0);
-  const BASICO_FIJO=140000;
-  const javiParte=70000;
+  const BASICO_FIJO=185000;
+  const javiParte=74000;
   let html=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 20px">
       <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">🏠 Gastos Básicos — ${MESES[mes]} ${anio}</div>
@@ -1914,7 +1914,7 @@ async function confirmarPagoBasicos(mesVisto,btn){
     // Gasto total desde CC
     await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"gastos_depto",desc:`Gastos Básicos ${mesLabel}`,monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesVisto,basicos_ref:true});
     // Ingreso de Javi ($70.000 fijo)
-    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi_basicos",desc:`Pago Javi — Básicos ${mesLabel}`,monto:70000,fecha:fechaHoy,mes_facturacion:mesVisto,monto_total:montoTotal});
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi_basicos",desc:`Pago Javi — Básicos ${mesLabel}`,monto:74000,fecha:fechaHoy,mes_facturacion:mesVisto,monto_total:montoTotal});
     mostrarToast(`✅ Básicos registrados — total ${mxn(montoTotal)} · +$70.000 de Javi`);
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
