@@ -621,7 +621,7 @@ function renderResumen(){
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
-  const _GFIJOS=375000+85000+75000;
+  const _GFIJOS=375000+85000+75000+70000;
   const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
   const javiMes=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo";});
   const _gVar=_GEST.reduce((s,g)=>{const real=javiMes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMes.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
@@ -629,7 +629,7 @@ function renderResumen(){
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
-  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar-totalPagosJavi-totalPagosDirectos);
+  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar+creditosJavi-totalPagosJavi-totalPagosDirectos);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -647,17 +647,18 @@ function renderResumen(){
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Total entre los dos</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaTotal)}</div></div>
         <div onclick="toggleDesglosJavi()" style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:10px 12px;min-width:0;cursor:pointer;user-select:none"><div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe <span style="font-size:10px;opacity:.6">▾</span></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(javiTotalCompartido)}</div></div>
       </div>
-      <div id="desgloseJavi" style="display:none;background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:12px 14px;margin-top:2px">
+      <div style="border-top:1px solid var(--border);margin-bottom:10px"></div>
+      <div id="desgloseJavi" style="display:none;background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:12px 14px;margin-bottom:10px">
         <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Desglose — Javi debe</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos fijos (arriendo, Skin Lux, etc.)</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_GFIJOS)}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos fijos (arriendo, Skin Lux, básicos, etc.)</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_GFIJOS)}</span></div>
           <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos variables compartidos</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_gVar)}</span></div>
+          ${creditosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">🏛️ Su parte créditos</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(creditosJavi)}</span></div>`:''}
           ${totalPagosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--green)">💚 Pagos de Javi</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(totalPagosJavi)}</span></div>`:''}
           ${totalPagosDirectos>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--green)">💙 Transferencias Javi</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(totalPagosDirectos)}</span></div>`:''}
           <div style="border-top:1px solid #FBCFE8;margin-top:4px;padding-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#BE185D;font-weight:700">Total pendiente</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">${mxn(javiTotalCompartido)}</span></div>
         </div>
       </div>
-      <div style="border-top:1px solid var(--border);margin-bottom:10px"></div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--muted)">Total entre los dos</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--muted);overflow-wrap:anywhere">${mxn(deudaTotal)}</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--muted)">💳 TC${pagoTCEsteMes?' <span style="background:#DCFCE7;border:1px solid #BBF7D0;color:#15803D;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">✓ pagada</span>':''}</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:${pagoTCEsteMes?'var(--green)':'var(--muted)'};overflow-wrap:anywhere">${pagoTCEsteMes?'$0':mxn(tcParaTotal)}</span></div>
