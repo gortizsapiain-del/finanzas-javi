@@ -610,7 +610,7 @@ function renderResumen(){
   const creditosM=data.filter(t=>t.cuenta==="creditos"&&t.cat!=="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
  const catsCreditosPagadas=new Set(["credito_consumo","credito_consumo_2","credito_hipotecario"].filter(catId=>{const cuotasEsteMes=creditosM.filter(t=>t.cat===catId);return cuotasEsteMes.length>0&&cuotasEsteMes.some(t=>t.pagado_automatico===true);}));
   const creditosMParaDeuda=creditosM.filter(t=>!catsCreditosPagadas.has(t.cat));
-  const creditosTotal=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_total||t.monto),0),creditosGonzalo=creditosMParaDeuda.reduce((s,t)=>s+t.monto,0),creditosJavi=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_javi||0),0);(s,t)=>s+(t.monto_total||t.monto),0),creditosGonzalo=creditosM.reduce((s,t)=>s+t.monto,0),creditosJavi=creditosM.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const creditosTotal=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_total||t.monto),0),creditosGonzalo=creditosMParaDeuda.reduce((s,t)=>s+t.monto,0),creditosJavi=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_javi||0),0);
   const arriendoM=data.filter(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
   const arriendoTotal=arriendoM.reduce((s,t)=>s+(t.monto_total||t.monto),0),arriendoGonzalo=arriendoM.reduce((s,t)=>s+t.monto,0),arriendoJavi=arriendoM.reduce((s,t)=>s+(t.monto_javi||0),0);
   const creditosTotalNeto=creditosTotal-arriendoTotal,creditosGonzaloNeto=creditosGonzalo-arriendoGonzalo,creditosJaviNeto=creditosJavi-arriendoJavi;
