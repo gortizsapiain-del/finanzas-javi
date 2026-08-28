@@ -626,14 +626,11 @@ function renderResumen(){
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
   const _GFIJOS=70000;
-  const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
-  const javiMes=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo";});
-  const _gVar=_GEST.reduce((s,g)=>{const real=javiMes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMes.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
   const pagosAJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesStr;});
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
-  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar+creditosJavi-totalPagosJavi-totalPagosDirectos);
+  const javiTotalCompartido=Math.max(0,_GFIJOS+tcJavi+creditosJavi-totalPagosJavi-totalPagosDirectos);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -655,8 +652,8 @@ function renderResumen(){
       <div id="desgloseJavi" style="display:none;background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:12px 14px;margin-bottom:10px">
         <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Desglose — Javi debe</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos básicos (parte Javi)</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_GFIJOS)}</span></div>
-          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos variables compartidos (TC)</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_gVar)}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">🏠 Gastos básicos (fijo)</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_GFIJOS)}</span></div>
+          ${tcJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">💳 Su parte TC</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(tcJavi)}</span></div>`:''}
           ${creditosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">🏛️ Su parte créditos</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(creditosJavi)}</span></div>`:''}
           ${totalPagosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--green)">💚 Pagos de Javi</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(totalPagosJavi)}</span></div>`:''}
           ${totalPagosDirectos>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--green)">💙 Transferencias Javi</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(totalPagosDirectos)}</span></div>`:''}
@@ -1634,16 +1631,49 @@ function renderPagos(){
   });
   html+=`</div></div>`;
 
+  // ── SECCIÓN 2b: Gastos Básicos ──
+  const basicosMesPagos=data.filter(t=>t.cuenta==="cc"&&t.cat==="gastos_depto").filter(t=>{const d=fechaLocal(t.fecha);return d.getMonth()===mes&&d.getFullYear()===anio;});
+  const totalBasicosMes=basicosMesPagos.reduce((s,t)=>s+(t.monto_total||t.monto),0);
+  const yaPageBasicos=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_javi_basicos"&&(t.mes_facturacion||t.fecha.slice(0,7))===mesVisto);
+  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:#FED7AA;display:flex;align-items:center;justify-content:center;font-size:18px">🏠</div>
+      <div style="font-weight:700;font-size:15px">Gastos Básicos</div>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gastado mes</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">${totalBasicosMes>0?mxn(totalBasicosMes):'$0'}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">$70.000</div>
+        </div>
+        <div style="background:#FFF1F6;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi debe</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">$70.000</div>
+        </div>
+      </div>
+      ${yaPageBasicos
+        ?`<div style="text-align:center;padding:10px;background:#F0FDF4;border-radius:10px;color:#15803D;font-weight:700;font-size:13px">✅ Pago registrado — total ${mxn(yaPageBasicos.monto_total||yaPageBasicos.monto)} · Javi depositó $70.000</div>`
+        :(esMesActual?`<button onclick="abrirPagoBasicos('${mesVisto}',${totalBasicosMes})" style="width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #FED7AA;background:#FFFBEB;color:var(--gold);font-family:inherit">💸 Registrar pago — ingresar monto total</button>`:'')
+      }
+    </div>
+  </div>`;
   // ── SECCIÓN 3: Deuda de Javi ──
   const _GFIJOS=375000+85000+75000;
-  const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
-  const javiMesPagos=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo";});
-  const _gVar=_GEST.reduce((s,g)=>{const real=javiMesPagos.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMesPagos.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
+  const creditosMPagos=data.filter(t=>t.cuenta==="creditos"&&t.cat!=="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===mes&&d.getFullYear()===anio;});
+  const catsCreditosPagadasP=new Set(["credito_consumo","credito_consumo_2","credito_hipotecario"].filter(catId=>{const c=creditosMPagos.filter(t=>t.cat===catId);return c.length>0&&c.some(t=>t.pagado_automatico===true);}));
+  const creditosMParaDeudaP=creditosMPagos.filter(t=>!catsCreditosPagadasP.has(t.cat));
+  const tcMPagos=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&t.cat!=="pago_tc").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===mes&&d.getFullYear()===anio;});
+  const tcJaviPagos=tcMPagos.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const creditosJaviPagos=creditosMParaDeudaP.reduce((s,t)=>s+(t.monto_javi||0),0);
   const pagosAJaviMesP=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesVisto;});
   const totalPagosJaviP=pagosAJaviMesP.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJaviP=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto;});
   const totalPagosDirectosP=pagosDirectosJaviP.reduce((s,t)=>s+(t.monto||0),0);
-  const deudaTotalJavi=_GFIJOS+_gVar;
+  const deudaTotalJavi=70000+tcJaviPagos+creditosJaviPagos;
   const saldoPendienteJavi=Math.max(0,deudaTotalJavi-totalPagosJaviP-totalPagosDirectosP);
   html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
@@ -1784,6 +1814,42 @@ function renderBasicos(){
     </div>
     <div class="expense-list">${basicosMes.length?basicosMes.map((t,i)=>filaTransaccion(t,i)).join(""):emptyState("🏠","Sin gastos básicos este mes","Agrégalos desde Cta. Corriente con categoría Gastos Básicos")}</div>`;
   document.getElementById("viewBasicos").innerHTML=html;
+}
+function abrirPagoBasicos(mesVisto,totalRealMes){
+  const overlay=document.createElement("div");
+  overlay.style.cssText="position:fixed;inset:0;background:#000000a0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)";
+  const mesLabel=MESES[parseInt(mesVisto.slice(5,7))-1]+' '+mesVisto.slice(0,4);
+  overlay.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:24px;max-width:360px;width:100%;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="font-weight:700;font-size:17px;margin-bottom:4px">🏠 Pago Gastos Básicos</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px">${mesLabel} · Javi deposita $70.000 fijo</div>
+    <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px">Monto total que pagaste</div>
+    <input id="inputMontoBasicos" type="text" placeholder="${totalRealMes>0?totalRealMes.toLocaleString('es-CL'):'0'}" oninput="formatearMonto(this)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:12px 13px;border-radius:10px;font-family:'DM Mono',monospace;font-size:18px;font-weight:700;margin-bottom:8px"/>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:16px">De este total, $70.000 corresponden a Javi → quedan registrados como ingreso en tu CC.</div>
+    <div style="display:flex;gap:10px">
+      <button onclick="this.closest('.basicos-overlay').remove()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:inherit;cursor:pointer">Cancelar</button>
+      <button onclick="confirmarPagoBasicos('${mesVisto}',this)" style="flex:2;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;font-family:inherit;font-weight:700;cursor:pointer">Registrar</button>
+    </div>
+  </div>`;
+  overlay.className="basicos-overlay";
+  overlay.onclick=ev=>{if(ev.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById("inputMontoBasicos")?.focus(),50);
+}
+async function confirmarPagoBasicos(mesVisto,btn){
+  const raw=document.getElementById("inputMontoBasicos").value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  const montoTotal=parseInt(raw)||0;
+  if(montoTotal<=0){mostrarToast("⚠️ Ingresa el monto total");return;}
+  btn.closest(".basicos-overlay").remove();
+  const hoy=new Date();
+  const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  const mesLabel=MESES[parseInt(mesVisto.slice(5,7))-1]+' '+mesVisto.slice(0,4);
+  try{
+    // Gasto total desde CC
+    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"gastos_depto",desc:`Gastos Básicos ${mesLabel}`,monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesVisto,basicos_ref:true});
+    // Ingreso de Javi ($70.000 fijo)
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi_basicos",desc:`Pago Javi — Básicos ${mesLabel}`,monto:70000,fecha:fechaHoy,mes_facturacion:mesVisto,monto_total:montoTotal});
+    mostrarToast(`✅ Básicos registrados — total ${mxn(montoTotal)} · +$70.000 de Javi`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){cerrarModal();cerrarModalTarjeta();}if(e.key==="Enter"&&document.getElementById("modalOverlay").style.display!=="none")guardar();});
 </script>
