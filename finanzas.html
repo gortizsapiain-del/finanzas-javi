@@ -1675,15 +1675,15 @@ function renderPagos(){
         </div>
         <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo</div>
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">$70.000</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">$74.000</div>
         </div>
         <div style="background:#FFF1F6;border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi debe</div>
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">$70.000</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">$74.000</div>
         </div>
       </div>
       ${yaPageBasicos
-        ?`<div style="text-align:center;padding:10px;background:#F0FDF4;border-radius:10px;color:#15803D;font-weight:700;font-size:13px">✅ Pago registrado — total ${mxn(yaPageBasicos.monto_total||yaPageBasicos.monto)} · Javi depositó $70.000</div>`
+        ?`<div style="text-align:center;padding:10px;background:#F0FDF4;border-radius:10px;color:#15803D;font-weight:700;font-size:13px">✅ Pago registrado — total ${mxn(yaPageBasicos.monto_total||yaPageBasicos.monto)} · Javi depositó $74.000</div>`
         :(esMesActual?`<button onclick="abrirPagoBasicos('${mesVisto}',${totalBasicosMes})" style="width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #FED7AA;background:#FFFBEB;color:var(--gold);font-family:inherit">💸 Registrar pago — ingresar monto total</button>`:'')
       }
     </div>
@@ -1700,7 +1700,7 @@ function renderPagos(){
   const totalPagosJaviP=pagosAJaviMesP.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJaviP=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto;});
   const totalPagosDirectosP=pagosDirectosJaviP.reduce((s,t)=>s+(t.monto||0),0);
-  const deudaTotalJavi=70000+tcJaviPagos+creditosJaviPagos;
+  const deudaTotalJavi=74000+tcJaviPagos+creditosJaviPagos;
   const saldoPendienteJavi=Math.max(0,deudaTotalJavi-totalPagosJaviP-totalPagosDirectosP);
   html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
@@ -1836,7 +1836,7 @@ function renderBasicos(){
         </div>
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.6">
-        💡 Los gastos básicos son <strong style="color:var(--text)">$140.000 fijos cada mes</strong>. Gonzalo paga $70.000 y Javi debe $70.000. Se suman automáticamente al total que debe Javi.
+        💡 Los gastos básicos son <strong style="color:var(--text)">$140.000 fijos cada mes</strong>. Gonzalo paga $111.000 y Javi debe $74.000. Se suman automáticamente al total que debe Javi.
       </div>
     </div>
     <div class="expense-list">${basicosMes.length?basicosMes.map((t,i)=>filaTransaccion(t,i)).join(""):emptyState("🏠","Sin gastos básicos este mes","Agrégalos desde Cta. Corriente con categoría Gastos Básicos")}</div>`;
@@ -1848,10 +1848,10 @@ function abrirPagoBasicos(mesVisto,totalRealMes){
   const mesLabel=MESES[parseInt(mesVisto.slice(5,7))-1]+' '+mesVisto.slice(0,4);
   overlay.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:24px;max-width:360px;width:100%;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.2)">
     <div style="font-weight:700;font-size:17px;margin-bottom:4px">🏠 Pago Gastos Básicos</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:18px">${mesLabel} · Javi deposita $70.000 fijo</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px">${mesLabel} · Javi deposita $74.000 fijo</div>
     <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px">Monto total que pagaste</div>
     <input id="inputMontoBasicos" type="text" placeholder="${totalRealMes>0?totalRealMes.toLocaleString('es-CL'):'0'}" oninput="formatearMonto(this)" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:12px 13px;border-radius:10px;font-family:'DM Mono',monospace;font-size:18px;font-weight:700;margin-bottom:8px"/>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:16px">De este total, $70.000 corresponden a Javi → quedan registrados como ingreso en tu CC.</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:16px">De este total, $74.000 corresponden a Javi → quedan registrados como ingreso en tu CC.</div>
     <div style="display:flex;gap:10px">
       <button onclick="this.closest('.basicos-overlay').remove()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:inherit;cursor:pointer">Cancelar</button>
       <button onclick="confirmarPagoBasicos('${mesVisto}',this)" style="flex:2;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;font-family:inherit;font-weight:700;cursor:pointer">Registrar</button>
@@ -1913,9 +1913,9 @@ async function confirmarPagoBasicos(mesVisto,btn){
   try{
     // Gasto total desde CC
     await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"gastos_depto",desc:`Gastos Básicos ${mesLabel}`,monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesVisto,basicos_ref:true});
-    // Ingreso de Javi ($70.000 fijo)
+    // Ingreso de Javi ($74.000 fijo)
     await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi_basicos",desc:`Pago Javi — Básicos ${mesLabel}`,monto:74000,fecha:fechaHoy,mes_facturacion:mesVisto,monto_total:montoTotal});
-    mostrarToast(`✅ Básicos registrados — total ${mxn(montoTotal)} · +$70.000 de Javi`);
+    mostrarToast(`✅ Básicos registrados — total ${mxn(montoTotal)} · +$74.000 de Javi`);
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){cerrarModal();cerrarModalTarjeta();}if(e.key==="Enter"&&document.getElementById("modalOverlay").style.display!=="none")guardar();});
