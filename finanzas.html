@@ -645,7 +645,17 @@ function renderResumen(){
       <div style="font-size:12px;color:var(--dim);margin-bottom:14px">💳 TC ${mxn(tcGonzaloParaTotal)}${creditosGonzaloNeto>0?' · 🏛️ Créditos '+mxn(creditosGonzaloNeto):''}${arriendoTotal>0?' · 🏢 +'+mxn(arriendoGonzalo)+' recibido':''}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0"><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Total entre los dos</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--text);overflow-wrap:anywhere">${mxn(deudaTotal)}</div></div>
-        <div style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:10px 12px;min-width:0"><div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(javiTotalCompartido)}</div></div>
+        <div onclick="toggleDesglosJavi()" style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:10px 12px;min-width:0;cursor:pointer;user-select:none"><div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Javi debe <span style="font-size:10px;opacity:.6">▾</span></div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:#BE185D;overflow-wrap:anywhere">${mxn(javiTotalCompartido)}</div></div>
+      </div>
+      <div id="desgloseJavi" style="display:none;background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:12px 14px;margin-top:2px">
+        <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Desglose — Javi debe</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos fijos (arriendo, Skin Lux, etc.)</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_GFIJOS)}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--muted)">Gastos variables compartidos</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_gVar)}</span></div>
+          ${totalPagosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--green)">💚 Pagos de Javi</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(totalPagosJavi)}</span></div>`:''}
+          ${totalPagosDirectos>0?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--green)">💙 Transferencias Javi</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--green)">-${mxn(totalPagosDirectos)}</span></div>`:''}
+          <div style="border-top:1px solid #FBCFE8;margin-top:4px;padding-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#BE185D;font-weight:700">Total pendiente</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">${mxn(javiTotalCompartido)}</span></div>
+        </div>
       </div>
       <div style="border-top:1px solid var(--border);margin-bottom:10px"></div>
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -1018,7 +1028,7 @@ function renderCreditos(){
                 <button class="btn-icon" onclick="event.stopPropagation();abrirModal('${t.id}')">✏️</button>
                 <button class="btn-icon" onclick="event.stopPropagation();eliminar('${t.id}')">🗑️</button>
               </div>
-              ${tieneJavi?`<div style="padding:7px 10px 8px;border-top:1px solid var(--border);background:${pagadoTotal?'#F0FDF4':totalPagadoJavi>0?'#FFFBEB':'#FFF8F0'}">
+              ${tieneJavi&&id!=='credito_hipotecario'?`<div style="padding:7px 10px 8px;border-top:1px solid var(--border);background:${pagadoTotal?'#F0FDF4':totalPagadoJavi>0?'#FFFBEB':'#FFF8F0'}">
                 ${pagadoTotal
                   ?`<div style="font-size:11px;color:var(--green);font-weight:700">✅ Javi pagó completo ${mxn(t.monto_javi)}</div>`
                   :`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -1742,6 +1752,7 @@ function renderReembolsosSL(){document.getElementById("viewReembolsos").innerHTM
 function abrirImportExcel(){document.getElementById("excelInput").value="";document.getElementById("excelInput").click();}
 async function procesarExcel(input){mostrarToast("⏳ Procesando Excel...");input.value="";}
 
+function toggleDesglosJavi(){const el=document.getElementById("desgloseJavi");if(el)el.style.display=el.style.display==="none"?"":"none";}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){cerrarModal();cerrarModalTarjeta();}if(e.key==="Enter"&&document.getElementById("modalOverlay").style.display!=="none")guardar();});
 </script>
 </body>
