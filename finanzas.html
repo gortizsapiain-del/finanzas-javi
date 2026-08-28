@@ -1635,30 +1635,29 @@ function renderPagos(){
   const arriendoMesPagos=data.filter(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===mes&&d.getFullYear()===anio;});
   const totalArriendo=arriendoMesPagos.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const yaRecibioArriendo=data.find(t=>t.cuenta==="cc"&&t.cat==="arriendo_oficina"&&(t.mes_facturacion||t.fecha.slice(0,7))===mesVisto&&t.tipo==="ingreso");
-  if(totalArriendo>0||yaRecibioArriendo){
-    html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-        <div style="width:34px;height:34px;border-radius:9px;background:#10B98122;display:flex;align-items:center;justify-content:center;font-size:18px">🏢</div>
-        <div style="font-weight:700;font-size:15px">Arriendo Oficina</div>
-      </div>
-      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Monto arriendo</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px">${mxn(totalArriendo)}</div>
+  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:#10B98122;display:flex;align-items:center;justify-content:center;font-size:18px">🏢</div>
+      <div style="font-weight:700;font-size:15px">Arriendo Oficina</div>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:12px;color:var(--dim);line-height:1.5">El arriendo recibido descuenta el 50% del crédito hipotecario de cada uno.</div>
+      ${yaRecibioArriendo
+        ?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Recibido</div>
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--green)">${mxn(yaRecibioArriendo.monto_total||yaRecibioArriendo.monto)}</div>
+            </div>
+            <div style="background:#F0FDF4;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:3px">Descuento c/u</div>
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--green)">-${mxn(Math.round((yaRecibioArriendo.monto_total||yaRecibioArriendo.monto)/2))}</div>
+            </div>
           </div>
-          <div style="background:#F0FDF4;border-radius:10px;padding:10px;text-align:center">
-            <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:3px">Descuento hipotecario</div>
-            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:var(--green)">-${mxn(Math.round(totalArriendo/2))}</div>
-          </div>
-        </div>
-        ${yaRecibioArriendo
-          ?`<div style="text-align:center;padding:10px;background:#F0FDF4;border-radius:10px;color:#15803D;font-weight:700;font-size:13px">✅ Arriendo recibido — ${mxn(yaRecibioArriendo.monto_total||yaRecibioArriendo.monto)}</div>`
-          :(esMesActual&&totalArriendo>0?`<button onclick="registrarArriendoRecibido('${mesVisto}',${totalArriendo})" style="width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit">✅ Recibido — ${mxn(totalArriendo)}</button>`:'')
-        }
-      </div>
-    </div>`;
-  }
+          <div style="text-align:center;padding:10px;background:#F0FDF4;border-radius:10px;color:#15803D;font-weight:700;font-size:13px">✅ Arriendo recibido este mes</div>`
+        :`<button onclick="abrirModalArriendo('${mesVisto}')" style="width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit">✅ Registrar arriendo recibido</button>`
+      }
+    </div>
+  </div>`;
   // ── SECCIÓN 2b: Gastos Básicos ──
   const basicosMesPagos=data.filter(t=>t.cuenta==="cc"&&t.cat==="gastos_depto").filter(t=>{const d=fechaLocal(t.fecha);return d.getMonth()===mes&&d.getFullYear()===anio;});
   const totalBasicosMes=basicosMesPagos.reduce((s,t)=>s+(t.monto_total||t.monto),0);
@@ -1863,16 +1862,44 @@ function abrirPagoBasicos(mesVisto,totalRealMes){
   document.body.appendChild(overlay);
   setTimeout(()=>document.getElementById("inputMontoBasicos")?.focus(),50);
 }
-async function registrarArriendoRecibido(mesVisto,montoTotal){
+function abrirModalArriendo(mesVisto){
   const mesLabel=MESES[parseInt(mesVisto.slice(5,7))-1]+' '+mesVisto.slice(0,4);
-  const descuento=Math.round(montoTotal/2);
-  const confirmar=confirm(`¿Registrar arriendo recibido?\n\nMes: ${mesLabel}\nMonto: ${mxn(montoTotal)}\nDescuento hipotecario (50%): ${mxn(descuento)}\n\nSe registra como ingreso en tu CC.`);
-  if(!confirmar)return;
+  const overlay=document.createElement("div");
+  overlay.style.cssText="position:fixed;inset:0;background:#000000a0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)";
+  overlay.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:24px;max-width:360px;width:100%;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="font-weight:700;font-size:17px;margin-bottom:4px">🏢 Arriendo recibido</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px">${mesLabel}</div>
+    <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px">Monto recibido</div>
+    <input id="inputMontoArriendo" type="text" placeholder="0" oninput="formatearMonto(this);actualizarDescuentoArriendo()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:12px 13px;border-radius:10px;font-family:'DM Mono',monospace;font-size:18px;font-weight:700;margin-bottom:8px"/>
+    <div id="previewArriendo" style="font-size:12px;color:var(--green);margin-bottom:16px;text-align:center"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="this.closest('.arriendo-overlay').remove()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:inherit;cursor:pointer">Cancelar</button>
+      <button onclick="confirmarArriendoRecibido('${mesVisto}',this)" style="flex:2;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;font-family:inherit;font-weight:700;cursor:pointer">Registrar</button>
+    </div>
+  </div>`;
+  overlay.className="arriendo-overlay";
+  overlay.onclick=ev=>{if(ev.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById("inputMontoArriendo")?.focus(),50);
+}
+function actualizarDescuentoArriendo(){
+  const raw=document.getElementById("inputMontoArriendo").value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  const monto=parseInt(raw)||0;
+  const preview=document.getElementById("previewArriendo");
+  if(monto>0)preview.textContent=`Descuento hipotecario por persona: ${mxn(Math.round(monto/2))}`;
+  else preview.textContent='';
+}
+async function confirmarArriendoRecibido(mesVisto,btn){
+  const raw=document.getElementById("inputMontoArriendo").value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  const monto=parseInt(raw)||0;
+  if(monto<=0){mostrarToast("⚠️ Ingresa el monto recibido");return;}
+  btn.closest(".arriendo-overlay").remove();
   const hoy=new Date();
   const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  const mesLabel=MESES[parseInt(mesVisto.slice(5,7))-1]+' '+mesVisto.slice(0,4);
   try{
-    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"arriendo_oficina",desc:`Arriendo recibido — ${mesLabel}`,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesVisto});
-    mostrarToast(`✅ Arriendo registrado — ${mxn(montoTotal)} en CC`);
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"arriendo_oficina",desc:`Arriendo recibido — ${mesLabel}`,monto,monto_total:monto,fecha:fechaHoy,mes_facturacion:mesVisto});
+    mostrarToast(`✅ Arriendo registrado — ${mxn(monto)} en CC`);
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 async function confirmarPagoBasicos(mesVisto,btn){
