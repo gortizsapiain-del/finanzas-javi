@@ -368,7 +368,6 @@ const SALDO_INICIAL_CC = 325289;
 const GONZALO_FIJOS = [
   {cat:"gastos_basicos", desc:"Gastos Básicos (parte Javi)", icon:"💡", color:"#9B8AB0", monto:74000},
 ];
-// Variables: 100% desde Firebase (compartido_gonzalo), sin estimados hardcodeados
 const GONZALO_ESTIMADOS = [];
 
 // ══════════════════════════════════════════
@@ -1111,7 +1110,6 @@ function renderGonzalo(){
     html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+(t.from_gonzalo?' · de Gonzalo':'')+'</div></div>';
     html+='<div class="expense-amount">'+mxn(t.monto)+'</div></div>';
   });
-  } // end if(false)
   html+='</div>';
 
   html+='<div style="background:#EEF4FF;border:2px solid #B0C8F0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">';
