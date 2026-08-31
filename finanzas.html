@@ -1750,11 +1750,8 @@ async function registrarPagoGastosFijos(sugerido,modo,mesStr){
 /* ── PAGOS ── */
 function renderPagos(){
   const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
-  const hoyDate=new Date();
-  const hoyStr=`${hoyDate.getFullYear()}-${String(hoyDate.getMonth()+1).padStart(2,'0')}`;
-  const mesSigDate=new Date(hoyDate.getFullYear(),hoyDate.getMonth()+1,1);
-  const mesSigStr=`${mesSigDate.getFullYear()}-${String(mesSigDate.getMonth()+1).padStart(2,'0')}`;
-  const esMesActual=mesVisto===hoyStr||mesVisto===mesSigStr;
+  const hoyStr=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  const esMesActual=mesVisto===hoyStr;
   let html='';
 
   // ── SECCIÓN 1: TC por tarjeta ──
@@ -1803,7 +1800,7 @@ function renderPagos(){
       </div>
       ${yaPagado
         ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div>`
-        :(esMesActual?`<button onclick="pagoAutomatico('${catId}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`:'')
+        :(total>0?`<button onclick="pagoAutomatico('${catId}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`:'')
       }
     </div>`;
     // Sub-fila Javi si aplica (no para hipotecario, ya se muestra en Resumen)
@@ -1843,7 +1840,7 @@ function renderPagos(){
         <div style="font-size:13px;font-weight:600;color:${arriendoYaRegistrado?'var(--green)':'var(--text)'}">${arriendoYaRegistrado?'✅ Registrado este mes':'⏳ Pendiente de registrar'}</div>
         <div style="font-size:11px;color:var(--dim);margin-top:2px">${arriendoYaRegistrado?'Resta $295.000 a cada uno':'Cuando llegue el pago, regístralo'}</div>
       </div>
-      ${!arriendoYaRegistrado&&esMesActual?`<button onclick="registrarArriendoOficina(event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #10B98160;background:#10B98118;color:#059669;font-family:inherit;white-space:nowrap">💰 Registrar pago</button>`:''}
+      ${!arriendoYaRegistrado?`<button onclick="registrarArriendoOficina(event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #10B98160;background:#10B98118;color:#059669;font-family:inherit;white-space:nowrap">💰 Registrar pago</button>`:''}
     </div>
   </div>`;
 
