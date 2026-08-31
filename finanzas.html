@@ -1792,9 +1792,9 @@ function renderPagos(){
         :(esMesActual?`<button onclick="pagoAutomatico('${catId}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`:'')
       }
     </div>`;
-    // Sub-fila Javi si aplica
+    // Sub-fila Javi si aplica (no para hipotecario, ya se muestra en Resumen)
     const javiTotal=cuotasEsteMes.reduce((s,t)=>s+(t.monto_javi||0),0);
-    if(javiTotal>0){
+    if(javiTotal>0&&catId!=="credito_hipotecario"){
       cuotasEsteMes.forEach(t=>{
         if(!(t.monto_javi>0))return;
         const pagosJavi=data.filter(x=>x.cuenta==="cc"&&x.cat==="pago_javi_credito"&&x.credito_ref===t.id);
