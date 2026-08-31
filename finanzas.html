@@ -993,11 +993,19 @@ function renderCreditos(){
     // Pagado solo si existe cuota con campo pagado_automatico=true (creada con botón ⚡ Pagar)
     const yaPagadoAutomatico=esMesActual&&cuotasEsteMes.some(t=>t.pagado_automatico===true);
     let btnPagar='';
-    if(!esIngreso){
+    if(id==="arriendo_oficina"){
+      const yaRegistrado=esMesActual&&cuotasEsteMes.some(t=>t.pagado_automatico===true);
+      if(yaRegistrado){
+        btnPagar=`<div style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ Registrado</div>`;
+      }else if(esMesActual){
+        btnPagar=`<button onclick="registrarArriendoOficina(event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #10B98160;background:#10B98118;color:#059669;font-family:inherit;white-space:nowrap">💰 Registrar pago</button>`;
+      }
+    }else if(!esIngreso){
       if(yaPagadoAutomatico){
         btnPagar=`<div style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ Pagado</div>`;
       }else if(esMesActual){
-        btnPagar=`<button onclick="pagoAutomatico('${id}',event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`;
+        const esHipotecario=id==="credito_hipotecario";
+        btnPagar=`<button onclick="${esHipotecario?`pagoTotalHipotecario('${id}',${catTotal},event)`:`pagoAutomatico('${id}',event)`}" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">${esHipotecario?'💳 Pagar total':'⚡ Pagar'}</button>`;
       }
     }
     html+=`<div style="background:var(--surface);border:1px solid ${abierta?c.color+'60':'var(--border)'};border-radius:14px;overflow:hidden">
@@ -1016,8 +1024,8 @@ function renderCreditos(){
       </div>
       ${abierta?`<div style="border-top:1px solid var(--border2);background:var(--surface2)">
         <div class="grid-auto" style="padding:10px 14px 8px;border-bottom:1px solid var(--border)">
-          <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #8B5CF630"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(gonzaloTotal)}</div></div>
-          ${c.regla==="50_50"?`<div style="background:#FFF1F6;border-radius:9px;padding:8px 10px;border:1px solid #FBCFE8"><div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">${montoSigno}${mxn(javiTotal)}</div></div>`:''}
+          ${id!=="credito_hipotecario"?`<div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid #8B5CF630"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(gonzaloTotal)}</div></div>`:''}
+          ${c.regla==="50_50"&&id!=="credito_hipotecario"?`<div style="background:#FFF1F6;border-radius:9px;padding:8px 10px;border:1px solid #FBCFE8"><div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">${montoSigno}${mxn(javiTotal)}</div></div>`:''}
           <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid var(--border2)"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Total mes</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(catTotal)}</div></div>
         </div>
         <div style="padding:10px 12px;display:flex;flex-direction:column;gap:5px">
@@ -1111,6 +1119,51 @@ async function confirmarTarjetaPago(){
     }
   }catch(err){mostrarToast("❌ Error: "+err.message);}
   _pagoCredPendiente=null;
+}
+
+/* ── PAGO HIPOTECARIO TOTAL ── */
+async function pagoTotalHipotecario(catId,montoTotal,e){
+  e.stopPropagation();
+  const mesStr=anio+"-"+String(mes+1).padStart(2,"0");
+  const hoy=new Date();
+  const fechaHoy=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+  // Buscar la cuota existente del mes o crear una nueva
+  const historial=data.filter(t=>t.cuenta==="creditos"&&t.cat===catId).sort((a,b)=>{const ra=a.mes_facturacion||a.fecha;const rb=b.mes_facturacion||b.fecha;return rb.localeCompare(ra);});
+  if(!historial.length){mostrarToast("⚠️ No hay cuotas anteriores");return;}
+  const ultima=historial[0];
+  const yaMes=data.find(t=>t.cuenta==="creditos"&&t.cat===catId&&(t.mes_facturacion||t.fecha.slice(0,7))===mesStr);
+  if(yaMes&&yaMes.pagado_automatico){mostrarToast("✅ Ya está pagado este mes");return;}
+  try{
+    if(yaMes){
+      await colUsuario().doc(yaMes.id).update({pagado_automatico:true});
+    }else{
+      const nuevaCuota={cuenta:"creditos",cat:catId,desc:ultima.desc||"Dividendo",monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr,pagado_automatico:true};
+      if(ultima.monto_uf)nuevaCuota.monto_uf=ultima.monto_uf;
+      if(ultima.cuota_actual&&ultima.cuotas_total){nuevaCuota.cuota_actual=ultima.cuota_actual+1;nuevaCuota.cuotas_total=ultima.cuotas_total;}
+      await colUsuario().add(nuevaCuota);
+    }
+    mostrarToast("✅ Pago total registrado — "+mxn(montoTotal));
+    renderCreditos();
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
+}
+
+/* ── REGISTRAR ARRIENDO OFICINA ── */
+async function registrarArriendoOficina(e){
+  e.stopPropagation();
+  const mesStr=anio+"-"+String(mes+1).padStart(2,"0");
+  const hoy=new Date();
+  const fechaHoy=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+  const montoTotal=590000;
+  const mitad=295000;
+  const yaMes=data.find(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina"&&(t.mes_facturacion||t.fecha.slice(0,7))===mesStr);
+  if(yaMes){mostrarToast("✅ Arriendo ya registrado este mes");return;}
+  try{
+    // Registrar ingreso de arriendo (resta deuda a ambos 50/50)
+    await colUsuario().add({cuenta:"creditos",cat:"arriendo_oficina",desc:"Arriendo Oficina "+MESES[mes]+" "+anio,monto:mitad,monto_javi:mitad,monto_total:montoTotal,tipo:"ingreso",fecha:fechaHoy,mes_facturacion:mesStr,pagado_automatico:true});
+    mostrarToast("✅ Arriendo registrado — "+mxn(montoTotal)+" (50/50)");
+    renderCreditos();
+    if(tabActual==="resumen")renderResumen();
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
 /* ── PAGO AUTOMÁTICO CRÉDITO ── */
