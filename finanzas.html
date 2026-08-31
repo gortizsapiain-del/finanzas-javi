@@ -633,7 +633,9 @@ function renderResumen(){
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
-  const JAVI_DIV_DEPTO=374000,JAVI_DIV_OFIC=296500,JAVI_GASTOS_FIJOS=74000,JAVI_ARRIENDO=-295000;
+  const JAVI_DIV_DEPTO=374000,JAVI_DIV_OFIC=296500,JAVI_GASTOS_FIJOS=74000;
+  const arriendoRegistrado=arriendoM.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const JAVI_ARRIENDO=arriendoRegistrado>0?-arriendoRegistrado:0;
   const JAVI_DEUDA_FIJA=JAVI_DIV_DEPTO+JAVI_DIV_OFIC+JAVI_GASTOS_FIJOS+JAVI_ARRIENDO;
   const pagosAJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesStr;});
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
@@ -662,7 +664,7 @@ function renderResumen(){
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏠 50% Dividendo Depto</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_DIV_DEPTO)}</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏢 50% Dividendo Oficina</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_DIV_OFIC)}</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💡 40% Gastos Fijos</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_GASTOS_FIJOS)}</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">🏢 −50% Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(Math.abs(JAVI_ARRIENDO))}</span></div>
+        ${JAVI_ARRIENDO<0?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">🏢 −50% Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(Math.abs(JAVI_ARRIENDO))}</span></div>`:`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--muted)">🏢 Arriendo (no registrado)</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--muted)">-</span></div>`}
         <div style="border-top:1px solid #FBCFE8;margin:2px 0"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💳 Gastos TC (su parte)</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(tcJavi)}</span></div>
         <div style="border-top:1px solid #FBCFE8;margin:2px 0"></div>
@@ -963,6 +965,8 @@ function renderCreditos(){
   const arriendoGonzalo=arriendo.reduce((s,t)=>s+t.monto,0),arriendoJavi=arriendo.reduce((s,t)=>s+(t.monto_javi||0),0);
   const gonzaloTotalCreditos=noArriendo.reduce((s,t)=>s+t.monto,0),javiTotalCreditos=noArriendo.reduce((s,t)=>s+(t.monto_javi||0),0);
   const costoNetoGonzalo=gonzaloTotalCreditos-arriendoGonzalo,costoNetoJavi=javiTotalCreditos-arriendoJavi;
+  const hoyStrC=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}`;
+  const esMesActualCreditos=mesVisto===hoyStrC;
   const categorias=CATS_CREDITOS.filter(id=>id!=="arriendo_oficina").map(id=>{const items=gm.filter(t=>t.cat===id);const total=items.reduce((s,t)=>s+(t.monto_total||t.monto),0);return{id,cat:CATS[id],total,items};}).filter(x=>x.total>0);
   const hastaElMes=todos.filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return t.cat!=="arriendo_oficina"&&((d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes));});
   const acumuladoTotal=hastaElMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
@@ -976,7 +980,8 @@ function renderCreditos(){
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Gonzalo neto</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace">${mxn(costoNetoGonzalo)}</div></div>
       <div style="background:#FFF1F6;border:1px solid #FBCFE8;border-radius:12px;padding:14px"><div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:4px">Javi neto</div><div class="mono" style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:#BE185D">${mxn(costoNetoJavi)}</div></div>
     </div>`;
-  const todasLasCats=[...categorias,{id:"arriendo_oficina",items:arriendo,total:totalArriendo,cat:CATS["arriendo_oficina"],esIngreso:true}].filter(x=>x.items.length>0||x.total>0);
+  const arriendoCat={id:"arriendo_oficina",items:arriendo,total:totalArriendo,cat:CATS["arriendo_oficina"],esIngreso:true};
+  const todasLasCats=[...categorias,arriendoCat].filter(x=>x.items.length>0||x.total>0||(esMesActualCreditos&&(x.id==="arriendo_oficina"||x.id==="credito_hipotecario")));
   html+=`<div class="filter-bar"><select class="filter-select ${filtroCredito!=='todas'?'on':''}" onchange="setFiltroCredito(this.value)"><option value="todas">🏛️ Ver: Todos</option>${todasLasCats.map(x=>`<option value="${x.id}" ${filtroCredito===x.id?"selected":""}>${x.cat.icon} ${x.cat.label}</option>`).join("")}</select></div>`;
   const catsMostrar=filtroCredito==="todas"?todasLasCats:todasLasCats.filter(x=>x.id===filtroCredito);
   catsMostrar.forEach(({id,items,total:catTotal,cat:c,esIngreso})=>{
@@ -989,7 +994,7 @@ function renderCreditos(){
     const montoColor=esIngreso?'var(--green)':'var(--text)';const montoSigno=esIngreso?'+':'';
     const cuotasEsteMes=items.filter(t=>(t.mes_facturacion||t.fecha.slice(0,7))===mesVisto);
     const hoyStr=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
-    const esMesActual=mesVisto===hoyStr;
+    const esMesActual=esMesActualCreditos;
     // Pagado solo si existe cuota con campo pagado_automatico=true (creada con botón ⚡ Pagar)
     const yaPagadoAutomatico=esMesActual&&cuotasEsteMes.some(t=>t.pagado_automatico===true);
     let btnPagar='';
