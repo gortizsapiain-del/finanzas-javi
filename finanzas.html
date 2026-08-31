@@ -546,7 +546,7 @@ async function pagarTarjetaMes(tarjeta,mesStr,totalGeneral,totalGonzalo,totalJav
   const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
   try{
     // Registro en CC
-    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",desc:`Pago ${v.label} — ${MESES[parseInt(mesStr.slice(5,7))-1]} ${mesStr.slice(0,4)}`,monto:totalGonzalo,monto_javi:totalJavi,monto_total:totalGeneral,fecha:fechaHoy,tc_mes_pagado:mesStr,tarjeta_pagada:tarjeta});
+    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",desc:`Pago ${v.label} — ${MESES[parseInt(mesStr.slice(5,7))-1]} ${mesStr.slice(0,4)}`,monto:totalGeneral,monto_javi:totalJavi,monto_total:totalGeneral,fecha:fechaHoy,tc_mes_pagado:mesStr,tarjeta_pagada:tarjeta});
     // Registro pago en TC
     await colUsuario().add({cuenta:"tc",tipo:"gasto",cat:"pago",desc:`Pago ${v.label}`,monto:totalGeneral,fecha:fechaHoy,mes_facturacion:mesStr,tarjeta,pago_tc_ref:true});
     mostrarToast(`✅ ${v.label} pagada — ${mxn(totalGeneral)} descontado de CC`);
@@ -1147,8 +1147,11 @@ async function pagoTotalHipotecario(catId,montoTotal,e){
       if(ultima.cuota_actual&&ultima.cuotas_total){nuevaCuota.cuota_actual=ultima.cuota_actual+1;nuevaCuota.cuotas_total=ultima.cuotas_total;}
       await colUsuario().add(nuevaCuota);
     }
-    mostrarToast("✅ Pago total registrado — "+mxn(montoTotal));
+    // Descontar de CC
+    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",desc:"Pago Dividendo "+mesStr,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr});
+    mostrarToast("✅ Pago total registrado — "+mxn(montoTotal)+" descontado de CC");
     renderCreditos();
+    if(tabActual==="pagos")renderPagos();
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
@@ -1165,9 +1168,12 @@ async function registrarArriendoOficina(e){
   try{
     // Registrar ingreso de arriendo (resta deuda a ambos 50/50)
     await colUsuario().add({cuenta:"creditos",cat:"arriendo_oficina",desc:"Arriendo Oficina "+MESES[mes]+" "+anio,monto:mitad,monto_javi:mitad,monto_total:montoTotal,tipo:"ingreso",fecha:fechaHoy,mes_facturacion:mesStr,pagado_automatico:true});
-    mostrarToast("✅ Arriendo registrado — "+mxn(montoTotal)+" (50/50)");
+    // Sumar a CC como ingreso
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"arriendo_oficina",desc:"Ingreso Arriendo Oficina "+MESES[mes]+" "+anio,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr});
+    mostrarToast("✅ Arriendo registrado — +"+mxn(montoTotal)+" en CC");
     renderCreditos();
     if(tabActual==="resumen")renderResumen();
+    if(tabActual==="pagos")renderPagos();
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
