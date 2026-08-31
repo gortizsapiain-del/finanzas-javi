@@ -1821,8 +1821,26 @@ function renderPagos(){
   });
   html+=`</div></div>`;
 
+  // ── SECCIÓN 2B: Arriendo Oficina ──
+  const arriendoMesP=data.filter(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina"&&((t.mes_facturacion||t.fecha.slice(0,7))===mesVisto));
+  const arriendoYaRegistrado=arriendoMesP.some(t=>t.pagado_automatico===true);
+  html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:9px;background:#10B98122;display:flex;align-items:center;justify-content:center;font-size:18px">🏢</div>
+      <div><div style="font-weight:700;font-size:15px">Arriendo Oficina</div><div style="font-size:11px;color:var(--dim)">$590.000 total · 50% cada uno</div></div>
+    </div>
+    <div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:${arriendoYaRegistrado?'var(--green)':'var(--text)'}">${arriendoYaRegistrado?'✅ Registrado este mes':'⏳ Pendiente de registrar'}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${arriendoYaRegistrado?'Resta $295.000 a cada uno':'Cuando llegue el pago, regístralo'}</div>
+      </div>
+      ${!arriendoYaRegistrado&&esMesActual?`<button onclick="registrarArriendoOficina(event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #10B98160;background:#10B98118;color:#059669;font-family:inherit;white-space:nowrap">💰 Registrar pago</button>`:''}
+    </div>
+  </div>`;
+
   // ── SECCIÓN 3: Deuda de Javi ──
-  const JAVI_DEUDA_FIJA_P=374000+296500+74000-295000;
+  const arriendoJaviP=arriendoMesP.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const JAVI_DEUDA_FIJA_P=374000+296500+74000-(arriendoJaviP>0?arriendoJaviP:0);
   const pagosAJaviMesP=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesVisto;});
   const totalPagosJaviP=pagosAJaviMesP.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJaviP=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto;});
