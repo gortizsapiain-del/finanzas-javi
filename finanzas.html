@@ -1750,8 +1750,11 @@ async function registrarPagoGastosFijos(sugerido,modo,mesStr){
 /* ── PAGOS ── */
 function renderPagos(){
   const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
-  const hoyStr=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
-  const esMesActual=mesVisto===hoyStr;
+  const hoyDate=new Date();
+  const hoyStr=`${hoyDate.getFullYear()}-${String(hoyDate.getMonth()+1).padStart(2,'0')}`;
+  const mesSigDate=new Date(hoyDate.getFullYear(),hoyDate.getMonth()+1,1);
+  const mesSigStr=`${mesSigDate.getFullYear()}-${String(mesSigDate.getMonth()+1).padStart(2,'0')}`;
+  const esMesActual=mesVisto===hoyStr||mesVisto===mesSigStr;
   let html='';
 
   // ── SECCIÓN 1: TC por tarjeta ──
