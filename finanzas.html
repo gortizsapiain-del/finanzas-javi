@@ -161,6 +161,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <button class="tab tab-gonzalo" onclick="setTab('cc')">🏦 Cta. Corriente</button>
       <button class="tab tab-gonzalo" onclick="setTab('ahorros')">💎 Ahorros</button>
       <button class="tab tab-gonzalo" onclick="setTab('creditos')">🏛️ Créditos</button>
+      <button class="tab tab-gonzalo" onclick="setTab('gastosfijos')">🏠 Gastos Fijos</button>
       <button class="tab tab-gonzalo" onclick="setTab('pagos')">💸 Pagos</button>
       <button class="tab tab-skinlux" style="display:none" onclick="setTab('ventas')">💰 Ventas</button>
       <button class="tab tab-skinlux" style="display:none" onclick="setTab('compras')">🛒 Compras</button>
@@ -181,6 +182,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div id="viewCC" style="display:none"></div>
   <div id="viewAhorros" style="display:none"></div>
   <div id="viewCreditos" style="display:none"></div>
+  <div id="viewGastosFijos" style="display:none"></div>
   <div id="viewPagos" style="display:none"></div>
   <div id="viewVentas" style="display:none"></div>
   <div id="viewCompras" style="display:none"></div>
@@ -309,7 +311,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <option value="seguros">🛡️ Seguros</option>
         <option value="salud_gonzalo">🏥 Salud Gonzalo</option>
         <option value="gastos_depto">💡 Gastos Básicos</option>
-        <option value="farmacia">💊 Farmacia</option>
+        <option value="farmacia_depto">💊 Farmacia Depto</option>
+        <option value="farmacia_gonzalo">💊 Farmacia Gonzalo</option>
+        <option value="citas">📅 Citas</option>
+        <option value="telefono">📞 Teléfono</option>
+        <option value="supermercado_gonzalo">🛒 Supermercado Gonzalo</option>
         <option value="pago">💸 Pago</option>
         <option value="pago_tc">💳 Pago TC</option>
         <option value="javi">👤 Javi</option>
@@ -485,8 +491,12 @@ const CATS={
   reembolsables:{label:"Reembolsables",icon:"↩️",color:"#06B6D4",regla:"gonzalo",pct_g:1,pct_j:0},
   seguros:{label:"Seguros",icon:"🛡️",color:"#6366F1",regla:"gonzalo",pct_g:1,pct_j:0},
   salud_gonzalo:{label:"Salud Gonzalo",icon:"🏥",color:"#EC4899",regla:"gonzalo",pct_g:1,pct_j:0},
-  gastos_depto:{label:"Gastos Básicos",icon:"💡",color:"#0EA5E9",regla:"60_40",pct_g:0.6,pct_j:0.4},
-  farmacia:{label:"Farmacia",icon:"💊",color:"#22C55E",regla:"60_40",pct_g:0.6,pct_j:0.4},
+  gastos_depto:{label:"Gastos Básicos",icon:"💡",color:"#0EA5E9",regla:"gonzalo",pct_g:1,pct_j:0},
+  farmacia_depto:{label:"Farmacia Depto",icon:"💊",color:"#22C55E",regla:"60_40",pct_g:0.6,pct_j:0.4},
+  farmacia_gonzalo:{label:"Farmacia Gonzalo",icon:"💊",color:"#16A34A",regla:"gonzalo",pct_g:1,pct_j:0},
+  citas:{label:"Citas",icon:"📅",color:"#6366F1",regla:"gonzalo",pct_g:1,pct_j:0},
+  telefono:{label:"Teléfono",icon:"📞",color:"#0EA5E9",regla:"gonzalo",pct_g:1,pct_j:0},
+  supermercado_gonzalo:{label:"Supermercado Gonzalo",icon:"🛒",color:"#F59E0B",regla:"gonzalo",pct_g:1,pct_j:0},
   pago:{label:"Pago",icon:"💸",color:"#F43F5E",regla:"gonzalo",pct_g:1,pct_j:0},
   pago_tc:{label:"Pago TC",icon:"💳",color:"#10B981",regla:"total",pct_g:1,pct_j:0,es_pago_tc:true},
   javi:{label:"Javi",icon:"👱‍♀️",color:"#BE185D",regla:"javi",pct_g:0,pct_j:1},
@@ -546,7 +556,7 @@ async function pagarTarjetaMes(tarjeta,mesStr,totalGeneral,totalGonzalo,totalJav
 /* TABS */
 function setTab(t){
   tabActual=t;
-  const allTabs=["resumen","tc","cc","ahorros","creditos",null,null,null,null,"ventas","compras","iva","flujo","reembolsos"];
+  const allTabs=["resumen","tc","cc","ahorros","creditos","gastosfijos","pagos",null,null,null,"ventas","compras","iva","flujo","reembolsos"];
   document.querySelectorAll(".tab").forEach((el,i)=>{const tName=allTabs[i];el.classList.toggle("active",tName===t);});
   document.getElementById("monthNav").style.display=perfil==="skinlux"?"none":"";
   render();
@@ -557,13 +567,14 @@ function render(){
   document.getElementById("monthNav").style.display=perfil==="skinlux"?"none":"";
   document.querySelectorAll(".tab-gonzalo").forEach(el=>el.style.display=perfil==="gonzalo"?"":"none");
   document.querySelectorAll(".tab-skinlux").forEach(el=>el.style.display=perfil==="skinlux"?"":"none");
-  const TABS_SIN_AGREGAR=["iva","flujo","pagos"];
+  const TABS_SIN_AGREGAR=["iva","flujo","pagos","gastosfijos"];
   document.getElementById("btnAgregar").style.display=TABS_SIN_AGREGAR.includes(tabActual)?"none":"";
   document.getElementById("viewResumen").style.display=tabActual==="resumen"?"":"none";
   document.getElementById("viewTC").style.display=(tabActual==="tc"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewCC").style.display=(tabActual==="cc"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewAhorros").style.display=(tabActual==="ahorros"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewCreditos").style.display=(tabActual==="creditos"&&perfil==="gonzalo")?"":"none";
+  document.getElementById("viewGastosFijos").style.display=(tabActual==="gastosfijos"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewPagos").style.display=(tabActual==="pagos"&&perfil==="gonzalo")?"":"none";
   document.getElementById("viewVentas").style.display=(tabActual==="ventas"&&perfil==="skinlux")?"":"none";
   document.getElementById("viewCompras").style.display=(tabActual==="compras"&&perfil==="skinlux")?"":"none";
@@ -576,6 +587,7 @@ function render(){
     if(tabActual==="cc")renderCC();
     if(tabActual==="ahorros")renderAhorros();
     if(tabActual==="creditos")renderCreditos();
+    if(tabActual==="gastosfijos")renderGastosFijos();
     if(tabActual==="pagos")renderPagos();
   }else{
     if(tabActual==="resumen")renderResumenSL();
@@ -621,15 +633,17 @@ function renderResumen(){
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
-  const _GFIJOS=375000+85000+75000;
-  const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
-  const javiMes=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo";});
-  const _gVar=_GEST.reduce((s,g)=>{const real=javiMes.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMes.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
+  // Deuda fija de Javi: 50% dividendos + 40% gastos fijos - 50% arriendo recibido
+  const JAVI_DIV_DEPTO=374000;   // 50% de $748.000
+  const JAVI_DIV_OFIC=296500;    // 50% de $593.000
+  const JAVI_GASTOS_FIJOS=74000; // 40% de $185.000
+  const JAVI_ARRIENDO=-295000;   // -50% de $590.000 arriendo recibido
+  const JAVI_DEUDA_FIJA=JAVI_DIV_DEPTO+JAVI_DIV_OFIC+JAVI_GASTOS_FIJOS+JAVI_ARRIENDO; // $449.500
   const pagosAJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesStr;});
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
-  const javiTotalCompartido=Math.max(0,_GFIJOS+_gVar-totalPagosJavi-totalPagosDirectos);
+  const javiTotalCompartido=Math.max(0,JAVI_DEUDA_FIJA-totalPagosJavi-totalPagosDirectos);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -649,10 +663,12 @@ function renderResumen(){
       </div>
       <div id="javiDebeDetalle" style="display:none;flex-direction:column;gap:6px;background:#FFF1F6;border:1px solid #FBCFE8;border-radius:10px;padding:12px 14px;margin-bottom:10px">
         <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Detalle — Javi debe</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏠 Fijos (arriendo+gastos+seguros)</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(_GFIJOS)}</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">📦 Variables compartidos</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(_gVar)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏠 50% Dividendo Depto</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_DIV_DEPTO)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏢 50% Dividendo Oficina</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_DIV_OFIC)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💡 40% Gastos Fijos</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_GASTOS_FIJOS)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">🏢 −50% Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(Math.abs(JAVI_ARRIENDO))}</span></div>
         <div style="border-top:1px solid #FBCFE8;margin:2px 0"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D;font-weight:700">Total que debe</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(_GFIJOS+_gVar)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D;font-weight:700">Total mensual fijo</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(JAVI_DEUDA_FIJA)}</span></div>
         ${totalPagosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">💚 Pago registrado</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(totalPagosJavi)}</span></div>`:''}
         ${totalPagosDirectos>0?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">💙 Transferencia directa</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(totalPagosDirectos)}</span></div>`:''}
         ${(totalPagosJavi+totalPagosDirectos)>0?`<div style="border-top:1px solid #FBCFE8;margin:2px 0"></div><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D;font-weight:700">Pendiente</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${javiTotalCompartido===0?'var(--green)':'#BE185D'}">${mxn(javiTotalCompartido)}</span></div>`:''}
@@ -1570,6 +1586,118 @@ async function cargarValorUF(){if(valorUF)return valorUF;try{const hoy=new Date(
 function mostrarCampoUF(mostrar){document.getElementById("fieldUF").style.display=mostrar?"":"none";document.getElementById("labelMonto").textContent=mostrar?"Monto (CLP, calculado)":"Monto (CLP)";if(!mostrar){document.getElementById("fMontoUF").value="";document.getElementById("ufPreviewCLP").textContent="";}}
 async function convertirUFaCLP(){const uf=parseFloat(document.getElementById("fMontoUF").value)||0;if(uf<=0){document.getElementById("fMonto").value="";document.getElementById("ufPreviewCLP").textContent="";return;}const vuf=await cargarValorUF();const clp=Math.round(uf*vuf);document.getElementById("fMonto").value=clp;document.getElementById("ufPreviewCLP").textContent=`${uf} UF × $${Math.round(vuf).toLocaleString('es-CL')} = ${mxn(clp)}`;actualizarPreviewCuotas();}
 
+/* ── GASTOS FIJOS ── */
+function renderGastosFijos(){
+  const mesStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const mesLabel=MESES[mes]+" "+anio;
+  const ITEMS=[
+    {label:"Dividendo Depto",icon:"🏠",total:748000,javi:374000,gonzalo:374000,pct_j:"50%",pct_g:"50%"},
+    {label:"Dividendo Oficina",icon:"🏢",total:593000,javi:296500,gonzalo:296500,pct_j:"50%",pct_g:"50%"},
+    {label:"Gastos Fijos (GC, luz, agua, internet, gas)",icon:"💡",total:185000,javi:74000,gonzalo:111000,pct_j:"40%",pct_g:"60%"},
+    {label:"Arriendo recibido (resta)",icon:"💰",total:-590000,javi:-295000,gonzalo:-295000,pct_j:"50%",pct_g:"50%",es_ingreso:true},
+  ];
+  const totalJavi=ITEMS.reduce((s,i)=>s+i.javi,0);
+  const totalGonzalo=ITEMS.reduce((s,i)=>s+i.gonzalo,0);
+  // Pagos registrados este mes
+  const pagosJaviMes=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion||t.fecha.slice(0,7);return ref===mesStr;});
+  const pagosDirectosMes=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
+  const totalPagado=pagosJaviMes.reduce((s,t)=>s+(t.monto||0),0)+pagosDirectosMes.reduce((s,t)=>s+(t.monto||0),0);
+  const pendiente=Math.max(0,totalJavi-totalPagado);
+  const esMesActual=mesStr===`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+
+  let html=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px">🏠 Gastos Fijos</div>
+          <div style="font-weight:700;font-size:16px">${mesLabel}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:2px">Javi debe</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:#BE185D">${mxn(totalJavi)}</div>
+        </div>
+      </div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+        ${ITEMS.map(item=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:${item.es_ingreso?'#F0FDF4':'var(--surface2)'};border:1px solid ${item.es_ingreso?'#BBF7D0':'var(--border)'};border-radius:12px">
+            <div style="font-size:20px;flex-shrink:0">${item.icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:${item.es_ingreso?'var(--green)':'var(--text)'}">${item.label}</div>
+              <div style="font-size:11px;color:var(--dim);margin-top:2px">Gonzalo ${item.pct_g} · Javi ${item.pct_j}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${item.es_ingreso?'var(--green)':'var(--text)'}">${item.es_ingreso?'+':''}${mxn(Math.abs(item.total))}</div>
+              <div style="font-size:10px;color:#BE185D;font-weight:600;margin-top:1px">Javi: ${item.es_ingreso?'-':''}${mxn(Math.abs(item.javi))}</div>
+            </div>
+          </div>`).join('')}
+        <div style="border-top:2px solid var(--border);padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;text-align:center">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Gonzalo paga</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px">${mxn(totalGonzalo)}</div>
+          </div>
+          <div style="background:#FFF1F6;border-radius:10px;padding:10px 12px;text-align:center;border:1px solid #FBCFE8">
+            <div style="font-size:10px;color:#BE185D;font-weight:700;text-transform:uppercase;margin-bottom:3px">Javi paga</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;color:#BE185D">${mxn(totalJavi)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:9px;background:#BE185D22;display:flex;align-items:center;justify-content:center;font-size:18px">💚</div>
+        <div>
+          <div style="font-weight:700;font-size:15px">Pago de Javi</div>
+          <div style="font-size:11px;color:var(--dim)">Monto fijo mensual: ${mxn(totalJavi)}</div>
+        </div>
+      </div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Total debe</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:#BE185D">${mxn(totalJavi)}</div>
+          </div>
+          <div style="background:#F0FDF4;border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:3px">Ya pagó</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:var(--green)">${mxn(totalPagado)}</div>
+          </div>
+          <div style="background:${pendiente>0?'#FFF1F6':'#F0FDF4'};border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:10px;color:${pendiente>0?'#BE185D':'var(--green)'};font-weight:700;text-transform:uppercase;margin-bottom:3px">Pendiente</div>
+            <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${pendiente>0?'#BE185D':'var(--green)'}">${mxn(pendiente)}</div>
+          </div>
+        </div>
+        ${pendiente>0&&esMesActual?`
+          <div style="display:flex;gap:8px">
+            <button onclick="registrarPagoGastosFijos(${totalJavi},'total','${mesStr}')" style="flex:1;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-family:inherit">✅ Pago total ${mxn(totalJavi)}</button>
+            <button onclick="registrarPagoGastosFijos(${pendiente},'parcial','${mesStr}')" style="flex:1;padding:11px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #FBCFE8;background:#FFF1F6;color:#BE185D;font-family:inherit">💰 Pago parcial</button>
+          </div>`
+        :pendiente===0?`<div style="text-align:center;padding:10px;color:var(--green);font-weight:700;font-size:13px">✅ Javi está al día este mes</div>`:''}
+        ${pagosJaviMes.length>0?`<div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:5px">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Pagos registrados</div>
+          ${pagosJaviMes.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:8px"><span style="font-size:12px;color:var(--muted)">${fechaLocal(t.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"})} · ${esc(t.desc||'Pago Javi')}</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--green)">+${mxn(t.monto)}</span></div>`).join('')}
+        </div>`:''}`
+      }</div>
+    </div>`;
+  document.getElementById("viewGastosFijos").innerHTML=html;
+}
+
+async function registrarPagoGastosFijos(sugerido,modo,mesStr){
+  let monto=sugerido;
+  if(modo==="parcial"){
+    const input=prompt(`Monto a registrar como pago de Javi (sugerido: $${sugerido.toLocaleString('es-CL')}):`);
+    if(!input)return;
+    monto=parseInt(input.replace(/\D/g,""));
+    if(!monto||monto<=0){mostrarToast("❌ Monto inválido");return;}
+  }
+  const hoy=new Date();
+  const fechaHoy=`${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  try{
+    await colUsuario().add({cuenta:"cc",tipo:"ingreso",cat:"pago_javi",desc:`Pago Gastos Fijos Javi — ${MESES[parseInt(mesStr.slice(5,7))-1]} ${mesStr.slice(0,4)}`,monto,fecha:fechaHoy,mes_facturacion:mesStr});
+    mostrarToast(`✅ Pago de Javi registrado — ${mxn(monto)}`);
+    renderGastosFijos();
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
+}
+
 /* ── PAGOS ── */
 function renderPagos(){
   const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
@@ -1651,15 +1779,15 @@ function renderPagos(){
   html+=`</div></div>`;
 
   // ── SECCIÓN 3: Deuda de Javi ──
-  const _GFIJOS=375000+85000+75000;
-  const _GEST=[{cat:"cuotas_comp",ref:204096},{cat:"extra_super",ref:12765},{cat:"comida_chancheo",ref:8392},{cat:"plataformas",ref:1596},{cat:"farmacia_gonz",ref:1186},{cat:"varios_gonz",ref:14990}];
-  const javiMesPagos=dataCompartido.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo";});
-  const _gVar=_GEST.reduce((s,g)=>{const real=javiMesPagos.filter(t=>t.cat===g.cat).reduce((a,t)=>a+t.monto,0);return s+(real>0?real:g.ref);},0)+javiMesPagos.filter(t=>!_GEST.find(g=>g.cat===t.cat)).reduce((s,t)=>s+t.monto,0);
+  const JAVI_DIV_DEPTO_P=374000;
+  const JAVI_DIV_OFIC_P=296500;
+  const JAVI_GASTOS_FIJOS_P=74000;
+  const JAVI_ARRIENDO_P=-295000;
+  const deudaTotalJavi=JAVI_DIV_DEPTO_P+JAVI_DIV_OFIC_P+JAVI_GASTOS_FIJOS_P+JAVI_ARRIENDO_P; // $449.500
   const pagosAJaviMesP=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesVisto;});
   const totalPagosJaviP=pagosAJaviMesP.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJaviP=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto;});
   const totalPagosDirectosP=pagosDirectosJaviP.reduce((s,t)=>s+(t.monto||0),0);
-  const deudaTotalJavi=_GFIJOS+_gVar;
   const saldoPendienteJavi=Math.max(0,deudaTotalJavi-totalPagosJaviP-totalPagosDirectosP);
   html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
