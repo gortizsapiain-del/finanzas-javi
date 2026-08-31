@@ -639,7 +639,7 @@ function renderResumen(){
   const totalPagosJavi=pagosAJaviMes.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
-  const javiTotalCompartido=Math.max(0,JAVI_DEUDA_FIJA-totalPagosJavi-totalPagosDirectos);
+  const javiTotalCompartido=Math.max(0,JAVI_DEUDA_FIJA+tcJavi-totalPagosJavi-totalPagosDirectos);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
@@ -664,7 +664,9 @@ function renderResumen(){
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💡 40% Gastos Fijos</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_GASTOS_FIJOS)}</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">🏢 −50% Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(Math.abs(JAVI_ARRIENDO))}</span></div>
         <div style="border-top:1px solid #FBCFE8;margin:2px 0"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D;font-weight:700">Total mensual fijo</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(JAVI_DEUDA_FIJA)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💳 Gastos TC (su parte)</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(tcJavi)}</span></div>
+        <div style="border-top:1px solid #FBCFE8;margin:2px 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D;font-weight:700">Total que debe</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:#BE185D">${mxn(JAVI_DEUDA_FIJA+tcJavi)}</span></div>
         ${totalPagosJavi>0?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">💚 Pago registrado</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(totalPagosJavi)}</span></div>`:''}
         ${totalPagosDirectos>0?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">💙 Transferencia directa</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(totalPagosDirectos)}</span></div>`:''}
         ${(totalPagosJavi+totalPagosDirectos)>0?`<div style="border-top:1px solid #FBCFE8;margin:2px 0"></div><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D;font-weight:700">Pendiente</span><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:${javiTotalCompartido===0?'var(--green)':'#BE185D'}">${mxn(javiTotalCompartido)}</span></div>`:''}
