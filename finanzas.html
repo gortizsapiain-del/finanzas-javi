@@ -634,7 +634,6 @@ function renderResumen(){
   const totalGastosJavi=tcJavi+ccGastosJavi+creditosJaviNeto;
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
-  const deudaTotal=Math.max(0,deudaGonzalo+javiTotalCompartido);
   const mesLabel=MESES[m]+" "+a;
   const JAVI_DIV_DEPTO=374000,JAVI_DIV_OFIC=296500,JAVI_GASTOS_FIJOS=74000;
   const arriendoRegistrado=arriendoM.reduce((s,t)=>s+(t.monto_javi||0),0);
@@ -645,6 +644,7 @@ function renderResumen(){
   const pagosDirectosJavi=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesStr;});
   const totalPagosDirectos=pagosDirectosJavi.reduce((s,t)=>s+(t.monto||0),0);
   const javiTotalCompartido=Math.max(0,JAVI_DEUDA_FIJA+tcJavi-totalPagosJavi-totalPagosDirectos);
+  const deudaTotal=Math.max(0,deudaGonzalo+javiTotalCompartido);
   document.getElementById("viewResumen").innerHTML=`
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🏦 Cuenta corriente</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:16px;color:${ccSaldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(ccSaldoAcumulado)}</div></div>
