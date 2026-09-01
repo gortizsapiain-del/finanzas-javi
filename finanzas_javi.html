@@ -1092,44 +1092,26 @@ function renderGonzalo(){
   });
   html+='</div>';
 
-  // ── Variables (referencia + real del mes) ──
-  html+='<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 2px;margin-top:4px">Gastos Variables del Mes</div>';
-  html+='<div class="expense-list">';
-  GONZALO_ESTIMADOS.forEach(function(g){
-    // buscar si hay entrada real este mes para esta categoría
-    const reales=varM.filter(t=>t.cat===g.cat);
-    const totalReal=reales.reduce((s,t)=>s+t.monto,0);
-    const tieneReal=reales.length>0;
-    html+='<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:var(--surface);border:1px solid '+(tieneReal?g.color+'60':'var(--border)')+'">';
-    html+='<div style="width:38px;height:38px;border-radius:9px;background:'+g.color+'22;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+g.icon+'</div>';
-    html+='<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;color:var(--text)">'+g.desc+'</div>';
-    html+='<div style="font-size:11px;color:var(--dim);margin-top:1px">Ref: '+mxn(g.ref)+(tieneReal?' · <span style="color:#3A8A70;font-weight:700">Real: '+mxn(totalReal)+'</span>':'')+'</div></div>';
-    const montoMostrar=tieneReal?totalReal:g.ref;
-    html+='<div style="text-align:right;flex-shrink:0">';
-    html+='<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:15px;color:'+(tieneReal?'#3A8A70':'#3050A0')+'">'+mxn(montoMostrar)+'</div>';
-    if(!tieneReal) html+='<div style="font-size:10px;color:var(--dim)">estimado</div>';
-    html+='</div>';
-    if(tieneReal){
-      reales.forEach(function(t){
-        const editable=!t.from_gonzalo;
-        html+='</div><div style="display:flex;align-items:center;gap:10px;padding:6px 16px 6px 66px;background:#F8FFF8;border-left:3px solid '+g.color+';border-radius:0 0 10px 10px;'+(editable?'cursor:pointer':'')+'"'+(editable?' onclick="abrirModal(\''+t.id+'\')"':'')+' title="'+(editable?'Editar':'Sincronizado de Gonzalo')+'">';
-        html+='<div style="flex:1;font-size:12px;color:var(--muted)">'+(t.from_gonzalo?'📤 ':'')+''+(t.desc||g.desc)+' · '+t.fecha+'</div>';
-        html+='<div style="font-size:12px;font-weight:600;color:#3A8A70">'+mxn(t.monto)+(editable?' ✏️':'')+'</div>';
-      });
-    }
-    html+='</div>';
+  // ── Variables colapsables ──
+  var detalleVarsHtml='';
+  varM.forEach(function(t){
+    var c=CATS[t.cat]||{label:t.cat,icon:'📦',color:'#A08898'};
+    detalleVarsHtml+='<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--border)">';
+    detalleVarsHtml+='<div style="font-size:18px">'+c.icon+'</div>';
+    detalleVarsHtml+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text)">'+(t.desc||c.label)+'</div>';
+    detalleVarsHtml+='<div style="font-size:11px;color:var(--dim)">'+t.fecha+(t.from_gonzalo?' · de Gonzalo':'')+'</div></div>';
+    detalleVarsHtml+='<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:13px;color:#3050A0">'+mxn(t.monto)+'</div>';
+    detalleVarsHtml+='</div>';
   });
-  // entradas variables sin categoría estimada
-  const varSinEst=varM.filter(t=>!GONZALO_ESTIMADOS.find(g=>g.cat===t.cat));
-  varSinEst.forEach(function(t){
-    const c=CATS[t.cat]||{label:t.cat,icon:"📦",color:"#A08898"};
-    const editable=!t.from_gonzalo;
-    html+='<div class="expense-row"'+(editable?' onclick="abrirModal(\''+t.id+'\')"':'')+' style="'+(t.from_gonzalo?'border-left:2px solid #3B82F680;opacity:.9':'')+'">';
-    html+='<div class="expense-icon" style="background:'+c.color+'22">'+(t.from_gonzalo?'📤':c.icon)+'</div>';
-    html+='<div style="flex:1;min-width:0"><div class="expense-desc">'+(t.desc||c.label)+'</div><div class="expense-meta">'+t.fecha+(t.from_gonzalo?' · de Gonzalo':'')+'</div></div>';
-    html+='<div class="expense-amount">'+mxn(t.monto)+'</div></div>';
-  });
+  html+='<div style="border-radius:14px;border:1px solid #B0C8F0;overflow:hidden;background:var(--surface)">';
+  html+='<div onclick="var d=this.nextElementSibling;d.style.display=d.style.display===\'none\'?\'block\':\'none\'" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none">';
+  html+='<div><div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px">Gastos Variables del Mes</div>';
+  html+='<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:16px;color:#3050A0">'+mxn(totalVar)+'</div></div>';
+  html+='<div style="font-size:12px;color:var(--muted)">▾</div>';
   html+='</div>';
+  html+='<div style="display:none">'+detalleVarsHtml+'</div>';
+  html+='</div>';
+
 
   html+='<div style="background:#EEF4FF;border:2px solid #B0C8F0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">';
   html+='<div style="font-size:13px;font-weight:700;color:#3050A0">Total a depositar</div>';
