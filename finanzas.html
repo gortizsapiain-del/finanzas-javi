@@ -293,6 +293,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <select id="fCat" onchange="onCatChange()">
         <option value="cuotas_personales">💳 Cuotas Personales</option>
         <option value="cuotas_depto">🏠 Cuotas Depto</option>
+          <option value="contribuciones">🏛️ Contribuciones</option>
         <option value="dividendo_depto">🏦 Dividendo Depto</option>
         <option value="gastos_comunes_depto">🔧 Gastos Comunes Depto</option>
         <option value="gastos_comunes_oficina">🏢 Gastos Comunes Oficina</option>
@@ -474,6 +475,7 @@ function escucharDatos(){
 const CATS={
   cuotas_personales:{label:"Cuotas Personales",icon:"💳",color:"#8B5CF6",regla:"gonzalo",pct_g:1,pct_j:0},
   cuotas_depto:{label:"Cuotas Depto",icon:"🏠",color:"#3B82F6",regla:"50_50",pct_g:0.5,pct_j:0.5},
+  contribuciones:{label:"Contribuciones",icon:"🏛️",color:"#6366F1",regla:"50_50",pct_g:0.5,pct_j:0.5},
   dividendo_depto:{label:"Dividendo Depto",icon:"🏦",color:"#F59E0B",regla:"50_50",pct_g:0.5,pct_j:0.5},
   gastos_comunes_depto:{label:"Gastos Comunes Depto",icon:"🔧",color:"#06B6D4",regla:"gonzalo",pct_g:1,pct_j:0},
   gastos_comunes_oficina:{label:"Gastos Comunes Ofic.",icon:"🏢",color:"#14B8A6",regla:"gonzalo",pct_g:1,pct_j:0},
