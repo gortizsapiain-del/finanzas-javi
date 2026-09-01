@@ -647,7 +647,7 @@ function renderResumen(){
   const gonzaloFijosTotal=perfil==="javiera"?GONZALO_FIJOS.reduce((s,g)=>s+g.monto,0):0;
   const gonzaloFijosDetalle=perfil==="javiera"?GONZALO_FIJOS:[];
   const varMRes=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo"));
-  const gonzaloVarTotal=varMRes.reduce((s,t)=>s+t.monto,0);
+  const gonzaloVarTotal=varMRes.reduce((s,t)=>s+(t.monto_javi||t.monto||0),0);
   const mesStrRes=`${anio}-${String(mes+1).padStart(2,'0')}`;
   // creditosGonzaloRes eliminado — ya incluido en GONZALO_FIJOS (dividendos)
   const creditosGonzaloRes=0;
@@ -671,7 +671,9 @@ function renderResumen(){
     const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
     return ref===mesStrRes&&t.cat==="arriendo_oficina"&&t.pagado_automatico===true;
   }).reduce((s,t)=>s+(t.monto_javi||0),0);
-  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal+creditosGonzaloRes-arriendoMesJavi-totalDescuentos-totalPagosGonzalo);
+  // Gastos TC de Gonzalo que Javi debe pagar (su parte = monto_javi)
+  const tcGonzaloJavi=delMes(dataCompartido.filter(t=>t.cuenta==="tc"&&t.cat!=="pago_tc")).reduce((s,t)=>s+(t.monto_javi||0),0);
+  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal+tcGonzaloJavi+creditosGonzaloRes-arriendoMesJavi-totalDescuentos-totalPagosGonzalo);
   // Total = TC Pendiente + Créditos + Gonzalo
   const totalGastos=tcPendiente+credTotal+gonzaloTotal;
   // Saldo CC acumulado
@@ -1033,6 +1035,7 @@ function renderGonzalo(){
 
   // Gastos variables del mes (cuenta:'gonzalo' en Firebase + sincronizados de Gonzalo)
   const varM=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_gonzalo"));
+  const tcGonzaloJaviPag=delMes(dataCompartido.filter(t=>t.cuenta==="tc"&&t.cat!=="pago_tc")).reduce((s,t)=>s+(t.monto_javi||0),0);
   const totalVar=varM.reduce((s,t)=>s+t.monto,0);
   const mesStrGonz=`${anio}-${String(mes+1).padStart(2,'0')}`;
   const creditosGonzGonzalo=dataCompartido.filter(t=>{
