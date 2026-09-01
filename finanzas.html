@@ -1442,7 +1442,7 @@ async function sincronizarConJavi(docId,trans,montoJavi){
   }
   if(montoJavi>0&&trans.cat&&!CATS_NO_SYNC_JAVI.includes(trans.cat)){
     const fechaEfectiva=trans.mes_facturacion?(trans.mes_facturacion+"-01"):(trans.fecha||"");
-    const entrada={fecha:fechaEfectiva,cuenta:"gonzalo",tipo:"gasto",cat:trans.cat,desc:trans.desc||"",monto:montoJavi,from_gonzalo:true,...(trans.mes_facturacion?{mes_facturacion:trans.mes_facturacion}:{})};
+    const entrada={fecha:fechaEfectiva,cuenta:"gonzalo",cuenta_origen:trans.cuenta||"cc",tipo:"gasto",cat:trans.cat,desc:trans.desc||"",monto:montoJavi,from_gonzalo:true,...(trans.mes_facturacion?{mes_facturacion:trans.mes_facturacion}:{})};
     try{await db.collection("compartido_gonzalo").doc(docId).set(entrada);mostrarToast("✅ Transacción agregada y sincronizada con Javi");}
     catch(e){mostrarToast("⚠️ Guardado, pero error al sincronizar: "+e.message);}
   }else{try{await db.collection("compartido_gonzalo").doc(docId).delete();}catch(e){}}
