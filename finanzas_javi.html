@@ -671,9 +671,11 @@ function renderResumen(){
     const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
     return ref===mesStrRes&&t.cat==="arriendo_oficina"&&t.pagado_automatico===true;
   }).reduce((s,t)=>s+(t.monto_javi||0),0);
-  // Gastos TC de Gonzalo que Javi debe pagar (su parte = monto_javi)
-  const tcGonzaloJavi=delMes(dataCompartido.filter(t=>t.cuenta==="tc"&&t.cat!=="pago_tc")).reduce((s,t)=>s+(t.monto_javi||0),0);
-  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal+tcGonzaloJavi+creditosGonzaloRes-arriendoMesJavi-totalDescuentos-totalPagosGonzalo);
+  // Gastos de TC de Gonzalo sincronizados (cuenta_origen="tc")
+  const tcGonzaloJavi=delMes(dataCompartido.filter(t=>t.cuenta==="gonzalo"&&(t.cuenta_origen==="tc"))).reduce((s,t)=>s+(t.monto||0),0);
+  // Variables no-TC (CC, etc)
+  const varNoTcTotal=delMes(dataCompartido.filter(t=>t.cuenta==="gonzalo"&&t.cuenta_origen!=="tc"&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo")).reduce((s,t)=>s+(t.monto||0),0);
+  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+varNoTcTotal+tcGonzaloJavi+creditosGonzaloRes-arriendoMesJavi-totalDescuentos-totalPagosGonzalo);
   // Total = TC Pendiente + Créditos + Gonzalo
   const totalGastos=tcPendiente+credTotal+gonzaloTotal;
   // Saldo CC acumulado
