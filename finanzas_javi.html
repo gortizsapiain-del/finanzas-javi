@@ -651,10 +651,8 @@ function renderResumen(){
   const varMRes=delMes(allData().filter(t=>t.cuenta==="gonzalo"&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo"));
   const gonzaloVarTotal=varMRes.reduce((s,t)=>s+t.monto,0);
   const mesStrRes=`${anio}-${String(mes+1).padStart(2,'0')}`;
-  const creditosGonzaloRes=dataCompartido.filter(t=>{
-    const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
-    return ref===mesStrRes&&t.cat==="credito_hipotecario";
-  }).reduce((s,t)=>s+(t.monto||0),0);
+  // creditosGonzaloRes eliminado — ya incluido en GONZALO_FIJOS (dividendos)
+  const creditosGonzaloRes=0;
   const pagosJaviResumen=allData().filter(function(t){
     return t.cat==="pago_javi"&&t.from_gonzalo;
   }).filter(function(t){
