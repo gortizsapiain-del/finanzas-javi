@@ -632,7 +632,9 @@ function renderResumen(){
   const totalGastos=tcTotal+ccGastosReales+creditosTotalNeto;
   const totalGastosGonzalo=tcGonzalo+ccGastosGonzalo+creditosGonzaloNeto;
   const totalGastosJavi=tcJavi+ccGastosJavi+creditosJaviNeto;
-  const deudaTotal=Math.max(0,tcParaTotal+creditosTotalNeto);
+  // Total entre los dos = TC + Créditos + Gastos Fijos compartidos (748.000+593.000+185.000-590.000)
+  const GASTOS_FIJOS_TOTAL=748000+593000+185000-590000; // $936.000
+  const deudaTotal=Math.max(0,tcParaTotal+creditosTotalNeto+GASTOS_FIJOS_TOTAL);
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
