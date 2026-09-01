@@ -391,7 +391,7 @@ let filtroTC = "todas", filtroCC = "todas", filtroCredito = "todas";
 let catExpandidaTC = null, catExpandidaCredito = null;
 let vistaTC = "categorias";
 
-(function(){mes=7;anio=2026;})(); // agosto 2026
+(function(){const n=new Date();mes=n.getMonth();anio=n.getFullYear();})();
 
 // ══════════════════════════════════════════
 //  FIREBASE
@@ -619,10 +619,8 @@ function getVirtualItems(){
   const mesStr=anio+'-'+String(mes+1).padStart(2,'0');
   const offset=(anio-2026)*12+(mes-7);
   if(offset<0) return [];
-  const candidatos=[
-    {cuenta:'creditos',tipo:'gasto',cat:'consumo',monto:255000,mes_facturacion:mesStr,fecha:mesStr+'-05',cuota_actual:1+offset,cuotas_total:24,desc:'Crédito Consumo (cuota '+(1+offset)+'/24)'},
-    ...(anio===2026&&mes===7?[{cuenta:'tc',tipo:'gasto',cat:'farmacia',monto:21359,mes_facturacion:mesStr,fecha:mesStr+'-01',desc:'Farmacia'}]:[]),
-  ];
+  const candidatos=[];
+  // Virtual items desactivados — se registran manualmente
   return candidatos.filter(function(e){
     return !data.some(function(t){
       return t.cuenta===e.cuenta&&t.cat===e.cat&&
