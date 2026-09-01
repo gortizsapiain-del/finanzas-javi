@@ -379,6 +379,7 @@ const GONZALO_ESTIMADOS = [];
 let db, auth, uid;
 let data = [];
 let dataCompartido = []; // Transacciones de Gonzalo auto-sincronizadas
+let dataTCGonzalo = []; // TC de Gonzalo con parte de Javi
 let tabActual = "resumen";
 let perfil = "javiera"; // "javiera" | "skinlux"
 let unsubscribeDatos = null;
@@ -457,6 +458,16 @@ function suscribirDatos(){
       dataCompartido=snap.docs.map(d=>({id:"cg_"+d.id,...d.data(),from_gonzalo:true,_cgId:d.id}));
       render();
     },e=>console.warn("compartido_gonzalo:",e.message));
+    // Leer también transacciones de TC de Gonzalo con monto_javi > 0
+    gonzaloDb.collection("usuarios").onSnapshot(usersSnap=>{
+      if(usersSnap.empty)return;
+      const uid_g=usersSnap.docs[0].id;
+      gonzaloDb.collection("usuarios").doc(uid_g).collection("transacciones")
+        .where("cuenta","==","tc").onSnapshot(tcSnap=>{
+          dataTCGonzalo=tcSnap.docs.map(d=>({id:"tc_g_"+d.id,...d.data(),from_gonzalo:true})).filter(t=>t.monto_javi>0&&t.cat!=="pago_tc");
+          render();
+        },e=>console.warn("tc gonzalo:",e.message));
+    },e=>console.warn("usuarios gonzalo:",e.message));
   }
   if(perfil==="skinlux") limpiarDatosSkinlux();
 }
@@ -671,11 +682,9 @@ function renderResumen(){
     const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);
     return ref===mesStrRes&&t.cat==="arriendo_oficina"&&t.pagado_automatico===true;
   }).reduce((s,t)=>s+(t.monto_javi||0),0);
-  // Gastos de TC de Gonzalo sincronizados (cuenta_origen="tc")
-  const tcGonzaloJavi=delMes(dataCompartido.filter(t=>t.cuenta==="gonzalo"&&(t.cuenta_origen==="tc"))).reduce((s,t)=>s+(t.monto||0),0);
-  // Variables no-TC (CC, etc)
-  const varNoTcTotal=delMes(dataCompartido.filter(t=>t.cuenta==="gonzalo"&&t.cuenta_origen!=="tc"&&t.cat!=="pago_javi"&&t.cat!=="pago_gonzalo")).reduce((s,t)=>s+(t.monto||0),0);
-  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+varNoTcTotal+tcGonzaloJavi+creditosGonzaloRes-arriendoMesJavi-totalDescuentos-totalPagosGonzalo);
+  // Gastos TC de Gonzalo (parte Javi), leídos directamente de TC de Gonzalo
+  const tcGonzaloJavi=delMes(dataTCGonzalo).reduce((s,t)=>s+(t.monto_javi||0),0);
+  const gonzaloTotal=Math.max(0,gonzaloFijosTotal+gonzaloVarTotal+tcGonzaloJavi+creditosGonzaloRes-arriendoMesJavi-totalDescuentos-totalPagosGonzalo);
   // Total = TC Pendiente + Créditos + Gonzalo
   const totalGastos=tcPendiente+credTotal+gonzaloTotal;
   // Saldo CC acumulado
