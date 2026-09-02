@@ -749,9 +749,9 @@ function renderTC(){
     </div>
     ${(filtroTarjeta==='todas'||filtroTarjeta==='visa_singular')?`<div style="background:var(--surface);border:1px solid #BFDBFE;border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
-        <div style="font-size:10px;color:#3B82F6;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Visa Singular — Consumido a la fecha</div>
-        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:#1D4ED8">${mxn(data.filter(t=>t.cuenta==='tc'&&t.tipo==='gasto'&&t.cat!=='pago'&&(t.tarjeta||'visa_singular')==='visa_singular').reduce((s,t)=>s+(t.monto_total||t.monto),0))}</div>
-        <div style="font-size:11px;color:var(--dim);margin-top:2px">Acumulado total desde el inicio</div>
+        <div style="font-size:10px;color:#3B82F6;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Visa Singular — Consumido pendiente</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:#1D4ED8">${mxn(data.filter(t=>t.cuenta==='tc'&&t.tipo==='gasto'&&t.cat!=='pago'&&(t.tarjeta||'visa_singular')==='visa_singular'&&(t.mes_facturacion||t.fecha.slice(0,7))>='2026-08').reduce((s,t)=>s+(t.monto_total||t.monto),0)-data.filter(t=>t.cuenta==='tc'&&t.cat==='pago'&&(t.tarjeta||'visa_singular')==='visa_singular'&&(t.mes_facturacion||t.fecha.slice(0,7))>='2026-08').reduce((s,t)=>s+(t.monto_total||t.monto),0))}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">Desde agosto 2026 · sin pagos anteriores</div>
       </div>
       <div style="font-size:32px">💳</div>
     </div>`:''}
