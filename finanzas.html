@@ -1608,7 +1608,12 @@ function renderGastosFijos(){
   var ITEMS=[
     {label:"Dividendo Depto",icon:"🏠",total:748000,javi:374000,gonzalo:374000,pct_j:"50%",pct_g:"50%",es_ingreso:false},
     {label:"Dividendo Oficina",icon:"🏢",total:593000,javi:296500,gonzalo:296500,pct_j:"50%",pct_g:"50%",es_ingreso:false},
-    {label:"Gastos Fijos (GC, luz, agua, internet, gas)",icon:"💡",total:290000,javi:116000,gonzalo:174000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"GC Depto",icon:"🏢",total:100000,javi:40000,gonzalo:60000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"GC Oficina",icon:"🏢",total:65000,javi:26000,gonzalo:39000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"Internet",icon:"🌐",total:25000,javi:10000,gonzalo:15000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"Gas",icon:"🔥",total:35000,javi:14000,gonzalo:21000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"Luz",icon:"💡",total:30000,javi:12000,gonzalo:18000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"Agua",icon:"💧",total:35000,javi:14000,gonzalo:21000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
     {label:"Arriendo recibido (resta)",icon:"💰",total:-590000,javi:-295000,gonzalo:-295000,pct_j:"50%",pct_g:"50%",es_ingreso:true},
   ];
   var totalJavi=ITEMS.reduce(function(s,i){return s+i.javi;},0);
