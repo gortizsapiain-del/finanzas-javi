@@ -273,6 +273,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="tipo-toggle" id="tipoToggle"></div>
     </div>
     <div class="field"><label>Descripción</label><input id="fDesc" placeholder="Ej. Nómina, Supermercado…"/></div>
+    <div class="field" id="fieldHipTipo" style="display:none">
+      <label>Propiedad</label>
+      <select id="fHipTipo">
+        <option value="depto">🏠 Depto</option>
+        <option value="oficina">🏢 Oficina</option>
+      </select>
+    </div>
     <div class="field" id="fieldUF" style="display:none">
       <label>Monto en UF</label>
       <div style="display:flex;gap:8px;align-items:center">
@@ -342,7 +349,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div id="mesPagoTCGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
       <button type="button" onclick="calcularTotalTCMes()" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:var(--green);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">🔄 Calcular total TC del mes</button>
     </div>
-    <div class="field" id="fieldFecha"><label id="labelFecha">Fecha de compra</label><input id="fFecha" type="date"/></div>
+    <div class="field" id="fieldFecha"><label id="labelFecha">Fecha de compra</label><input id="fFecha" type="date" onchange="onFechaChange()"/></div>
     <div class="field" id="fieldMesFac" style="display:none">
       <label>Mes de facturación</label>
       <input id="fMesFac" type="hidden"/>
@@ -532,6 +539,21 @@ let _pagoCredPendiente=null,_pagoCredTarjetaElegida="visa_singular";
 
 function mxn(n){const int=Math.round(Math.abs(n)).toString();const g=int.replace(/\B(?=(\d{3})+(?!\d))/g,".");return(n<0?"-$":"$")+g;}
 function fechaLocal(str){return new Date(str+"T12:00:00");}
+/* ── FACTURACIÓN TC AUTOMÁTICA (corte día 23) ── */
+const DIA_CORTE_TC=23;
+function fechaHoyLocal(){const h=new Date();return`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;}
+function mesFacturacionTC(fechaStr){const[y,m,d]=(fechaStr||fechaHoyLocal()).split('-').map(Number);let mm=m-1,yy=y;if(d>DIA_CORTE_TC){mm++;if(mm>11){mm=0;yy++;}}return`${yy}-${String(mm+1).padStart(2,'0')}`;}
+/* ── HIPOTECARIOS: DEPTO / OFICINA ── */
+const HIP_TIPOS={depto:{label:"Hipotecario Depto",corto:"Depto",icon:"🏠",color:"#3B82F6"},oficina:{label:"Hipotecario Oficina",corto:"Oficina",icon:"🏢",color:"#0EA5E9"}};
+function tipoHipotecario(t){
+  if(t.hip_tipo==="depto"||t.hip_tipo==="oficina")return t.hip_tipo;
+  const d=(t.desc||"").toLowerCase();
+  if(/ofic/.test(d))return"oficina";
+  if(/depto|departamento|casa/.test(d))return"depto";
+  return (t.monto_total||t.monto)>=670000?"depto":"oficina";
+}
+function hipDelMes(tipo,mesStr){return data.filter(t=>t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&(t.mes_facturacion||t.fecha.slice(0,7))===mesStr&&tipoHipotecario(t)===tipo);}
+function onFechaChange(){if(editandoId)return;if(document.getElementById("fCuenta").value==="tc"){initMesFacPicker(mesFacturacionTC(document.getElementById("fFecha").value));actualizarPreviewCuotas();}}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function delMes(lista){return lista.filter(t=>{const ref=((t.cuenta==="tc"||t.cuenta==="creditos")&&t.mes_facturacion)?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===mes&&d.getFullYear()===anio;});}
 function mesFacDeCuota(base,offset){const[anioB,mesB]=base.split('-').map(Number);const total=(mesB-1)+offset;return`${anioB+Math.floor(total/12)}-${String((total%12)+1).padStart(2,'0')}`;}
@@ -623,8 +645,8 @@ function renderResumen(){
   const ccSaldoAcumulado=SALDO_INICIAL_CC+data.filter(t=>t.cuenta==="cc").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-(t.monto_total||t.monto),0);
   const ahTotal=data.filter(t=>t.cuenta==="ahorros").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="deposito"||t.tipo==="ganancia"?s+t.monto:t.tipo==="retiro"?s-t.monto:s,0);
   const creditosM=data.filter(t=>t.cuenta==="creditos"&&t.cat!=="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
- const catsCreditosPagadas=new Set(["credito_consumo","credito_consumo_2","credito_hipotecario"].filter(catId=>{const cuotasEsteMes=creditosM.filter(t=>t.cat===catId);return cuotasEsteMes.length>0&&cuotasEsteMes.some(t=>t.pagado_automatico===true);}));
-  const creditosMParaDeuda=creditosM.filter(t=>!catsCreditosPagadas.has(t.cat));
+ const catsCreditosPagadas=new Set(["credito_consumo","credito_consumo_2"].filter(catId=>{const cuotasEsteMes=creditosM.filter(t=>t.cat===catId);return cuotasEsteMes.length>0&&cuotasEsteMes.some(t=>t.pagado_automatico===true);}));
+  const creditosMParaDeuda=creditosM.filter(t=>t.cat==="credito_hipotecario"?t.pagado_automatico!==true:!catsCreditosPagadas.has(t.cat));
   const creditosTotal=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_total||t.monto),0),creditosGonzalo=creditosMParaDeuda.reduce((s,t)=>s+t.monto,0),creditosJavi=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_javi||0),0);
   const arriendoM=data.filter(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
   const arriendoTotal=arriendoM.reduce((s,t)=>s+(t.monto_total||t.monto),0),arriendoGonzalo=arriendoM.reduce((s,t)=>s+t.monto,0),arriendoJavi=arriendoM.reduce((s,t)=>s+(t.monto_javi||0),0);
@@ -1014,12 +1036,13 @@ function renderCreditos(){
       }else if(esMesActual){
         btnPagar=`<button onclick="registrarArriendoOficina(event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #10B98160;background:#10B98118;color:#059669;font-family:inherit;white-space:nowrap">💰 Registrar pago</button>`;
       }
+    }else if(id==="credito_hipotecario"){
+      btnPagar=`<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">${Object.entries(HIP_TIPOS).map(([k,h])=>{const cuotasTipo=hipDelMes(k,mesVisto);const pagado=cuotasTipo.some(t=>t.pagado_automatico===true);if(pagado)return`<div style="padding:5px 9px;border-radius:9px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ ${h.corto}</div>`;if(!esMesActual)return'';return`<button onclick="pagoHipotecario('${k}',event)" style="padding:5px 9px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">${h.icon} Pagar ${h.corto}</button>`;}).join('')}</div>`;
     }else if(!esIngreso){
       if(yaPagadoAutomatico){
         btnPagar=`<div style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ Pagado</div>`;
       }else if(esMesActual){
-        const esHipotecario=id==="credito_hipotecario";
-        btnPagar=`<button onclick="${esHipotecario?`pagoTotalHipotecario('${id}',${catTotal},event)`:`pagoAutomatico('${id}',event)`}" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">${esHipotecario?"💳 Pagar total":"⚡ Pagar"}</button>`;
+        btnPagar=`<button onclick="pagoAutomatico('${id}',event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${c.color}60;background:${c.color}18;color:${c.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`;
       }
     }
     html+=`<div style="background:var(--surface);border:1px solid ${abierta?c.color+'60':'var(--border)'};border-radius:14px;overflow:hidden">
@@ -1057,6 +1080,7 @@ function renderCreditos(){
                   <div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                     <span>${fecha}</span>
                     ${t.cuota_actual&&t.cuotas_total?`<span style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">Cuota ${t.cuota_actual}/${t.cuotas_total}</span>`:''}
+                    ${t.cat==="credito_hipotecario"?`<span style="background:${HIP_TIPOS[tipoHipotecario(t)].color}18;border:1px solid ${HIP_TIPOS[tipoHipotecario(t)].color}60;color:${HIP_TIPOS[tipoHipotecario(t)].color};font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">${HIP_TIPOS[tipoHipotecario(t)].icon} ${HIP_TIPOS[tipoHipotecario(t)].corto}</span>`:''}
                     ${t.monto_uf?`<span style="color:var(--blue);font-weight:700">${t.monto_uf} UF</span>`:''}
                     ${tieneJavi?`<span style="color:var(--muted)">G:${mxn(t.monto)}</span><span style="color:var(--dim)">J:${mxn(t.monto_javi)}</span>`:''}
                   </div>
@@ -1312,7 +1336,7 @@ function calcularTotalTCMes(){
 /* ── MODAL PRINCIPAL ── */
 function abrirModal(id=null){
   editandoId=id;
-  const hoy=new Date().toISOString().slice(0,10);
+  const hoy=fechaHoyLocal();
   const cuentaDefault=tabActual==="resumen"?"tc":tabActual==="creditos"?"creditos":tabActual;
   const enResumen=tabActual==="resumen";
   document.getElementById("fieldCuenta").style.display=enResumen?"":"none";
@@ -1334,7 +1358,7 @@ function abrirModal(id=null){
     calcularCuotaMensual();
     if(t.cuenta==="tc"){initMesFacPicker(t.mes_facturacion||t.fecha.slice(0,7));document.getElementById("fTarjeta").value=t.tarjeta||"visa_singular";}
     if(t.cuenta==="ahorros")document.getElementById("fCuentaAhorro").value=t.cuenta_ahorro||"renta_plus";
-    if(t.cuenta==="creditos")initMesFacPicker(t.mes_facturacion||t.fecha.slice(0,7));
+    if(t.cuenta==="creditos"){initMesFacPicker(t.mes_facturacion||t.fecha.slice(0,7));if(t.cat==="credito_hipotecario")document.getElementById("fHipTipo").value=tipoHipotecario(t);}
     if(t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado){const[y,m]=t.tc_mes_pagado.split('-').map(Number);mesPagoTCAnio=y;mesPagoTCMes=m-1;document.getElementById("fieldMesPagoTC").style.display="";renderMesPagoTCGrid();}
     const esCuotaTC=t.cuenta==="tc"&&/\(cuota \d+\/\d+\)$/.test(t.desc||"");
     const esCuotaCredito=t.cuenta==="creditos"&&t.cuota_actual&&t.cuotas_total;
@@ -1349,9 +1373,10 @@ function abrirModal(id=null){
     numCuotas=1;document.getElementById("cuotasNum").textContent="1";
     document.getElementById("fCuotaActual").value="";document.getElementById("fCuotasTotal").value="";
     document.getElementById("cuotaCreditoPreview").textContent="";
+    document.getElementById("fFecha").value=hoy;
     actualizarModalPorCuenta(cuentaDefault);
     document.getElementById("fFecha").value=hoy;
-    if(cuentaDefault==="tc"){initMesFacPicker(hoy.slice(0,7));document.getElementById("fTarjeta").value=filtroTarjeta!=="todas"?filtroTarjeta:"visa_singular";}
+    if(cuentaDefault==="tc"){initMesFacPicker(mesFacturacionTC(hoy));document.getElementById("fTarjeta").value=filtroTarjeta!=="todas"?filtroTarjeta:"visa_singular";}
     if(cuentaDefault==="ahorros")document.getElementById("fCuentaAhorro").value=filtroAhorro!=="todas"?filtroAhorro:"renta_plus";
     else if(cuentaDefault==="creditos"){const ma=new Date();ma.setMonth(ma.getMonth()-1);initMesFacPicker(`${ma.getFullYear()}-${String(ma.getMonth()+1).padStart(2,'0')}`);}
   }
@@ -1361,13 +1386,15 @@ function abrirModal(id=null){
 function actualizarModalPorCuenta(cuentaForzada){
   const cuenta=cuentaForzada||document.getElementById("fCuenta").value;
   const fieldTipo=document.getElementById("fieldTipo"),fieldCat=document.getElementById("fieldCat"),tipoToggle=document.getElementById("tipoToggle");
+  document.getElementById("fieldHipTipo").style.display="none";
   document.getElementById("pagoTCBanner").style.display="none";
   document.getElementById("fieldMesPagoTC").style.display="none";
   if(cuenta==="tc"){
     mostrarCampoUF(false);document.getElementById("fieldCuotasCredito").style.display="none";document.getElementById("fieldCuentaAhorro").style.display="none";document.getElementById("fieldTarjeta").style.display="";
     fieldTipo.style.display="none";fieldCat.style.display="";actualizarOpcionesCat("tc");modalTipo="gasto";
     document.getElementById("labelFecha").textContent="Fecha de compra";document.getElementById("fFecha").type="date";
-    document.getElementById("fieldMesFac").style.display="";renderMesFacGrid();
+    document.getElementById("fieldMesFac").style.display="";
+    if(!editandoId)initMesFacPicker(mesFacturacionTC(document.getElementById("fFecha").value));else renderMesFacGrid();
     document.getElementById("fieldCuotas").style.display="";actualizarPreviewCuotas();
   }else if(cuenta==="creditos"){
     document.getElementById("fieldCuentaAhorro").style.display="none";document.getElementById("fieldTarjeta").style.display="none";
@@ -1402,6 +1429,7 @@ function actualizarOpcionesCat(cuenta){
 }
 function onCatChange(){
   const cat=document.getElementById("fCat").value,cuenta=document.getElementById("fCuenta").value;
+  document.getElementById("fieldHipTipo").style.display=(cuenta==="creditos"&&cat==="credito_hipotecario")?"":"none";
   if(cuenta==="creditos"&&cat==="credito_hipotecario"){mostrarCampoUF(true);cargarValorUF().then(v=>{document.getElementById("valorUFLabel").textContent="$"+Math.round(v).toLocaleString('es-CL');});}
   else mostrarCampoUF(false);
   if(cuenta==="cc"&&cat==="pago_tc"&&modalTipo==="gasto"){
@@ -1486,7 +1514,7 @@ async function guardar(){
   const cuotas=(cuenta==="tc"&&!esPagoTC&&numCuotas>1)?numCuotas:1;
   const montoCuota=Math.round(monto_total_calc/cuotas),montoGonzaloCuota=Math.round(monto_gonzalo/cuotas),montoJaviCuota=Math.round(monto_javi_calc/cuotas);
   const tarjeta=document.getElementById("fTarjeta").value,cuenta_ahorro=document.getElementById("fCuentaAhorro").value;
-  const tranBase={fecha,cuenta,tipo:modalTipo,cat:(cuenta==="tc"||cuenta==="creditos"||(cuenta==="cc"&&modalTipo==="gasto"))?cat:null,...(cuenta==="tc"?{tarjeta}:{}),...(cuenta==="ahorros"?{cuenta_ahorro}:{})};
+  const tranBase={fecha,cuenta,tipo:modalTipo,cat:(cuenta==="tc"||cuenta==="creditos"||(cuenta==="cc"&&modalTipo==="gasto"))?cat:null,...(cuenta==="tc"?{tarjeta}:{}),...(cuenta==="ahorros"?{cuenta_ahorro}:{}),...(cuenta==="creditos"&&cat==="credito_hipotecario"?{hip_tipo:document.getElementById("fHipTipo").value}:{})};
   cerrarModal();
   try{
     if(editandoId){
@@ -1702,31 +1730,34 @@ async function registrarPagoGastosFijos(sugerido,modo,mesStr){
   }catch(err){mostrarToast("Error: "+err.message);}
 }
 
-/* ── PAGO HIPOTECARIO TOTAL ── */
-async function pagoTotalHipotecario(catId,montoTotal,e){
-  e.stopPropagation();
+/* ── PAGO HIPOTECARIO (DEPTO / OFICINA POR SEPARADO) ── */
+async function pagoHipotecario(tipo,e){
+  if(e)e.stopPropagation();
+  var h=HIP_TIPOS[tipo];
   var mesStr=anio+"-"+String(mes+1).padStart(2,"0");
-  var hoy=new Date();
-  var fechaHoy=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
-  var historial=data.filter(function(t){return t.cuenta==="creditos"&&t.cat===catId;}).sort(function(a,b){var ra=a.mes_facturacion||a.fecha;var rb=b.mes_facturacion||b.fecha;return rb.localeCompare(ra);});
-  if(!historial.length){mostrarToast("Sin cuotas anteriores");return;}
+  var fechaHoy=fechaHoyLocal();
+  var historial=data.filter(function(t){return t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&tipoHipotecario(t)===tipo;}).sort(function(a,b){var ra=a.mes_facturacion||a.fecha;var rb=b.mes_facturacion||b.fecha;return rb.localeCompare(ra);});
+  if(!historial.length){mostrarToast("⚠️ Sin cuotas registradas de "+h.label);return;}
+  var cuotasMes=hipDelMes(tipo,mesStr);
+  if(cuotasMes.some(function(t){return t.pagado_automatico===true;})){mostrarToast("Ya pagado este mes");return;}
+  var yaMes=cuotasMes[0]||null;
   var ultima=historial[0];
-  var yaMes=data.find(function(t){return t.cuenta==="creditos"&&t.cat===catId&&(t.mes_facturacion||t.fecha.slice(0,7))===mesStr;});
-  if(yaMes&&yaMes.pagado_automatico){mostrarToast("Ya pagado este mes");return;}
+  var montoTotal=yaMes?(yaMes.monto_total||yaMes.monto):(ultima.monto_total||ultima.monto);
+  if(!confirm("¿Registrar pago de "+h.icon+" "+h.label+"?\n\nMonto: "+mxn(montoTotal)+"\nMes: "+MESES[mes]+" "+anio+"\nGonzalo: "+mxn(Math.round(montoTotal/2))+" · Javi: "+mxn(Math.round(montoTotal/2))+"\n\n🏦 Se descuenta de Cuenta Corriente"))return;
   try{
+    var credId;
     if(yaMes){
-      await colUsuario().doc(yaMes.id).update({pagado_automatico:true});
+      await colUsuario().doc(yaMes.id).update({pagado_automatico:true,hip_tipo:tipo});
+      credId=yaMes.id;
     }else{
-      var nuevaCuota={cuenta:"creditos",cat:catId,desc:ultima.desc||"Dividendo",monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr,pagado_automatico:true};
+      var nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:"credito_hipotecario",hip_tipo:tipo,desc:ultima.desc||("Dividendo "+h.corto),monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr,pagado_automatico:true};
       if(ultima.monto_uf)nuevaCuota.monto_uf=ultima.monto_uf;
       if(ultima.cuota_actual&&ultima.cuotas_total){nuevaCuota.cuota_actual=ultima.cuota_actual+1;nuevaCuota.cuotas_total=ultima.cuotas_total;}
-      await colUsuario().add(nuevaCuota);
+      var ref=await colUsuario().add(nuevaCuota);credId=ref.id;
     }
-    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",desc:"Pago Dividendo "+mesStr,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr});
-    mostrarToast("Pago registrado - "+mxn(montoTotal)+" descontado de CC");
-    renderCreditos();
-    if(tabActual==="pagos")renderPagos();
-  }catch(err){mostrarToast("Error: "+err.message);}
+    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",hip_tipo:tipo,desc:"Pago Dividendo "+h.corto+" — "+MESES[mes]+" "+anio,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr,credito_cc_ref:credId});
+    mostrarToast("✅ "+h.label+" pagado — "+mxn(montoTotal)+" descontado de CC");
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
 /* ── REGISTRAR ARRIENDO OFICINA ── */
@@ -1790,6 +1821,25 @@ function renderPagos(){
     </div>
     <div style="padding:12px;display:flex;flex-direction:column;gap:8px">`;
   creditosCats.forEach(catId=>{
+    if(catId==="credito_hipotecario"){
+      Object.entries(HIP_TIPOS).forEach(([k,h])=>{
+        const cuotasTipo=hipDelMes(k,mesVisto);
+        const totalH=cuotasTipo.reduce((s,t)=>s+(t.monto_total||t.monto),0);
+        const pagadoH=cuotasTipo.some(t=>t.pagado_automatico===true);
+        const tieneHistorial=data.some(t=>t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&tipoHipotecario(t)===k);
+        if(!tieneHistorial)return;
+        html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${pagadoH?'#BBF7D0':'var(--border)'}">
+          <div style="min-width:0">
+            <div style="font-weight:700;font-size:14px">${h.icon} ${h.label}</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:2px">${totalH>0?mxn(totalH)+' · 50% cada uno':'Se usa el monto de la última cuota'}</div>
+          </div>
+          ${pagadoH
+            ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div>`
+            :`<button onclick="pagoHipotecario('${k}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`}
+        </div>`;
+      });
+      return;
+    }
     const c=CATS[catId];
     const cuotasEsteMes=gm.filter(t=>t.cat===catId);
     const total=cuotasEsteMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
