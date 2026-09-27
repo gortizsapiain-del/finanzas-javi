@@ -552,6 +552,47 @@ function tipoHipotecario(t){
   if(/depto|departamento|casa/.test(d))return"depto";
   return (t.monto_total||t.monto)>=670000?"depto":"oficina";
 }
+const HIP_INICIO_CONTROL="2026-09"; // desde este mes se controla lo impago
+function montoDoc(t){return t.monto_total||t.monto||0;}
+function docsHip(tipo){return data.filter(t=>t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&tipoHipotecario(t)===tipo);}
+function medianaHip(tipo){const a=docsHip(tipo).map(montoDoc).filter(x=>x>0).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0;}
+function esOutlierHip(tipo,monto){const med=medianaHip(tipo);return med>0&&(monto>med*1.8||monto<med*0.5);}
+function cuotaHipMes(tipo,mesStr){
+  const med=medianaHip(tipo);
+  const pool=hipDelMes(tipo,mesStr).filter(d=>!esOutlierHip(tipo,montoDoc(d)));
+  if(!pool.length)return null;
+  const pag=pool.filter(d=>d.pagado_automatico===true);
+  return (pag.length?pag:pool).slice().sort((a,b)=>Math.abs(montoDoc(a)-med)-Math.abs(montoDoc(b)-med))[0];
+}
+function hipPagadoMes(tipo,mesStr){return hipDelMes(tipo,mesStr).some(t=>t.pagado_automatico===true)||data.some(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.hip_tipo===tipo&&t.mes_facturacion===mesStr);}
+function ultimoMontoHip(tipo,hastaMes){const d=docsHip(tipo).filter(x=>!esOutlierHip(tipo,montoDoc(x))&&(x.mes_facturacion||x.fecha.slice(0,7))<=hastaMes).sort((a,b)=>(b.mes_facturacion||b.fecha).localeCompare(a.mes_facturacion||a.fecha));return d.length?montoDoc(d[0]):medianaHip(tipo);}
+function pendientesHip(tipo,hastaMes){
+  const res=[];if(!docsHip(tipo).length)return res;
+  let m=HIP_INICIO_CONTROL;
+  while(m<=hastaMes){if(!hipPagadoMes(tipo,m)){const r=cuotaHipMes(tipo,m);res.push({mes:m,doc:r,monto:r?montoDoc(r):ultimoMontoHip(tipo,m)});}m=mesFacDeCuota(m,1);}
+  return res;
+}
+function duplicadosHip(){
+  const out=[];
+  ["depto","oficina"].forEach(tipo=>{
+    const meses=new Set(docsHip(tipo).map(d=>d.mes_facturacion||d.fecha.slice(0,7)));
+    meses.forEach(m=>{const r=cuotaHipMes(tipo,m);hipDelMes(tipo,m).forEach(d=>{if(r&&d.id===r.id)return;if(d.pagado_automatico===true)return;out.push(d);});});
+  });
+  return out;
+}
+function mesCorto(m){return MESES_CORTOS[parseInt(m.slice(5,7))-1];}
+async function limpiarDuplicadosHip(e){
+  if(e)e.stopPropagation();
+  const dup=duplicadosHip();
+  if(!dup.length){mostrarToast("✅ No hay duplicados");return;}
+  const total=dup.reduce((s,d)=>s+montoDoc(d),0);
+  if(!confirm(`Se eliminarán ${dup.length} cuota(s) hipotecaria(s) duplicada(s) o con monto anómalo (${mxn(total)} en total).\n\nSe conserva siempre 1 cuota por mes y propiedad, y nunca se borran cuotas pagadas.\n\n¿Continuar?`))return;
+  try{
+    for(let i=0;i<dup.length;i+=499){const lote=db.batch();dup.slice(i,i+499).forEach(d=>lote.delete(colUsuario().doc(d.id)));await lote.commit();}
+    for(const d of dup)await eliminarSyncJavi(d.id);
+    mostrarToast(`🧹 ${dup.length} duplicados eliminados`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
+}
 function hipDelMes(tipo,mesStr){return data.filter(t=>t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&(t.mes_facturacion||t.fecha.slice(0,7))===mesStr&&tipoHipotecario(t)===tipo);}
 function onFechaChange(){if(editandoId)return;if(document.getElementById("fCuenta").value==="tc"){initMesFacPicker(mesFacturacionTC(document.getElementById("fFecha").value));actualizarPreviewCuotas();}}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
@@ -646,8 +687,10 @@ function renderResumen(){
   const ahTotal=data.filter(t=>t.cuenta==="ahorros").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="deposito"||t.tipo==="ganancia"?s+t.monto:t.tipo==="retiro"?s-t.monto:s,0);
   const creditosM=data.filter(t=>t.cuenta==="creditos"&&t.cat!=="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
  const catsCreditosPagadas=new Set(["credito_consumo","credito_consumo_2"].filter(catId=>{const cuotasEsteMes=creditosM.filter(t=>t.cat===catId);return cuotasEsteMes.length>0&&cuotasEsteMes.some(t=>t.pagado_automatico===true);}));
-  const creditosMParaDeuda=creditosM.filter(t=>t.cat==="credito_hipotecario"?t.pagado_automatico!==true:!catsCreditosPagadas.has(t.cat));
-  const creditosTotal=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_total||t.monto),0),creditosGonzalo=creditosMParaDeuda.reduce((s,t)=>s+t.monto,0),creditosJavi=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const creditosMParaDeuda=creditosM.filter(t=>t.cat!=="credito_hipotecario"&&!catsCreditosPagadas.has(t.cat));
+  const hipPendRes=["depto","oficina"].reduce((s,k)=>s+pendientesHip(k,mesStr).reduce((a,p)=>a+p.monto,0),0);
+  const hipPendResG=Math.round(hipPendRes/2);
+  const creditosTotal=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_total||t.monto),0)+hipPendRes,creditosGonzalo=creditosMParaDeuda.reduce((s,t)=>s+t.monto,0)+hipPendResG,creditosJavi=creditosMParaDeuda.reduce((s,t)=>s+(t.monto_javi||0),0)+(hipPendRes-hipPendResG);
   const arriendoM=data.filter(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
   const arriendoTotal=arriendoM.reduce((s,t)=>s+(t.monto_total||t.monto),0),arriendoGonzalo=arriendoM.reduce((s,t)=>s+t.monto,0),arriendoJavi=arriendoM.reduce((s,t)=>s+(t.monto_javi||0),0);
   const creditosTotalNeto=creditosTotal-arriendoTotal,creditosGonzaloNeto=creditosGonzalo-arriendoGonzalo,creditosJaviNeto=creditosJavi-arriendoJavi;
@@ -993,7 +1036,8 @@ function renderCreditos(){
   const gm=delMes(todos);
   const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
   const arriendo=gm.filter(t=>t.cat==="arriendo_oficina");
-  const noArriendo=gm.filter(t=>t.cat!=="arriendo_oficina");
+  const repsHip=new Set(["depto","oficina"].map(k=>cuotaHipMes(k,`${anio}-${String(mes+1).padStart(2,'0')}`)).filter(Boolean).map(d=>d.id));
+  const noArriendo=gm.filter(t=>t.cat!=="arriendo_oficina"&&(t.cat!=="credito_hipotecario"||repsHip.has(t.id)));
   const totalMes=noArriendo.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const totalArriendo=arriendo.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const arriendoGonzalo=arriendo.reduce((s,t)=>s+t.monto,0),arriendoJavi=arriendo.reduce((s,t)=>s+(t.monto_javi||0),0);
@@ -1001,7 +1045,7 @@ function renderCreditos(){
   const costoNetoGonzalo=gonzaloTotalCreditos-arriendoGonzalo,costoNetoJavi=javiTotalCreditos-arriendoJavi;
   const hoyStrC=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}`;
   const esMesActualCreditos=mesVisto===hoyStrC;
-  const categorias=CATS_CREDITOS.filter(id=>id!=="arriendo_oficina").map(id=>{const items=gm.filter(t=>t.cat===id);const total=items.reduce((s,t)=>s+(t.monto_total||t.monto),0);return{id,cat:CATS[id],total,items};}).filter(x=>x.total>0);
+  const categorias=CATS_CREDITOS.filter(id=>id!=="arriendo_oficina").map(id=>{const items=gm.filter(t=>t.cat===id);const total=items.filter(t=>t.cat!=="credito_hipotecario"||repsHip.has(t.id)).reduce((s,t)=>s+(t.monto_total||t.monto),0);return{id,cat:CATS[id],total,items};}).filter(x=>x.total>0||(x.id==="credito_hipotecario"&&x.items.length>0));
   const hastaElMes=todos.filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return t.cat!=="arriendo_oficina"&&((d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes));});
   const acumuladoTotal=hastaElMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   let html=`
@@ -1037,7 +1081,7 @@ function renderCreditos(){
         btnPagar=`<button onclick="registrarArriendoOficina(event)" style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #10B98160;background:#10B98118;color:#059669;font-family:inherit;white-space:nowrap">💰 Registrar pago</button>`;
       }
     }else if(id==="credito_hipotecario"){
-      btnPagar=`<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">${Object.entries(HIP_TIPOS).map(([k,h])=>{const cuotasTipo=hipDelMes(k,mesVisto);const pagado=cuotasTipo.some(t=>t.pagado_automatico===true);if(pagado)return`<div style="padding:5px 9px;border-radius:9px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ ${h.corto}</div>`;if(!esMesActual)return'';return`<button onclick="pagoHipotecario('${k}',event)" style="padding:5px 9px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">${h.icon} Pagar ${h.corto}</button>`;}).join('')}</div>`;
+      btnPagar=`<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">${Object.entries(HIP_TIPOS).map(([k,h])=>{if(!docsHip(k).length)return'';const pend=pendientesHip(k,mesVisto);if(!pend.length)return`<div style="padding:5px 9px;border-radius:9px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ ${h.corto}</div>`;return`<button onclick="pagoHipotecario('${k}',event)" style="padding:5px 9px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">${h.icon} Pagar ${h.corto} ${mesCorto(pend[0].mes)}</button>`;}).join('')}</div>`;
     }else if(!esIngreso){
       if(yaPagadoAutomatico){
         btnPagar=`<div style="flex-shrink:0;padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;white-space:nowrap">✅ Pagado</div>`;
@@ -1066,6 +1110,7 @@ function renderCreditos(){
           <div style="background:var(--surface);border-radius:9px;padding:8px 10px;border:1px solid var(--border2)"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Total mes</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${montoColor}">${montoSigno}${mxn(catTotal)}</div></div>
         </div>
         <div style="padding:10px 12px;display:flex;flex-direction:column;gap:5px">
+          ${id==="credito_hipotecario"&&duplicadosHip().length?`<button onclick="limpiarDuplicadosHip(event)" style="padding:9px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;font-family:inherit">🧹 Eliminar ${duplicadosHip().length} cuota(s) duplicada(s)</button>`:''}
           ${items.length?items.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(t=>{
             const fecha=fechaLocal(t.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"});
             const tieneJavi=(t.monto_javi||0)>0;const montoMostrar=t.monto_total||t.monto;
@@ -1080,6 +1125,7 @@ function renderCreditos(){
                   <div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                     <span>${fecha}</span>
                     ${t.cuota_actual&&t.cuotas_total?`<span style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">Cuota ${t.cuota_actual}/${t.cuotas_total}</span>`:''}
+                    ${t.cat==="credito_hipotecario"&&!repsHip.has(t.id)?`<span style="background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">⚠️ Duplicado</span>`:''}
                     ${t.cat==="credito_hipotecario"?`<span style="background:${HIP_TIPOS[tipoHipotecario(t)].color}18;border:1px solid ${HIP_TIPOS[tipoHipotecario(t)].color}60;color:${HIP_TIPOS[tipoHipotecario(t)].color};font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px">${HIP_TIPOS[tipoHipotecario(t)].icon} ${HIP_TIPOS[tipoHipotecario(t)].corto}</span>`:''}
                     ${t.monto_uf?`<span style="color:var(--blue);font-weight:700">${t.monto_uf} UF</span>`:''}
                     ${tieneJavi?`<span style="color:var(--muted)">G:${mxn(t.monto)}</span><span style="color:var(--dim)">J:${mxn(t.monto_javi)}</span>`:''}
@@ -1730,33 +1776,32 @@ async function registrarPagoGastosFijos(sugerido,modo,mesStr){
   }catch(err){mostrarToast("Error: "+err.message);}
 }
 
-/* ── PAGO HIPOTECARIO (DEPTO / OFICINA POR SEPARADO) ── */
+/* ── PAGO HIPOTECARIO (DEPTO / OFICINA POR SEPARADO, MES PENDIENTE MÁS ANTIGUO) ── */
 async function pagoHipotecario(tipo,e){
   if(e)e.stopPropagation();
-  var h=HIP_TIPOS[tipo];
-  var mesStr=anio+"-"+String(mes+1).padStart(2,"0");
-  var fechaHoy=fechaHoyLocal();
-  var historial=data.filter(function(t){return t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&tipoHipotecario(t)===tipo;}).sort(function(a,b){var ra=a.mes_facturacion||a.fecha;var rb=b.mes_facturacion||b.fecha;return rb.localeCompare(ra);});
-  if(!historial.length){mostrarToast("⚠️ Sin cuotas registradas de "+h.label);return;}
-  var cuotasMes=hipDelMes(tipo,mesStr);
-  if(cuotasMes.some(function(t){return t.pagado_automatico===true;})){mostrarToast("Ya pagado este mes");return;}
-  var yaMes=cuotasMes[0]||null;
-  var ultima=historial[0];
-  var montoTotal=yaMes?(yaMes.monto_total||yaMes.monto):(ultima.monto_total||ultima.monto);
-  if(!confirm("¿Registrar pago de "+h.icon+" "+h.label+"?\n\nMonto: "+mxn(montoTotal)+"\nMes: "+MESES[mes]+" "+anio+"\nGonzalo: "+mxn(Math.round(montoTotal/2))+" · Javi: "+mxn(Math.round(montoTotal/2))+"\n\n🏦 Se descuenta de Cuenta Corriente"))return;
+  const h=HIP_TIPOS[tipo];
+  const mesVisto=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const pend=pendientesHip(tipo,mesVisto);
+  if(!pend.length){mostrarToast("✅ "+h.label+" está al día");return;}
+  const item=pend[0];
+  const montoTotal=item.monto;
+  const mesLbl=MESES[parseInt(item.mes.slice(5,7))-1]+" "+item.mes.slice(0,4);
+  const resto=pend.slice(1);
+  if(!confirm(`¿Registrar pago de ${h.icon} ${h.label}?\n\nMes: ${mesLbl}\nMonto: ${mxn(montoTotal)}\nGonzalo: ${mxn(Math.round(montoTotal/2))} · Javi: ${mxn(montoTotal-Math.round(montoTotal/2))}${resto.length?`\n\nQuedará pendiente: ${resto.map(p=>mesCorto(p.mes)+' '+mxn(p.monto)).join(' + ')}`:''}\n\n🏦 Se descuenta de Cuenta Corriente`))return;
+  const fechaHoy=fechaHoyLocal();
   try{
-    var credId;
-    if(yaMes){
-      await colUsuario().doc(yaMes.id).update({pagado_automatico:true,hip_tipo:tipo});
-      credId=yaMes.id;
+    let credId;
+    if(item.doc){
+      await colUsuario().doc(item.doc.id).update({pagado_automatico:true,hip_tipo:tipo});
+      credId=item.doc.id;
     }else{
-      var nuevaCuota={cuenta:"creditos",tipo:"gasto",cat:"credito_hipotecario",hip_tipo:tipo,desc:ultima.desc||("Dividendo "+h.corto),monto:Math.round(montoTotal/2),monto_javi:Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr,pagado_automatico:true};
-      if(ultima.monto_uf)nuevaCuota.monto_uf=ultima.monto_uf;
-      if(ultima.cuota_actual&&ultima.cuotas_total){nuevaCuota.cuota_actual=ultima.cuota_actual+1;nuevaCuota.cuotas_total=ultima.cuotas_total;}
-      var ref=await colUsuario().add(nuevaCuota);credId=ref.id;
+      const ultima=docsHip(tipo).filter(d=>!esOutlierHip(tipo,montoDoc(d))).sort((a,b)=>(b.mes_facturacion||b.fecha).localeCompare(a.mes_facturacion||a.fecha))[0];
+      const nueva={cuenta:"creditos",tipo:"gasto",cat:"credito_hipotecario",hip_tipo:tipo,desc:(ultima&&ultima.desc)||("Dividendo "+h.corto),monto:Math.round(montoTotal/2),monto_javi:montoTotal-Math.round(montoTotal/2),monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:item.mes,pagado_automatico:true};
+      if(ultima&&ultima.monto_uf)nueva.monto_uf=ultima.monto_uf;
+      const ref=await colUsuario().add(nueva);credId=ref.id;
     }
-    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",hip_tipo:tipo,desc:"Pago Dividendo "+h.corto+" — "+MESES[mes]+" "+anio,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:mesStr,credito_cc_ref:credId});
-    mostrarToast("✅ "+h.label+" pagado — "+mxn(montoTotal)+" descontado de CC");
+    await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",hip_tipo:tipo,desc:"Pago Dividendo "+h.corto+" — "+mesLbl,monto:montoTotal,monto_total:montoTotal,fecha:fechaHoy,mes_facturacion:item.mes,credito_cc_ref:credId});
+    mostrarToast(`✅ ${h.label} ${mesCorto(item.mes)} pagado — ${mxn(montoTotal)}`);
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
@@ -1823,19 +1868,21 @@ function renderPagos(){
   creditosCats.forEach(catId=>{
     if(catId==="credito_hipotecario"){
       Object.entries(HIP_TIPOS).forEach(([k,h])=>{
-        const cuotasTipo=hipDelMes(k,mesVisto);
-        const totalH=cuotasTipo.reduce((s,t)=>s+(t.monto_total||t.monto),0);
-        const pagadoH=cuotasTipo.some(t=>t.pagado_automatico===true);
-        const tieneHistorial=data.some(t=>t.cuenta==="creditos"&&t.cat==="credito_hipotecario"&&tipoHipotecario(t)===k);
-        if(!tieneHistorial)return;
-        html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${pagadoH?'#BBF7D0':'var(--border)'}">
+        if(!docsHip(k).length)return;
+        const pend=pendientesHip(k,mesVisto);
+        const totalPend=pend.reduce((a,p)=>a+p.monto,0);
+        const repMes=cuotaHipMes(k,mesVisto);
+        const detalle=pend.map(p=>`${mesCorto(p.mes)} ${mxn(p.monto)}`).join(' + ');
+        html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${!pend.length?'#BBF7D0':pend.length>1?'#FECACA':'var(--border)'}">
           <div style="min-width:0">
             <div style="font-weight:700;font-size:14px">${h.icon} ${h.label}</div>
-            <div style="font-size:11px;color:var(--dim);margin-top:2px">${totalH>0?mxn(totalH)+' · 50% cada uno':'Se usa el monto de la última cuota'}</div>
+            ${pend.length
+              ?`<div style="font-size:13px;font-weight:700;font-family:'DM Mono',monospace;margin-top:3px">${mxn(totalPend)}</div><div style="font-size:11px;color:${pend.length>1?'var(--red)':'var(--dim)'};margin-top:2px">${pend.length>1?'⚠️ '+pend.length+' meses pendientes: ':''}${detalle}</div>`
+              :`<div style="font-size:11px;color:var(--dim);margin-top:2px">${repMes?mxn(montoDoc(repMes))+' · ':''}al día</div>`}
           </div>
-          ${pagadoH
-            ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div>`
-            :`<button onclick="pagoHipotecario('${k}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`}
+          ${pend.length
+            ?`<button onclick="pagoHipotecario('${k}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">⚡ Pagar ${mesCorto(pend[0].mes)}</button>`
+            :`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div>`}
         </div>`;
       });
       return;
