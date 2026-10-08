@@ -1652,6 +1652,7 @@ async function borrarUnaTransaccion(id){
     const trans=data.find(t=>t.id===id);
     if(trans&&trans.cuenta==="tc"&&trans.cat==="pago"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.tc_pago_ref===id);if(ccEspejo)await colUsuario().doc(ccEspejo.id).delete();}
     if(trans&&trans.cuenta==="cc"&&trans.cat==="pago_tc"){const tcEspejo=data.find(t=>t.cuenta==="tc"&&t.cat==="pago"&&t.pago_tc_cc_ref===id);if(tcEspejo)await colUsuario().doc(tcEspejo.id).delete();}
+    if(trans&&trans.cuenta==="cc"&&trans.cat==="pago_tc"&&trans.hip_tipo&&trans.credito_cc_ref){const cred=data.find(t=>t.id===trans.credito_cc_ref);if(cred)await colUsuario().doc(cred.id).update({pagado_automatico:false});}
     if(trans&&trans.cuenta==="ahorros"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.ahorro_ref===id);if(ccEspejo)await colUsuario().doc(ccEspejo.id).delete();}
     await colUsuario().doc(id).delete();eliminarSyncJavi(id);mostrarToast("🗑️ Eliminado");
   }catch(err){mostrarToast("❌ Error al eliminar: "+err.message);}
@@ -1805,6 +1806,24 @@ async function pagoHipotecario(tipo,e){
   }catch(err){mostrarToast("❌ Error: "+err.message);}
 }
 
+/* ── DESHACER PAGO HIPOTECARIO ── */
+async function deshacerPagoHip(tipo,e){
+  if(e)e.stopPropagation();
+  const h=HIP_TIPOS[tipo];
+  const mesStr=`${anio}-${String(mes+1).padStart(2,'0')}`;
+  const mesLbl=MESES[mes]+" "+anio;
+  const cuotas=hipDelMes(tipo,mesStr).filter(t=>t.pagado_automatico===true);
+  const movsCC=data.filter(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.hip_tipo===tipo&&t.mes_facturacion===mesStr);
+  if(!cuotas.length&&!movsCC.length){mostrarToast("ℹ️ No hay pago registrado en "+mesLbl);return;}
+  const montoCC=movsCC.reduce((s,t)=>s+(t.monto||0),0);
+  if(!confirm(`¿Deshacer el pago de ${h.icon} ${h.label}?\n\nMes: ${mesLbl}${movsCC.length?`\nSe eliminará el cargo en Cuenta Corriente (${mxn(montoCC)})`:''}\n\nLa cuota quedará como pendiente.`))return;
+  try{
+    for(const c of cuotas)await colUsuario().doc(c.id).update({pagado_automatico:false});
+    for(const m of movsCC){await colUsuario().doc(m.id).delete();eliminarSyncJavi(m.id);}
+    mostrarToast(`↩️ ${h.label} ${mesCorto(mesStr)} vuelve a pendiente`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
+}
+
 /* ── REGISTRAR ARRIENDO OFICINA ── */
 async function registrarArriendoOficina(e){
   if(e)e.stopPropagation();
@@ -1882,7 +1901,7 @@ function renderPagos(){
           </div>
           ${pend.length
             ?`<button onclick="pagoHipotecario('${k}',event)" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${h.color}60;background:${h.color}18;color:${h.color};font-family:inherit;white-space:nowrap">⚡ Pagar ${mesCorto(pend[0].mes)}</button>`
-            :`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div>`}
+            :`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagado</div><button onclick="deshacerPagoHip('${k}',event)" title="Deshacer pago" style="padding:5px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:inherit;white-space:nowrap">↩️ Deshacer</button></div>`}
         </div>`;
       });
       return;
