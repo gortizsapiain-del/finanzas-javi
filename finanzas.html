@@ -83,7 +83,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 @media(max-width:380px){.grid-3{grid-template-columns:1fr}}
 .cat-row{margin-bottom:10px}.cat-row:last-child{margin-bottom:0}
 .cat-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
-.cat-bar-bg{background:var(--surface2);border-radius:3px;height:5px}
+.cat-bar-bg{background:var(--surface2);border-radius:3px;height:5px;overflow:hidden}
 .cat-bar{height:5px;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);transition:all .2s;font-family:inherit}
@@ -943,7 +943,7 @@ function renderCC(){
       <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px"><div style="font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;margin-bottom:4px">Gastos</div><div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#F87171">${mxn(gastos)}</div></div>
       <div style="background:${balance>=0?'#F0FDF4':'#FEF2F2'};border:1px solid ${balance>=0?'#BBF7D0':'#FECACA'};border-radius:12px;padding:14px"><div style="font-size:10px;color:${balance>=0?'var(--green)':'var(--red)'};font-weight:700;text-transform:uppercase;margin-bottom:4px">Mes</div><div style="font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:${balance>=0?'var(--green)':'var(--red)'}">${mxn(balance)}</div></div>
     </div>
-    ${porCat.length&&gastos>0?`<div class="card"><div class="section-label" style="margin-bottom:14px">Gastos por categoría</div>${porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span>${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--muted)">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${(c.total/gastos*100).toFixed(1)}%;background:${c.color}"></div></div></div>`).join("")}</div>`:''}
+    ${porCat.length&&gastos>0?`<div class="card"><div class="section-label" style="margin-bottom:14px">Gastos por categoría</div>${(()=>{const maxCat=Math.max(...porCat.map(x=>x.total),1);return porCat.map(c=>`<div class="cat-row"><div class="cat-meta"><span>${c.icon} ${c.label}</span><span style="font-family:'DM Mono',monospace;font-weight:600;color:var(--muted)">${mxn(c.total)}</span></div><div class="cat-bar-bg"><div class="cat-bar" style="width:${Math.min(100,c.total/maxCat*100).toFixed(1)}%;background:${c.color}"></div></div></div>`).join("")})()}</div>`:''}
     <div class="filter-bar"><select class="filter-select ${filtroCC!=='todas'?'on':''}" onchange="setFiltroCC(this.value)"><option value="todas">🗂 Ver: Todos</option><option value="ingresos">✅ Ingresos</option><option value="gastos">🔴 Gastos</option>${porCat.map(c=>`<option value="${c.id}" ${filtroCC===c.id?"selected":""}>${c.icon} ${c.label}</option>`).join("")}</select></div>
     <div class="expense-list">${filtrados.length?filtrados.map((t,i)=>filaTransaccion(t,i)).join(""):emptyState("🏦","Sin movimientos este mes","Agrega ingresos o gastos con el botón de arriba")}</div>`;
   document.getElementById("viewCC").innerHTML=html;
