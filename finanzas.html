@@ -131,6 +131,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .modal-footer{display:flex;gap:10px;margin-top:6px}
 .modal-footer .btn-ghost{flex:1}.modal-footer .btn-primary{flex:2}
 .btn-undo{display:none;align-items:center;gap:6px;padding:7px 12px;font-size:13px;font-weight:700;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;transition:background .2s,opacity .2s}.btn-undo:hover{background:var(--surface2)}.btn-undo:disabled{opacity:.6;cursor:wait}.btn-undo .undo-n{font-family:'DM Mono',monospace;font-size:11px;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px}
+.undo-wrap{position:relative}
+.undo-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);width:min(380px,92vw);max-height:70vh;overflow:auto;background:var(--surface);border:1px solid var(--border2);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);z-index:300;padding:10px}
+.undo-panel.open{display:block}
+.undo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 10px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.undo-head span{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.undo-item{display:flex;align-items:flex-start;gap:10px;padding:10px 8px;border-radius:10px}
+.undo-item:hover{background:var(--surface2)}
+.undo-item-txt{flex:1;min-width:0;text-align:justify}
+.undo-item-t{font-size:13px;font-weight:700;color:var(--text);overflow-wrap:anywhere}
+.undo-item-s{font-size:11px;color:var(--dim);margin-top:2px}
+.undo-item button,.undo-head button{flex-shrink:0;padding:5px 10px;font-size:12px;font-weight:700;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer}
+.undo-item button:hover,.undo-head button:hover{background:#FEF2F2;border-color:#FECACA;color:var(--red)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E293B;border:1px solid #334155;color:#E2E8F0;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;animation:fadeUp .3s ease;pointer-events:none}
 .pago-tc-banner{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px 16px;margin-bottom:14px}
 /* Tarjeta selector modal */
@@ -151,7 +163,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <img id="userAvatar" src="" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);object-fit:cover"/>
         <button class="btn-ghost" onclick="logout()" style="padding:5px 10px;font-size:12px">Salir</button>
       </div>
-      <button id="btnDeshacer" class="btn-undo" onclick="deshacer()" title="Deshacer último cambio (Ctrl+Z)">↶ Deshacer <span class="undo-n" id="undoN">0</span></button>
+      <span class="undo-wrap" id="undoWrap"><button id="btnDeshacer" class="btn-undo" onclick="togglePanelDeshacer(event)" title="Ver cambios para deshacer (Ctrl+Z deshace el último)">↶ Deshacer <span class="undo-n" id="undoN">0</span> ▾</button><div class="undo-panel" id="undoPanel"></div></span>
       <button id="btnAgregar" class="btn-primary" onclick="abrirModal()" style="display:none">+ Agregar</button>
     </div>
   </div>
@@ -1525,9 +1537,10 @@ function initMesFacPicker(valorInicial){
 
 
 /* ── DESHACER ── */
-let undoStack=[],undoGrupo=null,undoTimer=null,undoPrev=null,undoPrevComp=new Map(),undoEjecutando=false;
-const UNDO_MAX=20,UNDO_VENTANA=1500;
-function undoMapa(docs){const m=new Map();docs.forEach(d=>{const x=d.data();m.set(d.id,{...x});});return m;}
+let undoStack=[],undoGrupo=null,undoTimer=null,undoPrev=null,undoPrevComp=new Map(),undoEjecutando=false,undoSeq=0;
+const UNDO_MAX=30,UNDO_VENTANA=1500;
+const UNDO_CUENTA={cc:"Cta. Corriente",tc:"TC",ahorros:"Ahorros",creditos:"Créditos"};
+function undoMapa(docs){const m=new Map();docs.forEach(d=>{m.set(d.id,{...d.data()});});return m;}
 function undoRegistrarSnapshot(snap){
   const actual=undoMapa(snap.docs);
   if(undoPrev&&snap.metadata.hasPendingWrites&&!undoEjecutando){
@@ -1540,45 +1553,89 @@ function undoRegistrarCompartido(snap){
   const m=new Map();snap.docs.forEach(d=>{const x=d.data();if(x.from_gonzalo)m.set(d.id,{...x});});
   undoPrevComp=m;
 }
-function undoIgual(a,b){return JSON.stringify(a,Object.keys(a||{}).sort())===JSON.stringify(b,Object.keys(b||{}).sort());}
+function undoIgual(a,b){if(!a||!b)return a===b;return JSON.stringify(a,Object.keys(a).sort())===JSON.stringify(b,Object.keys(b).sort());}
+function undoDiff(antes,despues){
+  const out=[];
+  new Set([...antes.keys(),...despues.keys()]).forEach(id=>{const a=antes.get(id),d=despues.get(id);if(!undoIgual(a,d))out.push({id,antes:a||null,despues:d||null});});
+  return out;
+}
+function undoResumen(cambios){
+  const tipo=c=>!c.antes?"add":!c.despues?"del":"edit";
+  const nAdd=cambios.filter(c=>tipo(c)==="add").length,nDel=cambios.filter(c=>tipo(c)==="del").length,nEdit=cambios.filter(c=>tipo(c)==="edit").length;
+  const principal=[...cambios].sort((x,y)=>{const ox={edit:0,del:1,add:2};const r=ox[tipo(x)]-ox[tipo(y)];if(r)return r;const dx=x.despues||x.antes,dy=y.despues||y.antes;return (dx.tc_pago_ref||dx.pago_tc_cc_ref||dx.credito_cc_ref?1:0)-(dy.tc_pago_ref||dy.pago_tc_cc_ref||dy.credito_cc_ref?1:0);})[0];
+  const d=principal.despues||principal.antes;const t=tipo(principal);
+  const verbo=nAdd&&!nDel&&!nEdit?"➕ Agregado":nDel&&!nAdd&&!nEdit?"🗑️ Eliminado":nEdit&&!nAdd&&!nDel?"✏️ Editado":t==="add"?"➕ Agregado":t==="del"?"🗑️ Eliminado":"✏️ Editado";
+  const titulo=`${verbo}: ${d.desc||"(sin descripción)"}${d.monto?" · "+mxn(d.monto_total||d.monto):""}`;
+  const partes=[];if(nAdd)partes.push(`${nAdd} agregado${nAdd>1?"s":""}`);if(nEdit)partes.push(`${nEdit} editado${nEdit>1?"s":""}`);if(nDel)partes.push(`${nDel} eliminado${nDel>1?"s":""}`);
+  return{titulo,detalle:`${UNDO_CUENTA[d.cuenta]||d.cuenta||""}${partes.length?" · "+partes.join(", "):""}`};
+}
 function undoCerrarGrupo(){
   if(!undoGrupo)return;
   const g=undoGrupo;undoGrupo=null;
-  const ahora=undoPrev||new Map();let cambios=0;
-  new Set([...g.antes.keys(),...ahora.keys()]).forEach(id=>{if(!g.antes.has(id)||!ahora.has(id)||!undoIgual(g.antes.get(id),ahora.get(id)))cambios++;});
-  if(!cambios)return;
-  g.cambios=cambios;undoStack.push(g);if(undoStack.length>UNDO_MAX)undoStack.shift();
+  const cambios=undoDiff(g.antes,undoPrev||new Map());
+  if(!cambios.length)return;
+  const comp=undoDiff(g.antesComp,undoPrevComp);
+  const r=undoResumen(cambios);
+  undoStack.push({id:++undoSeq,hora:new Date(),cambios,comp,titulo:r.titulo,detalle:r.detalle});
+  if(undoStack.length>UNDO_MAX)undoStack.shift();
   actualizarBtnDeshacer();
 }
 function actualizarBtnDeshacer(){
-  const b=document.getElementById("btnDeshacer");if(!b)return;
-  b.style.display=(undoStack.length&&perfil==="gonzalo")?"inline-flex":"none";
+  const w=document.getElementById("undoWrap");if(!w)return;
+  w.style.display=(undoStack.length&&perfil==="gonzalo")?"":"none";
+  const b=document.getElementById("btnDeshacer");if(b)b.style.display=(undoStack.length&&perfil==="gonzalo")?"inline-flex":"none";
   const n=document.getElementById("undoN");if(n)n.textContent=undoStack.length;
+  if(!undoStack.length)cerrarPanelDeshacer();
+  renderPanelDeshacer();
+}
+function renderPanelDeshacer(){
+  const p=document.getElementById("undoPanel");if(!p)return;
+  if(!undoStack.length){p.innerHTML="";return;}
+  const items=[...undoStack].reverse().map(g=>`<div class="undo-item"><div class="undo-item-txt"><div class="undo-item-t">${esc(g.titulo)}</div><div class="undo-item-s">${g.hora.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})} · ${esc(g.detalle)}</div></div><button onclick="deshacerGrupo(${g.id})" ${undoEjecutando?"disabled":""}>↶ Deshacer</button></div>`).join("");
+  p.innerHTML=`<div class="undo-head"><span>Cambios de esta sesión (${undoStack.length})</span>${undoStack.length>1?`<button onclick="deshacerTodo()" ${undoEjecutando?"disabled":""}>Deshacer todos</button>`:""}</div>${items}`;
+}
+function togglePanelDeshacer(e){if(e)e.stopPropagation();const p=document.getElementById("undoPanel");if(!p)return;if(undoGrupo){clearTimeout(undoTimer);undoCerrarGrupo();}renderPanelDeshacer();p.classList.toggle("open");}
+function cerrarPanelDeshacer(){const p=document.getElementById("undoPanel");if(p)p.classList.remove("open");}
+document.addEventListener("click",e=>{const w=document.getElementById("undoWrap");if(w&&!w.contains(e.target))cerrarPanelDeshacer();});
+async function revertirGrupo(g,forzar){
+  const actual=undoPrev||new Map();
+  const compActual=new Map();dataCompartido.forEach(d=>{if(d.from_gonzalo){const{id,...x}=d;compActual.set(id,x);}});
+  const conflictos=g.cambios.filter(c=>!undoIgual(actual.get(c.id)||null,c.despues));
+  if(conflictos.length&&!forzar){
+    if(!confirm(`${conflictos.length} registro(s) de este cambio fueron modificados después.\n\nSi continúas, esos registros volverán a como estaban antes de "${g.titulo}" y se perderán las modificaciones posteriores sobre ellos.\n\n¿Continuar?`))return false;
+  }
+  const ops=[];
+  g.cambios.forEach(c=>{const ref=colUsuario().doc(c.id);if(c.antes)ops.push({ref,data:c.antes});else if(actual.has(c.id))ops.push({ref,del:true});});
+  g.comp.forEach(c=>{const ref=db.collection("compartido_gonzalo").doc(c.id);if(c.antes)ops.push({ref,data:c.antes});else if(compActual.has(c.id))ops.push({ref,del:true});});
+  for(let i=0;i<ops.length;i+=450){const lote=db.batch();ops.slice(i,i+450).forEach(o=>o.del?lote.delete(o.ref):lote.set(o.ref,o.data));await lote.commit();}
+  return true;
+}
+function undoFinalizar(){setTimeout(()=>{undoEjecutando=false;actualizarBtnDeshacer();},UNDO_VENTANA);}
+async function deshacerGrupo(id){
+  if(undoEjecutando)return;
+  const idx=undoStack.findIndex(g=>g.id===id);if(idx<0)return;
+  const g=undoStack[idx];
+  undoEjecutando=true;renderPanelDeshacer();
+  try{
+    const ok=await revertirGrupo(g,false);
+    if(ok){undoStack=undoStack.filter(x=>x.id!==id);mostrarToast(`↶ Deshecho: ${g.titulo}`);}
+  }catch(e){mostrarToast("❌ No se pudo deshacer: "+e.message);}
+  finally{undoFinalizar();actualizarBtnDeshacer();}
+}
+async function deshacerTodo(){
+  if(undoEjecutando||!undoStack.length)return;
+  if(!confirm(`¿Deshacer los ${undoStack.length} cambios de esta sesión?`))return;
+  undoEjecutando=true;renderPanelDeshacer();
+  try{
+    while(undoStack.length){const g=undoStack[undoStack.length-1];await revertirGrupo(g,true);undoStack.pop();}
+    mostrarToast("↶ Todos los cambios deshechos");
+  }catch(e){mostrarToast("❌ Error al deshacer: "+e.message);}
+  finally{undoFinalizar();actualizarBtnDeshacer();}
 }
 async function deshacer(){
-  if(undoEjecutando)return;
   if(undoGrupo){clearTimeout(undoTimer);undoCerrarGrupo();}
-  const g=undoStack.pop();
-  if(!g){mostrarToast("Nada que deshacer");actualizarBtnDeshacer();return;}
-  undoEjecutando=true;const btn=document.getElementById("btnDeshacer");if(btn)btn.disabled=true;
-  try{
-    const ahora=undoPrev||new Map();const ops=[];
-    new Set([...g.antes.keys(),...ahora.keys()]).forEach(id=>{
-      const a=g.antes.get(id),b=ahora.get(id);
-      if(a&&!b)ops.push({ref:colUsuario().doc(id),data:a});
-      else if(!a&&b)ops.push({ref:colUsuario().doc(id),del:true});
-      else if(a&&b&&!undoIgual(a,b))ops.push({ref:colUsuario().doc(id),data:a});
-    });
-    const compAhora=new Map();dataCompartido.forEach(d=>{if(d.from_gonzalo){const{id,...x}=d;compAhora.set(id,x);}});
-    new Set([...g.antesComp.keys(),...compAhora.keys()]).forEach(id=>{
-      const a=g.antesComp.get(id),b=compAhora.get(id);
-      if(a&&(!b||!undoIgual(a,b)))ops.push({ref:db.collection("compartido_gonzalo").doc(id),data:a});
-      else if(!a&&b)ops.push({ref:db.collection("compartido_gonzalo").doc(id),del:true});
-    });
-    for(let i=0;i<ops.length;i+=450){const lote=db.batch();ops.slice(i,i+450).forEach(o=>o.del?lote.delete(o.ref):lote.set(o.ref,o.data));await lote.commit();}
-    mostrarToast(`↶ Cambio deshecho (${g.cambios} registro${g.cambios===1?"":"s"})`);
-  }catch(e){undoStack.push(g);mostrarToast("❌ No se pudo deshacer: "+e.message);}
-  finally{setTimeout(()=>{undoEjecutando=false;if(btn)btn.disabled=false;actualizarBtnDeshacer();},UNDO_VENTANA);actualizarBtnDeshacer();}
+  if(!undoStack.length){mostrarToast("Nada que deshacer");return;}
+  await deshacerGrupo(undoStack[undoStack.length-1].id);
 }
 document.addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){
@@ -1586,6 +1643,7 @@ document.addEventListener("keydown",e=>{
     if(perfil!=="gonzalo"||!undoStack.length)return;
     e.preventDefault();deshacer();
   }
+  if(e.key==="Escape")cerrarPanelDeshacer();
 });
 
 /* ── SYNC JAVI ── */
@@ -1628,6 +1686,7 @@ async function guardar(){
     const regla=CATS[cat];if(regla){monto_total_calc=monto;monto_gonzalo=Math.round(monto*regla.pct_g);monto_javi_calc=Math.round(monto*regla.pct_j);}
   }
   const esPagoTC=(cuenta==="tc"&&cat==="pago");
+  if(esPagoTC&&!confirm(`La categoría "Pago" en TC significa que PAGASTE LA TARJETA.\n\nEsto descontará ${mxn(monto)} de tu Cta. Corriente.\n\nSi fue una compra o pago hecho CON la tarjeta, cancela y elige otra categoría.\n\n¿Continuar?`))return;
   const cuotas=(cuenta==="tc"&&!esPagoTC&&numCuotas>1)?numCuotas:1;
   const montoCuota=Math.round(monto_total_calc/cuotas),montoGonzaloCuota=Math.round(monto_gonzalo/cuotas),montoJaviCuota=Math.round(monto_javi_calc/cuotas);
   const tarjeta=document.getElementById("fTarjeta").value,cuenta_ahorro=document.getElementById("fCuentaAhorro").value;
