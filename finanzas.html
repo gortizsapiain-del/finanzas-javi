@@ -130,6 +130,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .tipo-btn.selected-ganancia{background:#F59E0B20;border-color:var(--gold);color:var(--gold)}
 .modal-footer{display:flex;gap:10px;margin-top:6px}
 .modal-footer .btn-ghost{flex:1}.modal-footer .btn-primary{flex:2}
+.btn-undo{display:none;align-items:center;gap:6px;padding:7px 12px;font-size:13px;font-weight:700;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;transition:background .2s,opacity .2s}.btn-undo:hover{background:var(--surface2)}.btn-undo:disabled{opacity:.6;cursor:wait}.btn-undo .undo-n{font-family:'DM Mono',monospace;font-size:11px;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E293B;border:1px solid #334155;color:#E2E8F0;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;animation:fadeUp .3s ease;pointer-events:none}
 .pago-tc-banner{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px 16px;margin-bottom:14px}
 /* Tarjeta selector modal */
@@ -150,6 +151,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <img id="userAvatar" src="" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);object-fit:cover"/>
         <button class="btn-ghost" onclick="logout()" style="padding:5px 10px;font-size:12px">Salir</button>
       </div>
+      <button id="btnDeshacer" class="btn-undo" onclick="deshacer()" title="Deshacer último cambio (Ctrl+Z)">↶ Deshacer <span class="undo-n" id="undoN">0</span></button>
       <button id="btnAgregar" class="btn-primary" onclick="abrirModal()" style="display:none">+ Agregar</button>
     </div>
   </div>
@@ -434,7 +436,7 @@ function loginConGoogle(){
 let perfil="gonzalo",dataSL=[],unsubscribeSL=null;
 function togglePerfilMenu(){const m=document.getElementById("perfilMenu");m.style.display=m.style.display==="none"?"block":"none";}
 document.addEventListener("click",e=>{const m=document.getElementById("perfilMenu");if(m&&m.style.display!=="none"&&!m.contains(e.target)&&!e.target.closest(".header-inner"))m.style.display="none";});
-function cambiarPerfil(p){
+function cambiarPerfil(p){setTimeout(()=>{try{actualizarBtnDeshacer();}catch(e){}},0);
   perfil=p;document.getElementById("perfilMenu").style.display="none";document.getElementById("headerTitle").textContent=p==="skinlux"?"Skin Lux":"Control Financiero";
   if(p==="skinlux"&&!unsubscribeSL&&currentUser)suscribirSL();
   const tabsG=["resumen","tc","cc","ahorros","creditos"];const tabsSL=["resumen","ventas","compras","iva","flujo","reembolsos"];
@@ -460,10 +462,10 @@ function slData(cuenta){
   return [...init.filter(t=>!fbIds.has(t.docId)),...fb];
 }
 
-function logout(){if(unsubscribeData){unsubscribeData();unsubscribeData=null;}if(unsubscribeCompartido){unsubscribeCompartido();unsubscribeCompartido=null;}dataCompartido=[];auth.signOut();}
+function logout(){undoStack=[];undoGrupo=null;undoPrev=null;actualizarBtnDeshacer();if(unsubscribeData){unsubscribeData();unsubscribeData=null;}if(unsubscribeCompartido){unsubscribeCompartido();unsubscribeCompartido=null;}dataCompartido=[];auth.signOut();}
 function suscribirCompartido(){
   if(unsubscribeCompartido){unsubscribeCompartido();unsubscribeCompartido=null;}
-  unsubscribeCompartido=db.collection("compartido_gonzalo").onSnapshot(snap=>{dataCompartido=snap.docs.map(d=>({id:d.id,...d.data()}));if(tabActual==="resumen")renderResumen();},e=>console.warn("compartido_gonzalo read:",e.message));
+  unsubscribeCompartido=db.collection("compartido_gonzalo").onSnapshot(snap=>{undoRegistrarCompartido(snap);dataCompartido=snap.docs.map(d=>({id:d.id,...d.data()}));if(tabActual==="resumen")renderResumen();},e=>console.warn("compartido_gonzalo read:",e.message));
 }
 function colUsuario(){return db.collection(`usuarios/${currentUser.uid}/transacciones`);}
 function escucharDatos(){
@@ -472,6 +474,7 @@ function escucharDatos(){
   if(unsubscribeJaviPagos)unsubscribeJaviPagos();
   unsubscribeJaviPagos=db.collection("compartido_gonzalo").where("cat","==","pago_gonzalo").onSnapshot(snap=>{dataCompartidoJavi=snap.docs.map(d=>({id:d.id,...d.data()}));render();},e=>console.warn("pagos javi:",e.message));
   unsubscribeData=colUsuario().onSnapshot(snapshot=>{
+    undoRegistrarSnapshot(snapshot);
     data=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
     const gastosTCNoCuota=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&!((t.desc||"").match(/\(cuota \d+\/\d+\)$/)));
     if(gastosTCNoCuota.length>0){const masReciente=gastosTCNoCuota.reduce((a,b)=>{const fa=a.mes_facturacion||a.fecha.slice(0,7);const fb=b.mes_facturacion||b.fecha.slice(0,7);return fb>fa?b:a;});const ref=masReciente.mes_facturacion||masReciente.fecha.slice(0,7);mes=parseInt(ref.slice(5,7))-1;anio=parseInt(ref.slice(0,4));}else{mes=new Date().getMonth();anio=new Date().getFullYear();}
@@ -1516,6 +1519,71 @@ function initMesFacPicker(valorInicial){
   else{const hoy=new Date();mesFacAnio=hoy.getFullYear();mesFacMes=hoy.getMonth();}
   renderMesFacGrid();
 }
+
+
+/* ── DESHACER ── */
+let undoStack=[],undoGrupo=null,undoTimer=null,undoPrev=null,undoPrevComp=new Map(),undoEjecutando=false;
+const UNDO_MAX=20,UNDO_VENTANA=1500;
+function undoMapa(docs){const m=new Map();docs.forEach(d=>{const x=d.data();m.set(d.id,{...x});});return m;}
+function undoRegistrarSnapshot(snap){
+  const actual=undoMapa(snap.docs);
+  if(undoPrev&&snap.metadata.hasPendingWrites&&!undoEjecutando){
+    if(!undoGrupo)undoGrupo={antes:undoPrev,antesComp:new Map(undoPrevComp)};
+    clearTimeout(undoTimer);undoTimer=setTimeout(undoCerrarGrupo,UNDO_VENTANA);
+  }
+  undoPrev=actual;
+}
+function undoRegistrarCompartido(snap){
+  const m=new Map();snap.docs.forEach(d=>{const x=d.data();if(x.from_gonzalo)m.set(d.id,{...x});});
+  undoPrevComp=m;
+}
+function undoIgual(a,b){return JSON.stringify(a,Object.keys(a||{}).sort())===JSON.stringify(b,Object.keys(b||{}).sort());}
+function undoCerrarGrupo(){
+  if(!undoGrupo)return;
+  const g=undoGrupo;undoGrupo=null;
+  const ahora=undoPrev||new Map();let cambios=0;
+  new Set([...g.antes.keys(),...ahora.keys()]).forEach(id=>{if(!g.antes.has(id)||!ahora.has(id)||!undoIgual(g.antes.get(id),ahora.get(id)))cambios++;});
+  if(!cambios)return;
+  g.cambios=cambios;undoStack.push(g);if(undoStack.length>UNDO_MAX)undoStack.shift();
+  actualizarBtnDeshacer();
+}
+function actualizarBtnDeshacer(){
+  const b=document.getElementById("btnDeshacer");if(!b)return;
+  b.style.display=(undoStack.length&&perfil==="gonzalo")?"inline-flex":"none";
+  const n=document.getElementById("undoN");if(n)n.textContent=undoStack.length;
+}
+async function deshacer(){
+  if(undoEjecutando)return;
+  if(undoGrupo){clearTimeout(undoTimer);undoCerrarGrupo();}
+  const g=undoStack.pop();
+  if(!g){mostrarToast("Nada que deshacer");actualizarBtnDeshacer();return;}
+  undoEjecutando=true;const btn=document.getElementById("btnDeshacer");if(btn)btn.disabled=true;
+  try{
+    const ahora=undoPrev||new Map();const ops=[];
+    new Set([...g.antes.keys(),...ahora.keys()]).forEach(id=>{
+      const a=g.antes.get(id),b=ahora.get(id);
+      if(a&&!b)ops.push({ref:colUsuario().doc(id),data:a});
+      else if(!a&&b)ops.push({ref:colUsuario().doc(id),del:true});
+      else if(a&&b&&!undoIgual(a,b))ops.push({ref:colUsuario().doc(id),data:a});
+    });
+    const compAhora=new Map();dataCompartido.forEach(d=>{if(d.from_gonzalo){const{id,...x}=d;compAhora.set(id,x);}});
+    new Set([...g.antesComp.keys(),...compAhora.keys()]).forEach(id=>{
+      const a=g.antesComp.get(id),b=compAhora.get(id);
+      if(a&&(!b||!undoIgual(a,b)))ops.push({ref:db.collection("compartido_gonzalo").doc(id),data:a});
+      else if(!a&&b)ops.push({ref:db.collection("compartido_gonzalo").doc(id),del:true});
+    });
+    for(let i=0;i<ops.length;i+=450){const lote=db.batch();ops.slice(i,i+450).forEach(o=>o.del?lote.delete(o.ref):lote.set(o.ref,o.data));await lote.commit();}
+    mostrarToast(`↶ Cambio deshecho (${g.cambios} registro${g.cambios===1?"":"s"})`);
+  }catch(e){undoStack.push(g);mostrarToast("❌ No se pudo deshacer: "+e.message);}
+  finally{setTimeout(()=>{undoEjecutando=false;if(btn)btn.disabled=false;actualizarBtnDeshacer();},UNDO_VENTANA);actualizarBtnDeshacer();}
+}
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){
+    const t=e.target;if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable))return;
+    if(perfil!=="gonzalo"||!undoStack.length)return;
+    e.preventDefault();deshacer();
+  }
+});
 
 /* ── SYNC JAVI ── */
 async function sincronizarConJavi(docId,trans,montoJavi){
