@@ -925,6 +925,9 @@ function renderDeudaTC(){
 }
 
 /* ── CC ── */
+const CAT_DIVIDENDO_VIS={id:"pago_dividendo",label:"Pago Dividendo",icon:"🏦",color:"#F59E0B"};
+function esPagoDividendo(t){return t.cuenta==="cc"&&t.cat==="pago_tc"&&!!t.hip_tipo;}
+function catVisCC(t){return esPagoDividendo(t)?"pago_dividendo":t.cat;}
 function renderCC(){
   const todos=data.filter(t=>t.cuenta==="cc");
   const hastaElMes=todos.filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<anio)||(d.getFullYear()===anio&&d.getMonth()<=mes);});
@@ -933,9 +936,9 @@ function renderCC(){
   const ingresos=gm.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+t.monto,0);
   const gastos=gm.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc").reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const balance=ingresos-gastos;
-  const porCat=Object.keys(CATS).map(id=>({id,...CATS[id],total:gm.filter(t=>t.cat===id&&t.tipo==="gasto").reduce((s,t)=>s+t.monto,0)})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+  const porCat=[...Object.keys(CATS).map(id=>({id,...CATS[id],total:gm.filter(t=>catVisCC(t)===id&&t.tipo==="gasto").reduce((s,t)=>s+t.monto,0)})),{...CAT_DIVIDENDO_VIS,total:gm.filter(t=>esPagoDividendo(t)&&t.tipo==="gasto").reduce((s,t)=>s+t.monto,0)}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
   const ccGastosRealesM=gm.filter(t=>t.tipo==="gasto"&&t.cat!=="pago_tc"&&!t.ahorro_ref);
-  const filtrados=(filtroCC==="todas"?gm:filtroCC==="ingresos"?gm.filter(t=>t.tipo==="ingreso"):filtroCC==="gastos"?gm.filter(t=>t.tipo==="gasto"):gm.filter(t=>t.cat===filtroCC&&t.tipo==="gasto")).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const filtrados=(filtroCC==="todas"?gm:filtroCC==="ingresos"?gm.filter(t=>t.tipo==="ingreso"):filtroCC==="gastos"?gm.filter(t=>t.tipo==="gasto"):gm.filter(t=>catVisCC(t)===filtroCC&&t.tipo==="gasto")).sort((a,b)=>b.fecha.localeCompare(a.fecha));
   let html=`
     <div style="background:${saldoAcumulado>=0?'#F0FDF4':'#FEF2F2'};border:1px solid ${saldoAcumulado>=0?'#BBF7D0':'#FECACA'};border-radius:16px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="min-width:0"><div style="font-size:10px;color:${saldoAcumulado>=0?'var(--green)':'var(--red)'};font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">Saldo actual</div><div style="font-size:clamp(20px,6.5vw,28px);font-weight:700;font-family:'DM Mono',monospace;color:${saldoAcumulado>=0?'var(--green)':'var(--red)'};overflow-wrap:anywhere">${mxn(saldoAcumulado)}</div><div style="font-size:11px;color:var(--dim);margin-top:3px">Acumulado hasta ${MESES[mes]} ${anio}</div></div>
@@ -980,7 +983,7 @@ function renderAhorros(){
 
 /* ── FILAS ── */
 function filaTransaccion(t,i){
-  const c=CATS[t.cat]||{icon:"📦",color:"#6B7280",label:"Otros"};
+  const c=esPagoDividendo(t)?CAT_DIVIDENDO_VIS:(CATS[t.cat]||{icon:"📦",color:"#6B7280",label:"Otros"});
   const fecha=fechaLocal(t.fecha).toLocaleDateString("es-MX",{day:"numeric",month:"short"});
   let iconBg,icon,amountClass,signo,badge;
   if(t.cuenta==="tc"){iconBg=c.color+"22";icon=c.icon;amountClass="amount-gasto";signo="-";badge="";}
