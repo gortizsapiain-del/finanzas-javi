@@ -132,6 +132,33 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .modal-footer .btn-ghost{flex:1}.modal-footer .btn-primary{flex:2}
 .btn-undo{display:none;align-items:center;gap:6px;padding:7px 12px;font-size:13px;font-weight:700;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;transition:background .2s,opacity .2s}.btn-undo:hover{background:var(--surface2)}.btn-undo:disabled{opacity:.6;cursor:wait}.btn-undo .undo-n{font-family:'DM Mono',monospace;font-size:11px;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px}
 .undo-wrap{position:relative}
+.btn-undo{white-space:nowrap}.btn-undo .undo-ico{font-size:15px;line-height:1}
+.header-inner>div:first-child{min-width:0}.header-actions{flex-shrink:0}
+.header-actions .btn-primary{white-space:nowrap}
+@media(max-width:600px){
+  .header{padding:10px 12px}
+  .header-inner{gap:8px}
+  .header-title{font-size:17px!important;white-space:nowrap}
+  .header-actions{gap:6px!important}
+  .header-actions #userInfo{gap:6px!important}
+  .header-actions #userAvatar{width:26px!important;height:26px!important}
+  .btn-undo{padding:6px 8px;gap:4px;font-size:12px}
+  .btn-undo .undo-txt,.btn-undo .undo-car{display:none}
+  .header-actions .btn-primary{padding:8px 12px;font-size:13px}
+  .undo-panel{position:fixed;left:10px;right:10px;top:64px;width:auto;max-height:70vh}
+}
+@media(max-width:600px){
+  #headerTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .header-title{min-width:0}
+}
+@media(max-width:440px){
+  .header-actions .btn-primary{padding:6px 12px;font-size:20px;line-height:1}
+  .header-actions .btn-primary .btn-txt{display:none}
+}
+@media(max-width:380px){
+  .header-title{font-size:15px!important}
+  .header-actions #userAvatar{display:none}
+}
 .undo-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);width:min(380px,92vw);max-height:70vh;overflow:auto;background:var(--surface);border:1px solid var(--border2);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18);z-index:300;padding:10px}
 .undo-panel.open{display:block}
 .undo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 10px;border-bottom:1px solid var(--border);margin-bottom:8px}
@@ -158,13 +185,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <div class="header">
   <div class="header-inner">
     <div><div class="header-label">💰 Finanzas</div><div class="header-title" style="display:flex;align-items:center;gap:6px"><span id="headerTitle">Control Financiero</span><span onclick="togglePerfilMenu()" style="cursor:pointer;font-size:14px;opacity:.6">▼</span></div><div id="perfilMenu" style="display:none;position:absolute;top:56px;left:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:200;min-width:160px"><button onclick="cambiarPerfil('gonzalo')" style="display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">💰 Gonzalo</button><button onclick="cambiarPerfil('skinlux')" style="display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✨ Skin Lux</button></div></div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div class="header-actions" style="display:flex;align-items:center;gap:10px">
       <div id="userInfo" style="display:none;align-items:center;gap:8px">
         <img id="userAvatar" src="" alt="" style="width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);object-fit:cover"/>
         <button class="btn-ghost" onclick="logout()" style="padding:5px 10px;font-size:12px">Salir</button>
       </div>
-      <span class="undo-wrap" id="undoWrap"><button id="btnDeshacer" class="btn-undo" onclick="togglePanelDeshacer(event)" title="Ver cambios para deshacer (Ctrl+Z deshace el último)">↶ Deshacer <span class="undo-n" id="undoN">0</span> ▾</button><div class="undo-panel" id="undoPanel"></div></span>
-      <button id="btnAgregar" class="btn-primary" onclick="abrirModal()" style="display:none">+ Agregar</button>
+      <span class="undo-wrap" id="undoWrap"><button id="btnDeshacer" class="btn-undo" onclick="togglePanelDeshacer(event)" title="Ver cambios para deshacer (Ctrl+Z deshace el último)"><span class="undo-ico">↶</span><span class="undo-txt">Deshacer</span><span class="undo-n" id="undoN">0</span><span class="undo-car">▾</span></button><div class="undo-panel" id="undoPanel"></div></span>
+      <button id="btnAgregar" class="btn-primary" onclick="abrirModal()" style="display:none">+<span class="btn-txt"> Agregar</span></button>
     </div>
   </div>
 </div>
