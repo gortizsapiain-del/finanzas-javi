@@ -825,7 +825,9 @@ function renderTC(){
   const todos=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto");
   let gm=delMes(todos);
   if(filtroTarjeta!=="todas")gm=gm.filter(t=>(t.tarjeta||"")===filtroTarjeta);
-  const total=gm.reduce((s,t)=>t.cat==="pago"?s-t.monto:s+t.monto,0);
+  // Gastos reales del mes (sin pagos). Gonzalo = total − Javi, así siempre cuadra.
+  const gmGastos=gm.filter(t=>t.cat!=="pago");
+  const total=gmGastos.reduce((s,t)=>s+((t.monto_total||t.monto)-(t.monto_javi||0)),0);
   const porCat=Object.keys(CATS).filter(id=>!CATS_CREDITOS.includes(id)&&id!=="pago_tc").map(id=>{
     const items=gm.filter(t=>t.cat===id).sort((a,b)=>b.monto-a.monto);
     const rawTotal=items.reduce((s,t)=>s+t.monto,0);
@@ -833,10 +835,10 @@ function renderTC(){
     return{id,...CATS[id],total:catTotal,rawTotal,items};
   }).filter(c=>{if(filtroPersonaTC==='javi')return c.items.some(t=>(t.monto_javi||0)>0);return c.rawTotal>0;})
   .sort((a,b)=>{if(filtroPersonaTC==='javi'){const ja=a.items.reduce((s,t)=>s+(t.monto_javi||0),0);const jb=b.items.reduce((s,t)=>s+(t.monto_javi||0),0);return jb-ja;}if(filtroPersonaTC==='gonzalo')return b.total-a.total;const ba=a.items.reduce((s,t)=>s+(t.monto_total||t.monto),0);const bb=b.items.reduce((s,t)=>s+(t.monto_total||t.monto),0);return bb-ba;});
-  const totalFacturado=gm.filter(t=>t.cat!=='pago').reduce((s,t)=>s+(t.monto_total||t.monto),0);
+  const totalFacturado=gmGastos.reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const totalPagos=gm.filter(t=>t.cat==='pago').reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const saldoPendiente=totalFacturado-totalPagos;
-  const totalJavi=gm.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const totalJavi=gmGastos.reduce((s,t)=>s+(t.monto_javi||0),0);
   let html=`
     <div class="filter-bar">
       <select class="filter-select ${filtroTarjeta!=='todas'?'on':''}" onchange="setFiltroTarjeta(this.value)">
@@ -850,7 +852,7 @@ function renderTC(){
       </select>
     </div>
     <div class="grid-3">
-      <div class="summary-card neutral"><div class="s-label" style="color:var(--muted)">Total facturado</div><div class="s-amount">${mxn(totalFacturado)}</div><div class="s-sub">${gm.length} movimientos</div></div>
+      <div class="summary-card neutral"><div class="s-label" style="color:var(--muted)">Total facturado</div><div class="s-amount">${mxn(totalFacturado)}</div><div class="s-sub">${gmGastos.length} movimientos</div></div>
       <div class="summary-card purple"><div class="s-label" style="color:var(--muted)">Gonzalo</div><div class="s-amount">${mxn(total)}</div><div class="s-sub">${totalFacturado>0?(total/totalFacturado*100).toFixed(0):'0'}% del total</div></div>
       <div class="summary-card neutral" style="border-color:#FBCFE8;background:#FFF1F6"><div class="s-label" style="color:#BE185D">Javi</div><div class="s-amount" style="color:#BE185D">${mxn(totalJavi)}</div><div class="s-sub" style="color:#475569">${totalFacturado>0?(totalJavi/totalFacturado*100).toFixed(0):'0'}%</div></div>
     </div>
@@ -1722,7 +1724,9 @@ async function guardar(){
   try{
     if(editandoId){
       const trans={...tranBase,desc,monto:monto_gonzalo,...((cuenta==="tc"||cuenta==="creditos")?{mes_facturacion:mesFac}:{}),...((cuenta==="tc"||cuenta==="creditos"||cuenta==="cc")&&monto_javi_calc>0?{monto_javi:monto_javi_calc,monto_total:monto_total_calc}:{})};
-      await colUsuario().doc(editandoId).update(trans);await sincronizarConJavi(editandoId,trans,monto_javi_calc);
+      // Si ya no hay parte de Javi, borrar campos antiguos para que no queden valores desactualizados
+      const limpiarJavi=monto_javi_calc>0?{}:{monto_javi:firebase.firestore.FieldValue.delete(),monto_total:firebase.firestore.FieldValue.delete()};
+      await colUsuario().doc(editandoId).update({...trans,...limpiarJavi});await sincronizarConJavi(editandoId,trans,monto_javi_calc);
       if(esPagoTC){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.tc_pago_ref===editandoId);const transCC={desc:`Pago TC: ${desc}`,monto,fecha,cuenta:"cc",tipo:"gasto",cat:"pago",tc_pago_ref:editandoId};if(ccEspejo)await colUsuario().doc(ccEspejo.id).update(transCC);else await colUsuario().add(transCC);}
       else if(cuenta==="tc"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.tc_pago_ref===editandoId);if(ccEspejo)await colUsuario().doc(ccEspejo.id).delete();}
       else if(cuenta==="ahorros"){if(modalTipo!=="ganancia"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.ahorro_ref===editandoId);const tipoCC=modalTipo==="deposito"?"gasto":"ingreso";const transCC={desc:modalTipo==="deposito"?`Depósito ahorro: ${desc}`:`Retiro ahorro: ${desc}`,monto,fecha,cuenta:"cc",tipo:tipoCC,cat:null,ahorro_ref:editandoId};if(ccEspejo)await colUsuario().doc(ccEspejo.id).update(transCC);else await colUsuario().add(transCC);}}
