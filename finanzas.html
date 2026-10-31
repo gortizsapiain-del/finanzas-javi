@@ -515,6 +515,7 @@ function escucharDatos(){
   unsubscribeData=colUsuario().onSnapshot(snapshot=>{
     undoRegistrarSnapshot(snapshot);
     data=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
+    corregirGastosCubiertosFijo();
     const gastosTCNoCuota=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&!((t.desc||"").match(/\(cuota \d+\/\d+\)$/)));
     if(gastosTCNoCuota.length>0){const masReciente=gastosTCNoCuota.reduce((a,b)=>{const fa=a.mes_facturacion||a.fecha.slice(0,7);const fb=b.mes_facturacion||b.fecha.slice(0,7);return fb>fa?b:a;});const ref=masReciente.mes_facturacion||masReciente.fecha.slice(0,7);mes=parseInt(ref.slice(5,7))-1;anio=parseInt(ref.slice(0,4));}else{mes=new Date().getMonth();anio=new Date().getFullYear();}
     render();
@@ -565,6 +566,17 @@ const CATS={
 const CATS_CREDITOS=["credito_consumo","credito_consumo_2","credito_hipotecario","arriendo_oficina"];
 const CATS_NO_SYNC_JAVI=["gastos_comunes_depto","gastos_comunes_oficina","gastos_depto","skin_lux","arriendo_oficina"];
 const SALDO_INICIAL_CC=59737;
+/* ── APORTE FIJO DE JAVI ──
+   El fijo de gastos (120.000) cubre luz, agua, gas, internet y gastos comunes de depto y oficina.
+   Por eso esas categorías, aunque se paguen con TC o CC, son 100% Gonzalo. */
+const JAVI_DIV_DEPTO_MES=374000,JAVI_DIV_OFIC_MES=296500,JAVI_GASTOS_FIJOS_MES=120000;
+const CATS_CUBIERTAS_FIJO_JAVI=["gastos_comunes_depto","gastos_comunes_oficina","gastos_depto"];
+/* ── CIERRE DE MESES ──
+   Todo lo facturado hasta MES_CIERRE se considera pagado (TC, créditos, dividendos),
+   salvo las excepciones indicadas, que siguen su estado normal. */
+const MES_CIERRE="2026-10";
+const EXCEPCIONES_CIERRE={hip_oficina:["2026-10"]};
+function mesCerrado(mesStr,clave){if(!mesStr||mesStr>MES_CIERRE)return false;if(clave&&(EXCEPCIONES_CIERRE[clave]||[]).includes(mesStr))return false;return true;}
 const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_CORTOS=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 let data=[],dataCompartidoJavi=[],mes=new Date().getMonth(),anio=new Date().getFullYear();
@@ -606,7 +618,7 @@ function cuotaHipMes(tipo,mesStr){
   const pag=pool.filter(d=>d.pagado_automatico===true);
   return (pag.length?pag:pool).slice().sort((a,b)=>Math.abs(montoDoc(a)-med)-Math.abs(montoDoc(b)-med))[0];
 }
-function hipPagadoMes(tipo,mesStr){return hipDelMes(tipo,mesStr).some(t=>t.pagado_automatico===true)||data.some(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.hip_tipo===tipo&&t.mes_facturacion===mesStr);}
+function hipPagadoMes(tipo,mesStr){if(mesCerrado(mesStr,"hip_"+tipo))return true;return hipDelMes(tipo,mesStr).some(t=>t.pagado_automatico===true)||data.some(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.hip_tipo===tipo&&t.mes_facturacion===mesStr);}
 function ultimoMontoHip(tipo,hastaMes){const d=docsHip(tipo).filter(x=>!esOutlierHip(tipo,montoDoc(x))&&(x.mes_facturacion||x.fecha.slice(0,7))<=hastaMes).sort((a,b)=>(b.mes_facturacion||b.fecha).localeCompare(a.mes_facturacion||a.fecha));return d.length?montoDoc(d[0]):medianaHip(tipo);}
 function pendientesHip(tipo,hastaMes){
   const res=[];if(!docsHip(tipo).length)return res;
@@ -712,7 +724,7 @@ function renderResumen(){
   const m=mes,a=anio,mesStr=`${a}-${String(m+1).padStart(2,'0')}`;
   const tcM=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto"&&t.cat!=="pago"&&t.cat!=="pago_tc").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
   const tcTotal=tcM.reduce((s,t)=>s+(t.monto_total||t.monto),0),tcGonzalo=tcM.reduce((s,t)=>s+t.monto,0),tcJavi=tcM.reduce((s,t)=>s+(t.monto_javi||0),0);
-  const pagoTCEsteMes=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesStr);
+  const pagoTCEsteMes=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesStr)||(mesCerrado(mesStr)?{cierre:true}:null);
   const pagosParciales=data.filter(t=>t.cuenta==="tc"&&t.cat==="pago").filter(t=>{const ref=t.mes_facturacion||t.fecha.slice(0,7);return ref===mesStr;}).reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const tcSaldoPendiente=Math.max(0,tcTotal-pagosParciales);
   const tcParaTotal=pagoTCEsteMes?0:tcSaldoPendiente;
@@ -728,7 +740,7 @@ function renderResumen(){
   const ccSaldoAcumulado=SALDO_INICIAL_CC+data.filter(t=>t.cuenta==="cc").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="ingreso"?s+t.monto:s-(t.monto_total||t.monto),0);
   const ahTotal=data.filter(t=>t.cuenta==="ahorros").filter(t=>{const d=fechaLocal(t.fecha);return(d.getFullYear()<a)||(d.getFullYear()===a&&d.getMonth()<=m);}).reduce((s,t)=>t.tipo==="deposito"||t.tipo==="ganancia"?s+t.monto:t.tipo==="retiro"?s-t.monto:s,0);
   const creditosM=data.filter(t=>t.cuenta==="creditos"&&t.cat!=="arriendo_oficina").filter(t=>{const ref=t.mes_facturacion?t.mes_facturacion+"-01":t.fecha;const d=fechaLocal(ref);return d.getMonth()===m&&d.getFullYear()===a;});
- const catsCreditosPagadas=new Set(["credito_consumo","credito_consumo_2"].filter(catId=>{const cuotasEsteMes=creditosM.filter(t=>t.cat===catId);return cuotasEsteMes.length>0&&cuotasEsteMes.some(t=>t.pagado_automatico===true);}));
+ const catsCreditosPagadas=new Set(["credito_consumo","credito_consumo_2"].filter(catId=>{const cuotasEsteMes=creditosM.filter(t=>t.cat===catId);return cuotasEsteMes.length>0&&(cuotasEsteMes.some(t=>t.pagado_automatico===true)||mesCerrado(mesStr));}));
   const creditosMParaDeuda=creditosM.filter(t=>t.cat!=="credito_hipotecario"&&!catsCreditosPagadas.has(t.cat));
   const hipPendRes=["depto","oficina"].reduce((s,k)=>s+pendientesHip(k,mesStr).reduce((a,p)=>a+p.monto,0),0);
   const hipPendResG=Math.round(hipPendRes/2);
@@ -742,7 +754,7 @@ function renderResumen(){
   const deudaGonzalo=Math.max(0,tcGonzaloParaTotal+creditosGonzaloNeto);
   const deudaJavi=Math.max(0,tcJaviParaTotal+creditosJaviNeto);
   const mesLabel=MESES[m]+" "+a;
-  const JAVI_DIV_DEPTO=374000,JAVI_DIV_OFIC=296500,JAVI_GASTOS_FIJOS=116000;
+  const JAVI_DIV_DEPTO=JAVI_DIV_DEPTO_MES,JAVI_DIV_OFIC=JAVI_DIV_OFIC_MES,JAVI_GASTOS_FIJOS=JAVI_GASTOS_FIJOS_MES;
   const arriendoRegistrado=arriendoM.reduce((s,t)=>s+(t.monto_javi||0),0);
   const JAVI_ARRIENDO=arriendoRegistrado>0?-arriendoRegistrado:0;
   const JAVI_DEUDA_FIJA=JAVI_DIV_DEPTO+JAVI_DIV_OFIC+JAVI_GASTOS_FIJOS+JAVI_ARRIENDO;
@@ -773,7 +785,7 @@ function renderResumen(){
         <div style="font-size:10px;color:#BE185D;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Detalle — Javi debe</div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏠 50% Dividendo Depto</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_DIV_DEPTO)}</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">🏢 50% Dividendo Oficina</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_DIV_OFIC)}</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💡 40% Gastos Fijos</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_GASTOS_FIJOS)}</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💡 Fijo gastos básicos y comunes</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(JAVI_GASTOS_FIJOS)}</span></div>
         ${JAVI_ARRIENDO<0?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--green)">🏢 −50% Arriendo recibido</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--green)">-${mxn(Math.abs(JAVI_ARRIENDO))}</span></div>`:`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:var(--muted)">🏢 Arriendo (no registrado)</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:var(--muted)">-</span></div>`}
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:12px;color:#BE185D">💳 Gastos TC (su parte)</span><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;color:#BE185D">${mxn(tcJavi)}</span></div>
         <div style="border-top:1px solid #FBCFE8;margin:2px 0"></div>
@@ -825,6 +837,7 @@ function renderTC(){
   const todos=data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto");
   let gm=delMes(todos);
   if(filtroTarjeta!=="todas")gm=gm.filter(t=>(t.tarjeta||"")===filtroTarjeta);
+  const mesVistoTC=`${anio}-${String(mes+1).padStart(2,'0')}`;
   // Gastos reales del mes (sin pagos). Gonzalo = total − Javi, así siempre cuadra.
   const gmGastos=gm.filter(t=>t.cat!=="pago");
   const total=gmGastos.reduce((s,t)=>s+((t.monto_total||t.monto)-(t.monto_javi||0)),0);
@@ -836,9 +849,10 @@ function renderTC(){
   }).filter(c=>{if(filtroPersonaTC==='javi')return c.items.some(t=>(t.monto_javi||0)>0);return c.rawTotal>0;})
   .sort((a,b)=>{if(filtroPersonaTC==='javi'){const ja=a.items.reduce((s,t)=>s+(t.monto_javi||0),0);const jb=b.items.reduce((s,t)=>s+(t.monto_javi||0),0);return jb-ja;}if(filtroPersonaTC==='gonzalo')return b.total-a.total;const ba=a.items.reduce((s,t)=>s+(t.monto_total||t.monto),0);const bb=b.items.reduce((s,t)=>s+(t.monto_total||t.monto),0);return bb-ba;});
   const totalFacturado=gmGastos.reduce((s,t)=>s+(t.monto_total||t.monto),0);
-  const totalPagos=gm.filter(t=>t.cat==='pago').reduce((s,t)=>s+(t.monto_total||t.monto),0);
+  const totalPagos=mesCerrado(mesVistoTC)?totalFacturado:gm.filter(t=>t.cat==='pago').reduce((s,t)=>s+(t.monto_total||t.monto),0);
   const saldoPendiente=totalFacturado-totalPagos;
   const totalJavi=gmGastos.reduce((s,t)=>s+(t.monto_javi||0),0);
+  const mesPostCierre=mesFacDeCuota(MES_CIERRE,1);
   let html=`
     <div class="filter-bar">
       <select class="filter-select ${filtroTarjeta!=='todas'?'on':''}" onchange="setFiltroTarjeta(this.value)">
@@ -859,8 +873,8 @@ function renderTC(){
     ${(filtroTarjeta==='todas'||filtroTarjeta==='visa_singular')?`<div style="background:var(--surface);border:1px solid #BFDBFE;border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
         <div style="font-size:10px;color:#3B82F6;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Visa Singular — Consumido pendiente</div>
-        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:#1D4ED8">${mxn(data.filter(t=>t.cuenta==='tc'&&t.tipo==='gasto'&&t.cat!=='pago'&&(t.tarjeta||'visa_singular')==='visa_singular'&&(t.mes_facturacion||t.fecha.slice(0,7))>='2026-08').reduce((s,t)=>s+(t.monto_total||t.monto),0)-data.filter(t=>t.cuenta==='tc'&&t.cat==='pago'&&(t.tarjeta||'visa_singular')==='visa_singular'&&(t.mes_facturacion||t.fecha.slice(0,7))>='2026-08').reduce((s,t)=>s+(t.monto_total||t.monto),0))}</div>
-        <div style="font-size:11px;color:var(--dim);margin-top:2px">Desde agosto 2026 · sin pagos anteriores</div>
+        <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:#1D4ED8">${mxn(data.filter(t=>t.cuenta==='tc'&&t.tipo==='gasto'&&t.cat!=='pago'&&(t.tarjeta||'visa_singular')==='visa_singular'&&(t.mes_facturacion||t.fecha.slice(0,7))>MES_CIERRE).reduce((s,t)=>s+(t.monto_total||t.monto),0)-data.filter(t=>t.cuenta==='tc'&&t.cat==='pago'&&(t.tarjeta||'visa_singular')==='visa_singular'&&(t.mes_facturacion||t.fecha.slice(0,7))>MES_CIERRE).reduce((s,t)=>s+(t.monto_total||t.monto),0))}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">Desde ${MESES[parseInt(mesPostCierre.slice(5,7))-1].toLowerCase()} ${mesPostCierre.slice(0,4)} · ${MESES[parseInt(MES_CIERRE.slice(5,7))-1].toLowerCase()} y anteriores pagados</div>
       </div>
       <div style="font-size:32px">💳</div>
     </div>`:''}
@@ -933,8 +947,8 @@ function renderDeudaTC(){
       else{const mesesFacturados=(ultimoCierre.getFullYear()-fechaCompra.getFullYear())*12+(ultimoCierre.getMonth()-fechaCompra.getMonth())+1;const cuotasFacturadas=Math.min(cuotasTotales,mesesFacturados);const cuotasRestantes=Math.max(0,cuotasTotales-cuotasFacturadas);pendiente=cuotasRestantes*montoCuota;cuotasFuturas+=pendiente;}
       deuda+=pendiente;const fracJavi=montoTotal>0?(t.monto_javi||0)/montoTotal:0;deudaJavi+=pendiente*fracJavi;deudaGonzalo+=pendiente*(1-fracJavi);
     });
-    // Verificar si ya pagó esta tarjeta este mes
-    const yaPageTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===deudaTCTarjeta);
+    // Verificar si ya pagó esta tarjeta este mes (o si el mes está cerrado)
+    const yaPageTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===deudaTCTarjeta)||mesCerrado(mesVisto);
     const {totalGeneral,totalGonzalo,totalJavi}=calcularTotalTCDeMes(mesVisto,deudaTCTarjeta);
     const v=TARJETAS[deudaTCTarjeta];
     inner=`<div style="padding:14px 16px;border-top:1px solid var(--border2)">
@@ -1117,8 +1131,8 @@ function renderCreditos(){
     const cuotasEsteMes=items.filter(t=>(t.mes_facturacion||t.fecha.slice(0,7))===mesVisto);
     const hoyStr=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
     const esMesActual=esMesActualCreditos;
-    // Pagado solo si existe cuota con campo pagado_automatico=true (creada con botón ⚡ Pagar)
-    const yaPagadoAutomatico=esMesActual&&cuotasEsteMes.some(t=>t.pagado_automatico===true);
+    // Pagado si existe cuota con pagado_automatico=true (botón ⚡ Pagar) o si el mes está cerrado
+    const yaPagadoAutomatico=esMesActual&&(cuotasEsteMes.some(t=>t.pagado_automatico===true)||(mesCerrado(mesVisto)&&cuotasEsteMes.length>0));
     let btnPagar='';
     if(id==="arriendo_oficina"){
       const yaRegistrado=esMesActual&&cuotasEsteMes.some(t=>t.pagado_automatico===true);
@@ -1691,6 +1705,26 @@ async function sincronizarConJavi(docId,trans,montoJavi){
 }
 async function eliminarSyncJavi(id){try{await db.collection("compartido_gonzalo").doc(id).delete();}catch(e){console.warn("Sync Javi delete:",e.message);}}
 
+/* ── CORRECCIÓN: GASTOS COMUNES Y BÁSICOS = 100% GONZALO ──
+   Ya están cubiertos por el fijo mensual de Javi. Si quedaron registros antiguos
+   con parte de Javi, se pasan a 100% Gonzalo (una vez por sesión). */
+let correccionFijoHecha=false;
+async function corregirGastosCubiertosFijo(){
+  if(correccionFijoHecha||!currentUser)return;
+  correccionFijoHecha=true;
+  const malos=data.filter(t=>CATS_CUBIERTAS_FIJO_JAVI.includes(t.cat)&&(t.monto_javi||0)>0);
+  if(!malos.length)return;
+  try{
+    for(let i=0;i<malos.length;i+=450){
+      const lote=db.batch();
+      malos.slice(i,i+450).forEach(t=>lote.update(colUsuario().doc(t.id),{monto:t.monto_total||(t.monto+(t.monto_javi||0)),monto_javi:firebase.firestore.FieldValue.delete(),monto_total:firebase.firestore.FieldValue.delete()}));
+      await lote.commit();
+    }
+    for(const t of malos)await eliminarSyncJavi(t.id);
+    mostrarToast(`🔧 ${malos.length} gasto(s) comunes/básicos pasados a 100% Gonzalo`);
+  }catch(e){correccionFijoHecha=false;console.warn("Corrección fijo Javi:",e.message);}
+}
+
 /* ── GUARDAR ── */
 async function guardar(){
   const desc=document.getElementById("fDesc").value.trim(),monto=leerMonto(),fecha=document.getElementById("fFecha").value,cuenta=document.getElementById("fCuenta").value,cat=document.getElementById("fCat").value,mesFac=document.getElementById("fMesFac").value;
@@ -1841,15 +1875,11 @@ function renderGastosFijos(){
   var mesLabel=MESES[mes]+" "+anio;
   var now=new Date();
   var esMesActual=mesStr===(now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0"));
+  var TOTAL_BASICOS=290000; // GC Depto + GC Oficina + Internet + Gas + Luz + Agua (referencial)
   var ITEMS=[
-    {label:"Dividendo Depto",icon:"🏠",total:748000,javi:374000,gonzalo:374000,pct_j:"50%",pct_g:"50%",es_ingreso:false},
-    {label:"Dividendo Oficina",icon:"🏢",total:593000,javi:296500,gonzalo:296500,pct_j:"50%",pct_g:"50%",es_ingreso:false},
-    {label:"GC Depto",icon:"🏢",total:100000,javi:40000,gonzalo:60000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
-    {label:"GC Oficina",icon:"🏢",total:65000,javi:26000,gonzalo:39000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
-    {label:"Internet",icon:"🌐",total:25000,javi:10000,gonzalo:15000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
-    {label:"Gas",icon:"🔥",total:35000,javi:14000,gonzalo:21000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
-    {label:"Luz",icon:"💡",total:30000,javi:12000,gonzalo:18000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
-    {label:"Agua",icon:"💧",total:35000,javi:14000,gonzalo:21000,pct_j:"40%",pct_g:"60%",es_ingreso:false},
+    {label:"Dividendo Depto",icon:"🏠",total:748000,javi:JAVI_DIV_DEPTO_MES,gonzalo:748000-JAVI_DIV_DEPTO_MES,pct_j:"50%",pct_g:"50%",es_ingreso:false},
+    {label:"Dividendo Oficina",icon:"🏢",total:593000,javi:JAVI_DIV_OFIC_MES,gonzalo:593000-JAVI_DIV_OFIC_MES,pct_j:"50%",pct_g:"50%",es_ingreso:false},
+    {label:"Gastos básicos y comunes",icon:"💡",total:TOTAL_BASICOS,javi:JAVI_GASTOS_FIJOS_MES,gonzalo:TOTAL_BASICOS-JAVI_GASTOS_FIJOS_MES,nota:"GC Depto · GC Oficina · Internet · Gas · Luz · Agua — Javi aporta un fijo, el resto lo pagas tú",es_ingreso:false},
     {label:"Arriendo recibido (resta)",icon:"💰",total:-590000,javi:-295000,gonzalo:-295000,pct_j:"50%",pct_g:"50%",es_ingreso:true},
   ];
   var totalJavi=ITEMS.reduce(function(s,i){return s+i.javi;},0);
@@ -1864,10 +1894,11 @@ function renderGastosFijos(){
     var clr=item.es_ingreso?"var(--green)":"var(--text)";
     var sign=item.es_ingreso?"+":"";
     var jsign=item.es_ingreso?"-":"";
+    var meta=item.nota?item.nota:('Gonzalo '+item.pct_g+' &middot; Javi '+item.pct_j);
     return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:'+bg+';border:1px solid '+bdr+';border-radius:12px">'+
       '<div style="font-size:20px;flex-shrink:0">'+item.icon+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:'+clr+'">'+item.label+'</div>'+
-      '<div style="font-size:11px;color:var(--dim);margin-top:2px">Gonzalo '+item.pct_g+' &middot; Javi '+item.pct_j+'</div></div>'+
+      '<div style="font-size:11px;color:var(--dim);margin-top:2px;text-align:justify">'+meta+'</div></div>'+
       '<div style="text-align:right;flex-shrink:0"><div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:13px;color:'+clr+'">'+sign+mxn(Math.abs(item.total))+'</div>'+
       '<div style="font-size:10px;color:#BE185D;font-weight:600;margin-top:1px">Javi: '+jsign+mxn(Math.abs(item.javi))+'</div></div></div>';
   }).join("");
@@ -1975,7 +2006,7 @@ async function deshacerPagoHip(tipo,e){
   const mesLbl=MESES[mes]+" "+anio;
   const cuotas=hipDelMes(tipo,mesStr).filter(t=>t.pagado_automatico===true);
   const movsCC=data.filter(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.hip_tipo===tipo&&t.mes_facturacion===mesStr);
-  if(!cuotas.length&&!movsCC.length){mostrarToast("ℹ️ No hay pago registrado en "+mesLbl);return;}
+  if(!cuotas.length&&!movsCC.length){mostrarToast(mesCerrado(mesStr,"hip_"+tipo)?"ℹ️ "+mesLbl+" está cerrado como pagado (sin registro que deshacer)":"ℹ️ No hay pago registrado en "+mesLbl);return;}
   const montoCC=movsCC.reduce((s,t)=>s+(t.monto||0),0);
   if(!confirm(`¿Deshacer el pago de ${h.icon} ${h.label}?\n\nMes: ${mesLbl}${movsCC.length?`\nSe eliminará el cargo en Cuenta Corriente (${mxn(montoCC)})`:''}\n\nLa cuota quedará como pendiente.`))return;
   try{
@@ -2021,8 +2052,9 @@ function renderPagos(){
     <div style="padding:12px;display:flex;flex-direction:column;gap:8px">`;
   Object.entries(TARJETAS).filter(([k])=>k!=="cc").forEach(([k,v])=>{
     const{totalGeneral,totalGonzalo,totalJavi}=calcularTotalTCDeMes(mesVisto,k);
-    const yaPageTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===k);
-    if(totalGeneral===0&&!yaPageTC)return;
+    const regTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===k);
+    const yaPageTC=regTC||(mesCerrado(mesVisto)&&totalGeneral>0);
+    if(totalGeneral===0&&!regTC)return;
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${yaPageTC?'#BBF7D0':'var(--border)'}">
       <div style="min-width:0">
         <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px">${v.icon} ${v.label}</div>
@@ -2070,7 +2102,7 @@ function renderPagos(){
     const c=CATS[catId];
     const cuotasEsteMes=gm.filter(t=>t.cat===catId);
     const total=cuotasEsteMes.reduce((s,t)=>s+(t.monto_total||t.monto),0);
-    const yaPagado=cuotasEsteMes.some(t=>t.pagado_automatico===true);
+    const yaPagado=cuotasEsteMes.some(t=>t.pagado_automatico===true)||(mesCerrado(mesVisto)&&cuotasEsteMes.length>0);
     if(total===0&&!yaPagado)return;
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${yaPagado?'#BBF7D0':'var(--border)'}">
       <div style="min-width:0">
@@ -2104,7 +2136,7 @@ function renderPagos(){
 
   // ── SECCIÓN 3: Deuda de Javi ──
   const arriendoJaviP=data.filter(t=>t.cuenta==="creditos"&&t.cat==="arriendo_oficina"&&((t.mes_facturacion||t.fecha.slice(0,7))===mesVisto)).reduce((s,t)=>s+(t.monto_javi||0),0);
-  const JAVI_DEUDA_FIJA_P=374000+296500+116000-(arriendoJaviP>0?arriendoJaviP:0);
+  const JAVI_DEUDA_FIJA_P=JAVI_DIV_DEPTO_MES+JAVI_DIV_OFIC_MES+JAVI_GASTOS_FIJOS_MES-(arriendoJaviP>0?arriendoJaviP:0);
   const pagosAJaviMesP=data.filter(t=>{if(t.cat!=="pago_javi")return false;const ref=t.mes_facturacion?t.mes_facturacion:t.fecha?(t.fecha).slice(0,7):"";return ref===mesVisto;});
   const totalPagosJaviP=pagosAJaviMesP.reduce((s,t)=>s+(t.monto||0),0);
   const pagosDirectosJaviP=dataCompartidoJavi.filter(t=>{const ref=t.mes_facturacion||(t.fecha||"").slice(0,7);return ref===mesVisto;});
@@ -2137,7 +2169,7 @@ function renderPagos(){
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;background:var(--surface2);border-radius:10px;padding:10px 12px">
-        <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:12px;color:var(--muted)">🏠 Fijos (dividendos + gastos fijos − arriendo)</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--muted)">${mxn(JAVI_DEUDA_FIJA_P)}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:12px;color:var(--muted)">🏠 Fijos (dividendos + ${mxn(JAVI_GASTOS_FIJOS_MES)} gastos fijos − arriendo)</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--muted)">${mxn(JAVI_DEUDA_FIJA_P)}</span></div>
         <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:12px;color:var(--muted)">💳 Gastos TC (su parte)</span><span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--muted)">${mxn(tcJaviP)}</span></div>
       </div>
       ${saldoPendienteJavi>0&&esMesActual?`
