@@ -128,6 +128,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .tipo-btn.selected-deposito{background:#10B98120;border-color:var(--green);color:var(--green)}
 .tipo-btn.selected-retiro{background:#F43F5E18;border-color:var(--red);color:var(--red)}
 .tipo-btn.selected-ganancia{background:#F59E0B20;border-color:var(--gold);color:var(--gold)}
+.tipo-btn.selected-moneda{background:#2563EB18;border-color:var(--blue);color:var(--blue)}
 .modal-footer{display:flex;gap:10px;margin-top:6px}
 .modal-footer .btn-ghost{flex:1}.modal-footer .btn-primary{flex:2}
 .btn-undo{display:none;align-items:center;gap:6px;padding:7px 12px;font-size:13px;font-weight:700;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer;transition:background .2s,opacity .2s}.btn-undo:hover{background:var(--surface2)}.btn-undo:disabled{opacity:.6;cursor:wait}.btn-undo .undo-n{font-family:'DM Mono',monospace;font-size:11px;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px}
@@ -300,6 +301,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <option value="visa_signature">💎 Visa Signature</option>
         <option value="cencosud">🏪 Cencosud</option>
       </select>
+    </div>
+    <div class="field" id="fieldMoneda" style="display:none">
+      <label>Moneda</label>
+      <div class="tipo-toggle" id="monedaToggle"></div>
     </div>
     <div class="field" id="fieldCuentaAhorro" style="display:none">
       <label>Cuenta de ahorro</label>
@@ -593,6 +598,66 @@ let _pagoCredPendiente=null,_pagoCredTarjetaElegida="visa_singular";
 
 function mxn(n){const int=Math.round(Math.abs(n)).toString();const g=int.replace(/\B(?=(\d{3})+(?!\d))/g,".");return(n<0?"-$":"$")+g;}
 function fechaLocal(str){return new Date(str+"T12:00:00");}
+/* ── MONEDA TC (CLP / US$) ── */
+let monedaTC="CLP";
+function usd(n){return"US$"+Number(n||0).toLocaleString("es-CL",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esUSDModal(){const c=document.getElementById("fCuenta");return monedaTC==="USD"&&c&&c.value==="tc";}
+function parseMontoUSD(v){v=String(v||"").replace(/[^0-9.,]/g,"");if(v.includes(",")){v=v.replace(/\./g,"").replace(",",".");}else if((v.match(/\./g)||[]).length>1){v=v.replace(/\./g,"");}return parseFloat(v)||0;}
+function renderMonedaToggle(){const el=document.getElementById("monedaToggle");if(!el)return;el.innerHTML=`<button type="button" class="tipo-btn ${monedaTC==="CLP"?"selected-moneda":""}" onclick="setMonedaTC('CLP')">🇨🇱 CLP</button><button type="button" class="tipo-btn ${monedaTC==="USD"?"selected-moneda":""}" onclick="setMonedaTC('USD')">💵 US$</button>`;}
+function setMonedaTC(m){
+  if(m===monedaTC)return;
+  const inp=document.getElementById("fMonto");const valor=leerMonto();
+  monedaTC=m;
+  if(valor>0)inp.value=m==="USD"?valor.toLocaleString("es-CL",{maximumFractionDigits:2}):Math.round(valor).toLocaleString("es-CL");
+  renderMonedaToggle();aplicarMoneda();
+}
+function aplicarMoneda(){
+  const esUSD=monedaTC==="USD";const inp=document.getElementById("fMonto");
+  document.getElementById("labelMonto").textContent=esUSD?"Monto (US$)":"Monto (CLP)";
+  inp.placeholder=esUSD?"0,00":"0";inp.setAttribute("inputmode",esUSD?"decimal":"numeric");
+  if(document.getElementById("fCuenta").value==="tc")document.getElementById("fieldCuotas").style.display=esUSD?"none":"";
+}
+function totalUSDDeMes(mesStr,tarjeta){return data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto_usd"&&(t.mes_facturacion||t.fecha.slice(0,7))===mesStr&&(!tarjeta||(t.tarjeta||"")===tarjeta)).reduce((s,t)=>s+(t.monto||0),0);}
+function pagadoUSDDeMes(mesStr,tarjeta){return data.filter(t=>t.cuenta==="tc"&&t.tipo==="pago_usd"&&t.mes_facturacion===mesStr&&(!tarjeta||(t.tarjeta||"")===tarjeta)).reduce((s,t)=>s+(t.monto||0),0);}
+async function pagarTarjetaUSD(tarjeta,mesStr){
+  const v=TARJETAS[tarjeta];
+  const pendiente=Math.round((totalUSDDeMes(mesStr,tarjeta)-pagadoUSDDeMes(mesStr,tarjeta))*100)/100;
+  if(pendiente<=0){mostrarToast("✅ Sin saldo en dólares pendiente");return;}
+  const mesLbl=MESES[parseInt(mesStr.slice(5,7))-1]+" "+mesStr.slice(0,4);
+  if(!confirm(`¿Registrar pago en dólares de ${v.icon} ${v.label}?\n\nMes: ${mesLbl}\nMonto: ${usd(pendiente)}`))return;
+  const resp=prompt(`¿Cuántos pesos (CLP) se descontaron de tu Cta. Corriente para pagar ${usd(pendiente)}?\n\nDéjalo vacío si pagaste con dólares de otra cuenta.`,"");
+  if(resp===null)return;
+  const clp=parseInt(String(resp).replace(/\D/g,""))||0;
+  const fechaHoy=fechaHoyLocal();
+  try{
+    const ref=await colUsuario().add({cuenta:"tc",tipo:"pago_usd",moneda:"USD",cat:"pago_usd",desc:`Pago US$ ${v.label} — ${mesLbl}`,monto:pendiente,fecha:fechaHoy,mes_facturacion:mesStr,tarjeta,...(clp>0?{monto_clp:clp}:{})});
+    if(clp>0)await colUsuario().add({cuenta:"cc",tipo:"gasto",cat:"pago_tc",desc:`Pago US$ ${v.label} — ${mesLbl} (${usd(pendiente)})`,monto:clp,monto_total:clp,fecha:fechaHoy,tc_mes_pagado_usd:mesStr,tarjeta_pagada:tarjeta,usd_pago_ref:ref.id});
+    mostrarToast(`✅ ${v.label} US$ pagada — ${usd(pendiente)}${clp>0?" · "+mxn(clp)+" de CC":""}`);
+  }catch(err){mostrarToast("❌ Error: "+err.message);}
+}
+async function deshacerPagoUSD(tarjeta,mesStr){
+  const v=TARJETAS[tarjeta];
+  const pagos=data.filter(t=>t.cuenta==="tc"&&t.tipo==="pago_usd"&&t.mes_facturacion===mesStr&&(t.tarjeta||"")===tarjeta);
+  if(!pagos.length){mostrarToast("ℹ️ No hay pago en dólares registrado");return;}
+  const ids=new Set(pagos.map(p=>p.id));
+  const movsCC=data.filter(t=>t.cuenta==="cc"&&t.usd_pago_ref&&ids.has(t.usd_pago_ref));
+  if(!confirm(`¿Deshacer el pago en dólares de ${v.icon} ${v.label}?${movsCC.length?`\n\nSe eliminará el cargo en Cta. Corriente (${mxn(movsCC.reduce((s,t)=>s+(t.monto||0),0))})`:""}`))return;
+  try{for(const m of movsCC)await colUsuario().doc(m.id).delete();for(const p of pagos)await colUsuario().doc(p.id).delete();mostrarToast("↩️ Pago en dólares deshecho");}
+  catch(err){mostrarToast("❌ Error: "+err.message);}
+}
+function filaTransaccionUSD(t,i){
+  const c=CATS[t.cat]||{icon:"💵",color:"#2563EB",label:"Otros"};
+  const fecha=fechaLocal(t.fecha).toLocaleDateString("es-CL",{day:"numeric",month:"short"});
+  const tc=TARJETAS[t.tarjeta];
+  const tcBadge=tc?`<span style="background:${tc.color}22;border:1px solid ${tc.color}60;color:${tc.color};font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:5px">${tc.icon} ${tc.label}</span>`:'';
+  return`<div class="expense-row" style="animation-delay:${i*35}ms">
+    <div class="expense-icon" style="background:${c.color}22">${c.icon}</div>
+    <div style="flex:1;min-width:0"><div class="expense-desc">${esc(t.desc)}${tcBadge}</div><div class="expense-meta">${c.label} · ${fecha}</div></div>
+    <div class="expense-amount" style="color:var(--blue2)">-${usd(t.monto)}</div>
+    <div style="display:flex;gap:2px;flex-shrink:0"><button class="btn-icon" onclick="abrirModal('${t.id}')">✏️</button><button class="btn-icon" onclick="eliminar('${t.id}')">🗑️</button></div>
+  </div>`;
+}
+
 /* ── FACTURACIÓN TC AUTOMÁTICA (corte día 23) ── */
 const DIA_CORTE_TC=23;
 function fechaHoyLocal(){const h=new Date();return`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;}
@@ -853,6 +918,16 @@ function renderTC(){
   const saldoPendiente=totalFacturado-totalPagos;
   const totalJavi=gmGastos.reduce((s,t)=>s+(t.monto_javi||0),0);
   const mesPostCierre=mesFacDeCuota(MES_CIERRE,1);
+  const usdMes=delMes(data.filter(t=>t.cuenta==="tc"&&t.tipo==="gasto_usd")).filter(t=>filtroTarjeta==="todas"||(t.tarjeta||"")===filtroTarjeta).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const totalUSDMes=usdMes.reduce((s,t)=>s+(t.monto||0),0);
+  const pagadoUSDMes=mesCerrado(mesVistoTC)?totalUSDMes:Math.min(totalUSDMes,pagadoUSDDeMes(mesVistoTC,filtroTarjeta==="todas"?null:filtroTarjeta));
+  const htmlUSD=usdMes.length?`<div style="background:var(--surface);border:1px solid #BFDBFE;border-radius:14px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)">
+        <div style="min-width:0"><div style="font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💵 Compras en dólares</div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:20px;color:var(--blue2);overflow-wrap:anywhere">${usd(totalUSDMes)}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${usdMes.length} mov. · Pagado ${usd(pagadoUSDMes)} · Pendiente ${usd(Math.max(0,totalUSDMes-pagadoUSDMes))}</div></div>
+        <div style="font-size:30px;flex-shrink:0">💵</div>
+      </div>
+      <div class="expense-list" style="padding:10px">${usdMes.map((t,i)=>filaTransaccionUSD(t,i)).join("")}</div>
+    </div>`:'';
   let html=`
     <div class="filter-bar">
       <select class="filter-select ${filtroTarjeta!=='todas'?'on':''}" onchange="setFiltroTarjeta(this.value)">
@@ -870,6 +945,7 @@ function renderTC(){
       <div class="summary-card purple"><div class="s-label" style="color:var(--muted)">Gonzalo</div><div class="s-amount">${mxn(total)}</div><div class="s-sub">${totalFacturado>0?(total/totalFacturado*100).toFixed(0):'0'}% del total</div></div>
       <div class="summary-card neutral" style="border-color:#FBCFE8;background:#FFF1F6"><div class="s-label" style="color:#BE185D">Javi</div><div class="s-amount" style="color:#BE185D">${mxn(totalJavi)}</div><div class="s-sub" style="color:#475569">${totalFacturado>0?(totalJavi/totalFacturado*100).toFixed(0):'0'}%</div></div>
     </div>
+    ${htmlUSD}
     ${(filtroTarjeta==='todas'||filtroTarjeta==='visa_singular')?`<div style="background:var(--surface);border:1px solid #BFDBFE;border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div>
         <div style="font-size:10px;color:#3B82F6;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">💳 Visa Singular — Consumido pendiente</div>
@@ -1442,6 +1518,7 @@ function calcularTotalTCMes(){
 
 /* ── MODAL PRINCIPAL ── */
 function abrirModal(id=null){
+  if(id){const t0=data.find(x=>x.id===id);if(t0&&(t0.tipo==="pago_usd"||t0.tc_mes_pagado_usd)){mostrarToast("ℹ️ Pago en US$: deshazlo desde la pestaña Pagos");return;}}
   editandoId=id;
   const hoy=fechaHoyLocal();
   const cuentaDefault=tabActual==="resumen"?"tc":tabActual==="creditos"?"creditos":tabActual;
@@ -1453,7 +1530,7 @@ function abrirModal(id=null){
   if(id){
     const t=data.find(x=>x.id===id);
     document.getElementById("modalTitulo").textContent="Editar transacción";
-    document.getElementById("fCuenta").value=t.cuenta;modalTipo=t.tipo;
+    document.getElementById("fCuenta").value=t.cuenta;modalTipo=t.tipo;monedaTC=(t.cuenta==="tc"&&t.tipo==="gasto_usd")?"USD":"CLP";
     document.getElementById("fDesc").value=t.desc;
     document.getElementById("fMonto").value=(t.monto_total||t.monto).toLocaleString("es-CL");
     document.getElementById("fCat").value=t.cat||"otros";
@@ -1471,7 +1548,7 @@ function abrirModal(id=null){
     const esCuotaCredito=t.cuenta==="creditos"&&t.cuota_actual&&t.cuotas_total;
     document.getElementById("btnEliminarCuotas").style.display=(esCuotaTC||esCuotaCredito)?"":"none";
   }else{
-    document.getElementById("modalTitulo").textContent="Nueva transacción";
+    document.getElementById("modalTitulo").textContent="Nueva transacción";monedaTC="CLP";
     document.getElementById("btnEliminarCuotas").style.display="none";
     modalTipo=tabActual==="ahorros"?"deposito":tabActual==="cc"?"ingreso":"gasto";
     document.getElementById("fDesc").value="";document.getElementById("fMonto").value="";
@@ -1496,6 +1573,7 @@ function actualizarModalPorCuenta(cuentaForzada){
   document.getElementById("fieldHipTipo").style.display="none";
   document.getElementById("pagoTCBanner").style.display="none";
   document.getElementById("fieldMesPagoTC").style.display="none";
+  document.getElementById("fieldMoneda").style.display="none";document.getElementById("labelMonto").textContent="Monto (CLP)";
   if(cuenta==="tc"){
     mostrarCampoUF(false);document.getElementById("fieldCuotasCredito").style.display="none";document.getElementById("fieldCuentaAhorro").style.display="none";document.getElementById("fieldTarjeta").style.display="";
     fieldTipo.style.display="none";fieldCat.style.display="";actualizarOpcionesCat("tc");modalTipo="gasto";
@@ -1503,6 +1581,7 @@ function actualizarModalPorCuenta(cuentaForzada){
     document.getElementById("fieldMesFac").style.display="";
     if(!editandoId)initMesFacPicker(mesFacturacionTC(document.getElementById("fFecha").value));else renderMesFacGrid();
     document.getElementById("fieldCuotas").style.display="";actualizarPreviewCuotas();
+    document.getElementById("fieldMoneda").style.display="";renderMonedaToggle();aplicarMoneda();
   }else if(cuenta==="creditos"){
     document.getElementById("fieldCuentaAhorro").style.display="none";document.getElementById("fieldTarjeta").style.display="none";
     fieldTipo.style.display="none";fieldCat.style.display="";actualizarOpcionesCat("creditos");modalTipo="gasto";
@@ -1552,8 +1631,8 @@ function calcularCuotaMensual(){
   if(monto>0)parts.push(`Monto por cuota: ${mxn(monto)}`);
   preview.textContent=parts.join(" · ");
 }
-function formatearMonto(input){const raw=input.value.replace(/\./g,'').replace(/[^0-9]/g,'');if(raw===''){input.value='';return;}input.value=parseInt(raw).toLocaleString('es-CL');}
-function leerMonto(){const val=document.getElementById("fMonto").value.replace(/\./g,'').replace(/[^0-9]/g,'');return parseFloat(val)||0;}
+function formatearMonto(input){if(input&&input.id==="fMonto"&&esUSDModal()){input.value=input.value.replace(/[^0-9.,]/g,'');return;}const raw=input.value.replace(/\./g,'').replace(/[^0-9]/g,'');if(raw===''){input.value='';return;}input.value=parseInt(raw).toLocaleString('es-CL');}
+function leerMonto(){if(esUSDModal())return parseMontoUSD(document.getElementById("fMonto").value);const val=document.getElementById("fMonto").value.replace(/\./g,'').replace(/[^0-9]/g,'');return parseFloat(val)||0;}
 function setTipo(t){modalTipo=t;const cuenta=document.getElementById("fCuenta").value;actualizarModalPorCuenta(cuenta);}
 function cerrarModal(){document.getElementById("modalOverlay").style.display="none";}
 function cerrarSiAfuera(e){if(e.target===document.getElementById("modalOverlay"))cerrarModal();}
@@ -1744,6 +1823,20 @@ async function guardar(){
   }
   if(!desc||isNaN(monto)||monto<=0||!fecha){mostrarToast("⚠️ Completa todos los campos");return;}
   if((cuenta==="tc"||cuenta==="creditos")&&!mesFac){mostrarToast("⚠️ Selecciona el mes de facturación");return;}
+  if(cuenta==="tc"&&monedaTC==="USD"){
+    if(cat==="pago"){mostrarToast("⚠️ Los pagos en US$ se registran desde la pestaña Pagos");return;}
+    const transUSD={fecha,cuenta:"tc",tipo:"gasto_usd",moneda:"USD",cat,tarjeta:document.getElementById("fTarjeta").value,desc,monto:Math.round(monto*100)/100,mes_facturacion:mesFac};
+    cerrarModal();
+    try{
+      if(editandoId){
+        await colUsuario().doc(editandoId).update({...transUSD,monto_javi:firebase.firestore.FieldValue.delete(),monto_total:firebase.firestore.FieldValue.delete()});
+        await eliminarSyncJavi(editandoId);
+        const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.tc_pago_ref===editandoId);if(ccEspejo)await colUsuario().doc(ccEspejo.id).delete();
+        mostrarToast("✅ Compra en US$ actualizada");
+      }else{await colUsuario().add(transUSD);mostrarToast(`✅ Compra en dólares agregada: ${usd(transUSD.monto)}`);}
+    }catch(err){mostrarToast("❌ Error al guardar: "+err.message);}
+    return;
+  }
   let monto_gonzalo=monto,monto_javi_calc=0,monto_total_calc=monto;
   if((cuenta==="tc"&&cat!=="pago")||cuenta==="creditos"||(cuenta==="cc"&&modalTipo==="gasto"&&cat&&cat!=="pago"&&cat!=="pago_tc")){
     const regla=CATS[cat];if(regla){monto_total_calc=monto;monto_gonzalo=Math.round(monto*regla.pct_g);monto_javi_calc=Math.round(monto*regla.pct_j);}
@@ -1760,7 +1853,7 @@ async function guardar(){
       const trans={...tranBase,desc,monto:monto_gonzalo,...((cuenta==="tc"||cuenta==="creditos")?{mes_facturacion:mesFac}:{}),...((cuenta==="tc"||cuenta==="creditos"||cuenta==="cc")&&monto_javi_calc>0?{monto_javi:monto_javi_calc,monto_total:monto_total_calc}:{})};
       // Si ya no hay parte de Javi, borrar campos antiguos para que no queden valores desactualizados
       const limpiarJavi=monto_javi_calc>0?{}:{monto_javi:firebase.firestore.FieldValue.delete(),monto_total:firebase.firestore.FieldValue.delete()};
-      await colUsuario().doc(editandoId).update({...trans,...limpiarJavi});await sincronizarConJavi(editandoId,trans,monto_javi_calc);
+      await colUsuario().doc(editandoId).update({...trans,...limpiarJavi,...(cuenta==="tc"?{moneda:firebase.firestore.FieldValue.delete()}:{})});await sincronizarConJavi(editandoId,trans,monto_javi_calc);
       if(esPagoTC){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.tc_pago_ref===editandoId);const transCC={desc:`Pago TC: ${desc}`,monto,fecha,cuenta:"cc",tipo:"gasto",cat:"pago",tc_pago_ref:editandoId};if(ccEspejo)await colUsuario().doc(ccEspejo.id).update(transCC);else await colUsuario().add(transCC);}
       else if(cuenta==="tc"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.tc_pago_ref===editandoId);if(ccEspejo)await colUsuario().doc(ccEspejo.id).delete();}
       else if(cuenta==="ahorros"){if(modalTipo!=="ganancia"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.ahorro_ref===editandoId);const tipoCC=modalTipo==="deposito"?"gasto":"ingreso";const transCC={desc:modalTipo==="deposito"?`Depósito ahorro: ${desc}`:`Retiro ahorro: ${desc}`,monto,fecha,cuenta:"cc",tipo:tipoCC,cat:null,ahorro_ref:editandoId};if(ccEspejo)await colUsuario().doc(ccEspejo.id).update(transCC);else await colUsuario().add(transCC);}}
@@ -1849,6 +1942,8 @@ async function borrarUnaTransaccion(id){
     if(trans&&trans.cuenta==="cc"&&trans.cat==="pago_tc"){const tcEspejo=data.find(t=>t.cuenta==="tc"&&t.cat==="pago"&&t.pago_tc_cc_ref===id);if(tcEspejo)await colUsuario().doc(tcEspejo.id).delete();}
     if(trans&&trans.cuenta==="cc"&&trans.cat==="pago_tc"&&trans.hip_tipo&&trans.credito_cc_ref){const cred=data.find(t=>t.id===trans.credito_cc_ref);if(cred)await colUsuario().doc(cred.id).update({pagado_automatico:false});}
     if(trans&&trans.cuenta==="ahorros"){const ccEspejo=data.find(t=>t.cuenta==="cc"&&t.ahorro_ref===id);if(ccEspejo)await colUsuario().doc(ccEspejo.id).delete();}
+    if(trans&&trans.cuenta==="tc"&&trans.tipo==="pago_usd"){for(const m of data.filter(t=>t.cuenta==="cc"&&t.usd_pago_ref===id))await colUsuario().doc(m.id).delete();}
+    if(trans&&trans.cuenta==="cc"&&trans.usd_pago_ref){await colUsuario().doc(trans.usd_pago_ref).delete().catch(()=>{});}
     await colUsuario().doc(id).delete();eliminarSyncJavi(id);mostrarToast("🗑️ Eliminado");
   }catch(err){mostrarToast("❌ Error al eliminar: "+err.message);}
 }
@@ -2054,16 +2149,33 @@ function renderPagos(){
     const{totalGeneral,totalGonzalo,totalJavi}=calcularTotalTCDeMes(mesVisto,k);
     const regTC=data.find(t=>t.cuenta==="cc"&&t.cat==="pago_tc"&&t.tc_mes_pagado===mesVisto&&t.tarjeta_pagada===k);
     const yaPageTC=regTC||(mesCerrado(mesVisto)&&totalGeneral>0);
-    if(totalGeneral===0&&!regTC)return;
-    html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${yaPageTC?'#BBF7D0':'var(--border)'}">
-      <div style="min-width:0">
-        <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px">${v.icon} ${v.label}</div>
-        <div style="font-size:11px;color:var(--dim);margin-top:2px">${mxn(totalGeneral)} facturado${totalJavi>0?` · J: ${mxn(totalJavi)}`:''}</div>
-      </div>
-      ${yaPageTC
-        ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagada</div>`
-        :(totalGeneral>0?`<button onclick="pagarTarjetaMes('${k}','${mesVisto}',${totalGeneral},${totalGonzalo},${totalJavi})" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${v.color}60;background:${v.color}18;color:${v.color};font-family:inherit;white-space:nowrap">⚡ Pagar</button>`:'')
-      }
+    const usdT=totalUSDDeMes(mesVisto,k),usdPag=pagadoUSDDeMes(mesVisto,k);
+    const usdPend=mesCerrado(mesVisto)?0:Math.max(0,Math.round((usdT-usdPag)*100)/100);
+    const hayCLP=totalGeneral>0||!!regTC,hayUSD=usdT>0||usdPag>0;
+    if(!hayCLP&&!hayUSD)return;
+    const todoPagado=(!hayCLP||yaPageTC)&&(!hayUSD||usdPend===0);
+    html+=`<div style="padding:12px 14px;background:var(--surface2);border-radius:12px;border:1px solid ${todoPagado?'#BBF7D0':'var(--border)'};display:flex;flex-direction:column;gap:10px">
+      <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px">${v.icon} ${v.label}</div>
+      ${hayCLP?`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div style="min-width:0">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase">🇨🇱 Pesos (CLP)</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;margin-top:2px">${mxn(totalGeneral)}</div>
+          ${totalJavi>0?`<div style="font-size:11px;color:var(--dim);margin-top:1px">J: ${mxn(totalJavi)}</div>`:''}
+        </div>
+        ${yaPageTC
+          ?`<div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagada</div>`
+          :(totalGeneral>0?`<button onclick="pagarTarjetaMes('${k}','${mesVisto}',${totalGeneral},${totalGonzalo},${totalJavi})" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ${v.color}60;background:${v.color}18;color:${v.color};font-family:inherit;white-space:nowrap">⚡ Pagar CLP</button>`:'')}
+      </div>`:''}
+      ${hayUSD?`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;${hayCLP?'border-top:1px dashed var(--border2);padding-top:10px':''}">
+        <div style="min-width:0">
+          <div style="font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.06em;text-transform:uppercase">💵 Dólares (US$)</div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;color:var(--blue2);margin-top:2px">${usd(usdT)}</div>
+          ${usdPag>0&&usdPend>0?`<div style="font-size:11px;color:var(--dim);margin-top:1px">Pagado ${usd(usdPag)} · Pendiente ${usd(usdPend)}</div>`:''}
+        </div>
+        ${usdPend===0
+          ?`<div style="display:flex;align-items:center;gap:6px;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:#15803D;white-space:nowrap">✅ Pagada</div>${usdPag>0?`<button onclick="deshacerPagoUSD('${k}','${mesVisto}')" title="Deshacer pago en dólares" style="padding:5px 8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:inherit;white-space:nowrap">↩️</button>`:''}</div>`
+          :`<button onclick="pagarTarjetaUSD('${k}','${mesVisto}')" style="flex-shrink:0;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid #2563EB60;background:#2563EB18;color:var(--blue2);font-family:inherit;white-space:nowrap">⚡ Pagar US$</button>`}
+      </div>`:''}
     </div>`;
   });
   html+=`</div></div>`;
